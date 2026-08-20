@@ -105,6 +105,45 @@ export const syncJobSchema = z.object({
   created_at: z.string().datetime({ offset: true }),
 })
 
+export const authUserSchema = z.object({
+  id: z.string().uuid(),
+  status: z.enum(['ACTIVE', 'SUSPENDED', 'DEACTIVATED', 'DELETED']),
+  github: z.object({
+    user_id: z.string().regex(/^\d+$/),
+    login: z.string().max(80).nullable(),
+    avatar_url: z.string().url().nullable(),
+  }),
+  roles: z.array(z.enum(['FOUNDER', 'ADMIN', 'MODERATOR', 'REVIEWER', 'DEVELOPER', 'USER'])),
+  badges: z.array(z.enum(['FOUNDER', 'OFFICIAL', 'VERIFIED_DEVELOPER', 'MODERATOR', 'REVIEWER'])),
+})
+
+export const authenticatedSessionSchema = z.object({
+  authenticated: z.literal(true),
+  user: authUserSchema,
+  expires_at: z.string().datetime({ offset: true }),
+})
+
+export const authSessionResponseSchema = z.discriminatedUnion('authenticated', [
+  z.object({ authenticated: z.literal(false) }),
+  authenticatedSessionSchema,
+])
+
+export const desktopOAuthStartResponseSchema = z.object({
+  authorization_url: z.string().url(),
+  transaction_id: z.string().uuid(),
+  poll_token: z.string().min(32).max(128),
+  expires_at: z.string().datetime({ offset: true }),
+})
+
+export const desktopSessionExchangeResponseSchema = z.discriminatedUnion('status', [
+  z.object({ status: z.literal('PENDING') }),
+  z.object({
+    status: z.literal('COMPLETE'),
+    session_token: z.string().min(32).max(128),
+    session: authenticatedSessionSchema,
+  }),
+])
+
 export const pluginSnapshotSchema = z.object({
   plugin: pluginSchema,
   checked_at: z.string().datetime({ offset: true }),

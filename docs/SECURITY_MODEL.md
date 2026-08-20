@@ -138,6 +138,8 @@
 
 - OAuth Authorization Code + PKCE；服务端验证 issuer、audience、expiry；
 - Secure、HttpOnly、SameSite Cookie 或等效安全会话；
+- Desktop OAuth 通过系统浏览器和一次性高熵 poll token 交付 HarnessHub Session；Session 明文不进入数据库，GitHub token 不进入客户端；
+- OAuth state 原子单次消费，PKCE verifier 加密保存并在 callback 后清除；
 - 所有写操作做 Origin/CSRF 防护和速率限制；
 - Markdown 严格白名单净化，外链增加安全属性；
 - URL 抓取仅允许经过规范化与 DNS/IP 检查的 GitHub/npm 来源，防 SSRF；
@@ -149,6 +151,10 @@
 
 ## 10. 身份、版权与滥用
 
+- OAuth 主体使用 provider 的稳定唯一 ID；username、display name、email、头像和可编辑 metadata 永远不能参与权限判断；
+- User、OAuthIdentity、RoleAssignment 与 BadgeGrant 分层保存；服务端授权不读取 Badge；
+- 账号绑定必须由已登录用户在 recent authentication 后显式发起，并使用短时 state/PKCE/nonce；禁止根据相同 email 自动合并；
+- Founder 通过数据库 bootstrap 绑定 GitHub 数字 user ID，全平台唯一，普通 API 不可转移或解绑；
 - GitHub 登录不自动等同仓库所有权；
 - 认领使用仓库协作者权限、可验证文件/issue 挑战或 npm provenance 等证据；
 - 作者移交必须通知现有关注者并重新验证；

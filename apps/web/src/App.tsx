@@ -1,9 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 
-import type { Plugin, PluginSnapshotRecord } from '@harnesshub/types'
+import type { AuthSessionResponse, Plugin, PluginSnapshotRecord } from '@harnesshub/types'
 import { IdentityBadge, PluginCard, PluginDetail } from '@harnesshub/ui'
 
-import { getPlugin, listPlugins, listPluginSnapshots } from './api.js'
+import {
+  getAuthSession,
+  getPlugin,
+  githubLoginUrl,
+  listPlugins,
+  listPluginSnapshots,
+  logout,
+} from './api.js'
 
 type LoadState = 'loading' | 'ready' | 'error'
 
@@ -23,6 +30,25 @@ export function App() {
   const [hasNext, setHasNext] = useState(false)
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [error, setError] = useState('')
+  const [auth, setAuth] = useState<AuthSessionResponse>({ authenticated: false })
+  const [authBusy, setAuthBusy] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    void getAuthSession()
+      .then((session) => {
+        if (active) setAuth(session)
+      })
+      .catch(() => {
+        if (active) setAuth({ authenticated: false })
+      })
+      .finally(() => {
+        if (active) setAuthBusy(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -74,7 +100,34 @@ export function App() {
           <a href="/">Registry</a>
           <a href="#principles">Principles</a>
         </nav>
-        <span className="phase-pill">Phase 1-D · Production Hardening</span>
+        <div className="header-auth">
+          <span className="phase-pill">Phase 2-B1 · GitHub OAuth</span>
+          {auth.authenticated ? (
+            <div className="signed-in-user">
+              {auth.user.github.avatar_url ? (
+                <img alt="" src={auth.user.github.avatar_url} />
+              ) : null}
+              <span>{auth.user.github.login ?? `GitHub ${auth.user.github.user_id}`}</span>
+              {auth.user.badges.includes('FOUNDER') ? <IdentityBadge kind="founder" /> : null}
+              <button
+                disabled={authBusy}
+                onClick={() => {
+                  setAuthBusy(true)
+                  void logout()
+                    .then(() => setAuth({ authenticated: false }))
+                    .finally(() => setAuthBusy(false))
+                }}
+                type="button"
+              >
+                Sign out
+              </button>
+            </div>
+          ) : (
+            <a className="github-login" href={githubLoginUrl}>
+              Sign in with GitHub
+            </a>
+          )}
+        </div>
       </header>
 
       <main>

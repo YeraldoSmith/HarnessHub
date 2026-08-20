@@ -8,7 +8,7 @@ HarnessHub 是面向 DeepSeek Harness（DSH）生态起步的第三方社区平�
 
 HarnessHub 由 **YeraldoSmith** 创建，初始身份为 **Founder & Initial Maintainer**。
 
-> 当前状态：Phase 1-D 已完成，Phase 1 Registry Foundation 正式收口。Registry 支持稳定分页、PostgreSQL 搜索、SyncJob、来源可用状态、追加式 Snapshot、基础限流与统一错误响应；Mock Plugin 仅保留为测试 fixture。
+> 当前状态：Phase 2-B1 GitHub-only OAuth 已完成。Web/Desktop 可通过后端 callback 建立 HarnessHub Session；Founder 只按数据库中预置的 GitHub 数字 user ID 识别。Google、账号绑定、Developer Claim 与社区能力尚未实现。Phase 1 Registry Foundation 保持稳定。
 
 ## v0.1 的最小闭环
 
@@ -48,6 +48,8 @@ pnpm registry:sync
 pnpm dev
 ```
 
+GitHub 登录前将 `.env.example` 复制为 `.env`，并在本机设置 `GITHUB_CLIENT_ID`、`GITHUB_CLIENT_SECRET`、`GITHUB_CALLBACK_URL`、`SESSION_SECRET` 和 `AUTH_WEB_SUCCESS_URL`。不要提交 `.env`，也不要把 Secret 放进任何 `VITE_` 前端变量。callback 必须是 `http://127.0.0.1:3001/auth/github/callback`。
+
 启动后：
 
 - Web Registry：`http://127.0.0.1:5173`
@@ -78,6 +80,7 @@ pnpm db:local:stop
 - [社区准则](docs/COMMUNITY_GUIDELINES.md)
 - [创始原则](docs/FOUNDING_PRINCIPLES.md)
 - [身份体系](docs/IDENTITY_SYSTEM.md)
+- [Identity Foundation Architecture](docs/IDENTITY_ARCHITECTURE.md)
 - [治理模型](docs/GOVERNANCE.md)
 - [开发者指南](docs/DEVELOPER_GUIDE.md)
 - [路线图](docs/ROADMAP.md)
@@ -86,10 +89,11 @@ pnpm db:local:stop
 - [Phase 1-B Registry](docs/PHASE_1B_REGISTRY.md)
 - [Phase 1-C Registry Hardening](docs/PHASE_1C_REGISTRY_HARDENING.md)
 - [Phase 1-D Production Hardening](docs/PHASE_1D_PRODUCTION_HARDENING.md)
+- [Phase 2-B1 GitHub OAuth](docs/PHASE_2B1_GITHUB_OAUTH.md)
 
 ## 后续门槛
 
-Phase 1 已结束。下一阶段是 Phase 2 Identity Foundation；账号与开发者体系必须作为独立阶段重新确认后再实现。
+Phase 2-B1 已完成。下一阶段仍不得直接开放 Google 或自动账号绑定；必须先实现并验证显式 Account Linking 的 recent-auth、冲突拒绝和跨 provider email 自动合并隔离。
 
 ## Copyright
 

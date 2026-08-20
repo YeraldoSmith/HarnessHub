@@ -135,3 +135,42 @@ export interface SyncJobRecord {
   error: string | null
   created_at: string
 }
+
+export type AuthUserStatus = 'ACTIVE' | 'SUSPENDED' | 'DEACTIVATED' | 'DELETED'
+export type AuthRole = 'FOUNDER' | 'ADMIN' | 'MODERATOR' | 'REVIEWER' | 'DEVELOPER' | 'USER'
+export type AuthBadge = 'FOUNDER' | 'OFFICIAL' | 'VERIFIED_DEVELOPER' | 'MODERATOR' | 'REVIEWER'
+
+export interface AuthUser {
+  id: string
+  status: AuthUserStatus
+  github: {
+    user_id: string
+    login: string | null
+    avatar_url: string | null
+  }
+  roles: AuthRole[]
+  badges: AuthBadge[]
+}
+
+export type AuthSessionResponse =
+  | { authenticated: false }
+  | {
+      authenticated: true
+      user: AuthUser
+      expires_at: string
+    }
+
+export interface DesktopOAuthStartResponse {
+  authorization_url: string
+  transaction_id: string
+  poll_token: string
+  expires_at: string
+}
+
+export type DesktopSessionExchangeResponse =
+  | { status: 'PENDING' }
+  | {
+      status: 'COMPLETE'
+      session_token: string
+      session: Extract<AuthSessionResponse, { authenticated: true }>
+    }

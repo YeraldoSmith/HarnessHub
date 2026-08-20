@@ -31,38 +31,200 @@ enum SyncJobStatus {
   FAILED
 }
 
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+  DELETED
+}
+
+enum IdentityProvider {
+  GITHUB
+}
+
+enum PlatformRole {
+  FOUNDER
+  ADMIN
+  MODERATOR
+  REVIEWER
+  DEVELOPER
+  USER
+}
+
+enum IdentityBadge {
+  FOUNDER
+  OFFICIAL
+  VERIFIED_DEVELOPER
+  MODERATOR
+  REVIEWER
+}
+
+enum AssignmentScope {
+  PLATFORM
+  PLUGIN
+}
+
+enum OAuthClient {
+  WEB
+  DESKTOP
+}
+
+enum OAuthTransactionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id              String           @id @default(uuid()) @db.Uuid
+  status          UserStatus       @default(ACTIVE)
+  securityVersion Int              @default(1) @map("security_version")
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+  suspendedAt     DateTime?        @map("suspended_at") @db.Timestamptz(3)
+  deactivatedAt   DateTime?        @map("deactivated_at") @db.Timestamptz(3)
+  deletedAt       DateTime?        @map("deleted_at") @db.Timestamptz(3)
+  identities      OAuthIdentity[]
+  roleAssignments RoleAssignment[]
+  badgeGrants     BadgeGrant[]
+  sessions        AuthSession[]
+
+  @@map("users")
+}
+
+model OAuthIdentity {
+  id                  String           @id @default(uuid()) @db.Uuid
+  userId              String           @map("user_id") @db.Uuid
+  provider            IdentityProvider
+  issuer              String           @db.VarChar(255)
+  providerUserId      String           @map("provider_user_id") @db.VarChar(255)
+  metadata            Json
+  createdAt           DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+  lastAuthenticatedAt DateTime?        @map("last_authenticated_at") @db.Timestamptz(3)
+  disabledAt          DateTime?        @map("disabled_at") @db.Timestamptz(3)
+  user                User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([provider, issuer, providerUserId])
+  @@index([userId])
+  @@map("oauth_identities")
+}
+
+model RoleAssignment {
+  id              String          @id @default(uuid()) @db.Uuid
+  userId          String          @map("user_id") @db.Uuid
+  role            PlatformRole
+  scopeType       AssignmentScope @default(PLATFORM) @map("scope_type")
+  scopeId         String?         @map("scope_id") @db.VarChar(120)
+  grantedByUserId String?         @map("granted_by_user_id") @db.Uuid
+  reason          String          @db.VarChar(255)
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt       DateTime?       @map("expires_at") @db.Timestamptz(3)
+  revokedAt       DateTime?       @map("revoked_at") @db.Timestamptz(3)
+  revokedByUserId String?         @map("revoked_by_user_id") @db.Uuid
+  user            User            @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, role])
+  @@map("role_assignments")
+}
+
+model BadgeGrant {
+  id              String        @id @default(uuid()) @db.Uuid
+  userId          String        @map("user_id") @db.Uuid
+  badge           IdentityBadge
+  grantedByUserId String?       @map("granted_by_user_id") @db.Uuid
+  evidenceType    String        @map("evidence_type") @db.VarChar(80)
+  evidenceRef     String?       @map("evidence_ref") @db.VarChar(255)
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt       DateTime?     @map("expires_at") @db.Timestamptz(3)
+  revokedAt       DateTime?     @map("revoked_at") @db.Timestamptz(3)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, badge])
+  @@map("user_badge_grants")
+}
+
+model OAuthTransaction {
+  id                       String                 @id @default(uuid()) @db.Uuid
+  stateHash                String                 @unique @map("state_hash") @db.Char(64)
+  codeVerifierCiphertext   String?                @map("code_verifier_ciphertext") @db.Text
+  client                   OAuthClient
+  status                   OAuthTransactionStatus @default(PENDING)
+  desktopPollTokenHash     String?                @map("desktop_poll_token_hash") @db.Char(64)
+  desktopSessionCiphertext String?                @map("desktop_session_ciphertext") @db.Text
+  errorCode                String?                @map("error_code") @db.VarChar(80)
+  expiresAt                DateTime               @map("expires_at") @db.Timestamptz(3)
+  consumedAt               DateTime?              @map("consumed_at") @db.Timestamptz(3)
+  completedAt              DateTime?              @map("completed_at") @db.Timestamptz(3)
+  deliveredAt              DateTime?              @map("delivered_at") @db.Timestamptz(3)
+  createdAt                DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([status, expiresAt])
+  @@map("oauth_transactions")
+}
+
+model AuthSession {
+  id         String      @id @default(uuid()) @db.Uuid
+  userId     String      @map("user_id") @db.Uuid
+  tokenHash  String      @unique @map("token_hash") @db.Char(64)
+  client     OAuthClient
+  createdAt  DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt  DateTime    @map("expires_at") @db.Timestamptz(3)
+  lastSeenAt DateTime    @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  revokedAt  DateTime?   @map("revoked_at") @db.Timestamptz(3)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, expiresAt])
+  @@map("auth_sessions")
+}
+
+model AuditEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  actorUserId String?  @map("actor_user_id") @db.Uuid
+  action      String   @db.VarChar(120)
+  targetType  String   @map("target_type") @db.VarChar(80)
+  targetId    String?  @map("target_id") @db.VarChar(255)
+  metadata    Json
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([actorUserId, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+  @@map("audit_events")
+}
+
 model Plugin {
-  id          String          @id @db.VarChar(120)
-  name        String          @db.VarChar(120)
-  description String          @db.Text
-  category    String          @db.VarChar(80)
-  authorName  String          @map("author_name") @db.VarChar(120)
-  authorHandle String         @map("author_handle") @db.VarChar(120)
-  tags        String[]        @default([])
-  license     String          @db.VarChar(80)
-  sourceType  SourceType      @map("source_type")
-  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt   DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
-  sources     PluginSource[]
-  versions    PluginVersion[]
+  id           String          @id @db.VarChar(120)
+  name         String          @db.VarChar(120)
+  description  String          @db.Text
+  category     String          @db.VarChar(80)
+  authorName   String          @map("author_name") @db.VarChar(120)
+  authorHandle String          @map("author_handle") @db.VarChar(120)
+  tags         String[]        @default([])
+  license      String          @db.VarChar(80)
+  sourceType   SourceType      @map("source_type")
+  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+  sources      PluginSource[]
+  versions     PluginVersion[]
 
   @@map("plugins")
 }
 
 model PluginSource {
-  id            String         @id @default(cuid()) @db.VarChar(40)
-  pluginId      String         @map("plugin_id") @db.VarChar(120)
-  provider      SourceProvider
-  repositoryUrl String?        @map("repository_url") @db.Text
-  packageName   String?        @map("package_name") @db.VarChar(214)
-  evidence      Json
-  status        SourceAvailability @default(UNKNOWN)
-  lastVerifiedAt DateTime?      @map("last_verified_at") @db.Timestamptz(3)
-  unavailableSince DateTime?    @map("unavailable_since") @db.Timestamptz(3)
-  lastError       String?       @map("last_error") @db.VarChar(500)
-  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
-  plugin        Plugin         @relation(fields: [pluginId], references: [id], onDelete: Restrict)
+  id               String             @id @default(cuid()) @db.VarChar(40)
+  pluginId         String             @map("plugin_id") @db.VarChar(120)
+  provider         SourceProvider
+  repositoryUrl    String?            @map("repository_url") @db.Text
+  packageName      String?            @map("package_name") @db.VarChar(214)
+  evidence         Json
+  status           SourceAvailability @default(UNKNOWN)
+  lastVerifiedAt   DateTime?          @map("last_verified_at") @db.Timestamptz(3)
+  unavailableSince DateTime?          @map("unavailable_since") @db.Timestamptz(3)
+  lastError        String?            @map("last_error") @db.VarChar(500)
+  createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  plugin           Plugin             @relation(fields: [pluginId], references: [id], onDelete: Restrict)
 
   @@unique([pluginId, provider])
   @@index([provider])

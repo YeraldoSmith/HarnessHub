@@ -55,6 +55,18 @@ Phase 1-C 新增人工白名单来源：
 - [NestJS Rate Limiting](https://docs.nestjs.com/security/rate-limiting)：基础 API 限流采用官方 `@nestjs/throttler` 模块和全局 Guard；当前使用进程内存储，不引入 Redis 等额外基础设施。
 - [PostgreSQL pg_trgm](https://www.postgresql.org/docs/current/pgtrgm.html)：名称、描述、分类和作者字段使用 trigram GIN 索引支撑模糊搜索；标签使用原生数组 GIN 索引。
 
+## Phase 2-A 身份架构来源
+
+- [GitHub REST Users API](https://docs.github.com/en/rest/users)：GitHub 提供按数字 ID 读取用户及获取已认证用户的接口；HarnessHub 使用 provider 数字 user ID，不使用 login 作权限键。
+- [GitHub OAuth authorization](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps)：GitHub.com 支持 Authorization Code 与 PKCE `S256`，并建议使用不可猜测 state；Phase 2-B1 以此作为回调基线。
+- [GitHub App 与 OAuth App 的差异](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/differences-between-github-apps-and-oauth-apps)：仓库认领后续优先使用 GitHub App 的细粒度权限与短期 token，不扩大登录 OAuth 权限。
+- [YeraldoSmith GitHub API record](https://api.github.com/users/YeraldoSmith)：2026-08-20 核验 `id = 120692294`；生产 bootstrap 前仍需 Founder 独立确认。
+- [Google OpenID Connect](https://developers.google.com/identity/openid-connect/reference)：Google 明确要求使用不会变化/复用的 `sub` 识别用户，并警告不能把 email 当主标识。
+- [Microsoft ID token claims](https://learn.microsoft.com/en-us/entra/identity-platform/id-token-claims-reference)：名称、email、preferred username 可变；Microsoft 场景使用稳定 `sub` 或 tenant-aware `oid`。
+- [OAuth 2.0 Security BCP, RFC 9700](https://www.rfc-editor.org/rfc/rfc9700.html)：Phase 2-B 的 redirect、Authorization Code/PKCE、token 和攻击模型安全基线。
+- [Supabase Identity Linking](https://supabase.com/docs/guides/auth/auth-identity-linking)：当前文档说明 OAuth identity 可能按相同 email 自动 linking，同时提供已登录用户发起的 manual linking。HarnessHub 禁止前者作为权限继承路径，第二 provider 上线前必须验证目标部署的隔离能力。
+- [Supabase Identity object](https://supabase.com/docs/guides/auth/identities)：`provider_id` 是 OAuth provider 返回的账号 ID；`identity_data` 只作为外部 metadata，不作为 HarnessHub 授权事实。
+
 ## 更新规则
 
 以下事件发生时必须重新核验并更新本页：

@@ -7,6 +7,9 @@ import {
   pluginSnapshotComparisonSchema,
   pluginSnapshotRecordSchema,
   registryResponseSchema,
+  authSessionResponseSchema,
+  desktopOAuthStartResponseSchema,
+  desktopSessionExchangeResponseSchema,
 } from './index.js'
 
 const mockPlugin = pluginSchema.parse(
@@ -62,5 +65,33 @@ describe('plugin schema', () => {
     })
 
     expect(comparison.changes[0]?.field).toBe('version')
+  })
+
+  it('validates server-derived identity and desktop session envelopes', () => {
+    const session = authSessionResponseSchema.parse({
+      authenticated: true,
+      user: {
+        id: 'a0fb0416-83b0-42a5-b368-00923c872b18',
+        status: 'ACTIVE',
+        github: { user_id: '120692294', login: 'renamed-founder', avatar_url: null },
+        roles: ['FOUNDER', 'USER'],
+        badges: ['FOUNDER'],
+      },
+      expires_at: '2026-08-27T00:00:00.000Z',
+    })
+    const started = desktopOAuthStartResponseSchema.parse({
+      authorization_url: 'https://github.com/login/oauth/authorize?state=test',
+      transaction_id: 'df91eab0-3ebf-4cd2-bda6-828502b3ba0a',
+      poll_token: 'a'.repeat(43),
+      expires_at: '2026-08-20T00:10:00.000Z',
+    })
+    const delivered = desktopSessionExchangeResponseSchema.parse({
+      status: 'COMPLETE',
+      session_token: 'b'.repeat(64),
+      session,
+    })
+
+    expect(started.transaction_id).toMatch(/^[0-9a-f-]{36}$/)
+    expect(delivered.status).toBe('COMPLETE')
   })
 })

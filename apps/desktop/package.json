@@ -15,6 +15,7 @@
     "@harnesshub/types": "workspace:*",
     "@harnesshub/ui": "workspace:*",
     "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/plugin-opener": "^2.5.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },

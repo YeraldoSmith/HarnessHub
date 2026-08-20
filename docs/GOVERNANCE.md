@@ -129,6 +129,6 @@ Founder 或明确授权的 Administrator 可以在活跃安全事件中临时关
 3. 不允许远程、静默删除用户本机插件；
 4. 应尽快通知受影响方并提供复核或申诉渠道。
 
-## 10. Phase 1 实施边界
+## 10. Phase 2-B1 实施边界
 
-Phase 1 是只读 Plugin Registry，不实现登录、角色管理或治理后台。本文件先定义未来权限语义，避免数据模型和产品文案混淆；实际权限功能必须在相应阶段重新进行安全评审。
+Phase 2-B1 已实现 GitHub 登录、Founder 数据库 bootstrap、独立 RoleAssignment/BadgeGrant 和服务端 Session。尚未实现角色管理 API 或治理后台；因此没有普通客户端路径可以授予、撤销或转移 Founder。后续每个治理写操作仍需独立授权策略、recent authentication 与安全评审。

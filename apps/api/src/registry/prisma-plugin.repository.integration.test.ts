@@ -2,6 +2,10 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import type { PluginSnapshot } from '@harnesshub/types'
 
+import { AuthConfig } from '../auth/auth.config.js'
+import { AuthService } from '../auth/auth.service.js'
+import type { GitHubIdentity, GitHubOAuthGateway } from '../auth/github-oauth.client.js'
+import { PrismaAuthRepository } from '../auth/prisma-auth.repository.js'
 import { PrismaService } from '../database/prisma.service.js'
 import { PrismaSyncJobRepository } from '../sync/prisma-sync-job.repository.js'
 import { PrismaPluginRepository } from './prisma-plugin.repository.js'
@@ -15,10 +19,72 @@ if (!testDatabaseUrl.includes('schema=harnesshub_test')) {
 }
 
 process.env.DATABASE_URL = testDatabaseUrl
+process.env.GITHUB_CLIENT_ID = 'integration-client-id'
+process.env.GITHUB_CLIENT_SECRET = 'integration-client-secret'
+process.env.GITHUB_CALLBACK_URL = 'http://127.0.0.1:3001/auth/github/callback'
+process.env.SESSION_SECRET = 'integration-session-secret-that-is-longer-than-32-bytes'
 
 const prisma = new PrismaService()
 const repository = new PrismaPluginRepository(prisma)
 const syncJobs = new PrismaSyncJobRepository(prisma)
+const authRepository = new PrismaAuthRepository(prisma)
+
+const githubIdentities: Record<string, GitHubIdentity> = {
+  'ordinary-code': {
+    providerUserId: '900001',
+    login: 'ordinary-developer',
+    avatarUrl: null,
+    profileUrl: 'https://github.com/ordinary-developer',
+  },
+  'founder-code': {
+    providerUserId: '120692294',
+    login: 'founder-renamed-login',
+    avatarUrl: null,
+    profileUrl: 'https://github.com/founder-renamed-login',
+  },
+  'impostor-code': {
+    providerUserId: '900002',
+    login: 'YeraldoSmith',
+    avatarUrl: null,
+    profileUrl: 'https://github.com/YeraldoSmith',
+  },
+  'similar-code': {
+    providerUserId: '900003',
+    login: 'YeraldoSrnith',
+    avatarUrl: null,
+    profileUrl: 'https://github.com/YeraldoSrnith',
+  },
+  'desktop-code': {
+    providerUserId: '900004',
+    login: 'desktop-user',
+    avatarUrl: null,
+    profileUrl: 'https://github.com/desktop-user',
+  },
+}
+
+const fakeGitHub: GitHubOAuthGateway = {
+  authorizationUrl(state, challenge) {
+    const url = new URL('https://github.test/login/oauth/authorize')
+    url.searchParams.set('state', state)
+    url.searchParams.set('code_challenge', challenge)
+    url.searchParams.set('code_challenge_method', 'S256')
+    return url.toString()
+  },
+  async authenticate(code) {
+    const identity = githubIdentities[code]
+    if (!identity) throw new Error('Unknown integration authorization code.')
+    return identity
+  },
+}
+
+const auth = new AuthService(new AuthConfig(), authRepository, fakeGitHub)
+
+async function completeWeb(code: string) {
+  const authorizationUrl = await auth.startWeb()
+  const url = new URL(authorizationUrl)
+  expect(url.searchParams.get('code_challenge_method')).toBe('S256')
+  return auth.complete(code, url.searchParams.get('state') ?? undefined)
+}
 const snapshot: PluginSnapshot = {
   checked_at: '2026-08-20T03:00:00.000Z',
   plugin: {
@@ -182,5 +248,75 @@ describe.sequential('PrismaPluginRepository', () => {
     await expect(
       prisma.pluginSnapshot.count({ where: { pluginVersion: { pluginId: snapshot.plugin.id } } }),
     ).resolves.toBe(snapshotCount)
+  })
+})
+
+describe.sequential('GitHub OAuth identity foundation', () => {
+  it('creates an ordinary user and stable GitHub OAuth identity without storing an OAuth token', async () => {
+    const completed = await completeWeb('ordinary-code')
+
+    expect(completed.session.user.github).toMatchObject({
+      user_id: '900001',
+      login: 'ordinary-developer',
+    })
+    expect(completed.session.user.roles).toEqual(['USER'])
+    expect(completed.session.user.badges).toEqual([])
+    await expect(
+      prisma.oAuthIdentity.count({ where: { providerUserId: '900001' } }),
+    ).resolves.toBe(1)
+    const identity = await prisma.oAuthIdentity.findFirstOrThrow({
+      where: { providerUserId: '900001' },
+    })
+    expect(JSON.stringify(identity.metadata)).not.toMatch(/access.token|email/i)
+    const storedSession = await prisma.authSession.findFirstOrThrow({
+      where: { userId: completed.session.user.id },
+    })
+    expect(storedSession.tokenHash).not.toBe(completed.sessionToken)
+    await expect(auth.session(completed.sessionToken)).resolves.toMatchObject({ authenticated: true })
+  })
+
+  it('grants Founder only to the bootstrapped numeric GitHub user ID, even after a login rename', async () => {
+    const completed = await completeWeb('founder-code')
+
+    expect(completed.session.user.github).toMatchObject({
+      user_id: '120692294',
+      login: 'founder-renamed-login',
+    })
+    expect(completed.session.user.roles).toContain('FOUNDER')
+    expect(completed.session.user.badges).toContain('FOUNDER')
+  })
+
+  it.each([
+    ['impostor-code', 'YeraldoSmith'],
+    ['similar-code', 'YeraldoSrnith'],
+  ])('never grants Founder to a different GitHub ID using login %s', async (code, login) => {
+    const completed = await completeWeb(code)
+
+    expect(completed.session.user.github.login).toBe(login)
+    expect(completed.session.user.github.user_id).not.toBe('120692294')
+    expect(completed.session.user.roles).not.toContain('FOUNDER')
+    expect(completed.session.user.badges).not.toContain('FOUNDER')
+  })
+
+  it('consumes OAuth state exactly once and rejects callback replay', async () => {
+    const authorizationUrl = await auth.startWeb()
+    const state = new URL(authorizationUrl).searchParams.get('state') ?? undefined
+    await auth.complete('ordinary-code', state)
+    await expect(auth.complete('ordinary-code', state)).rejects.toThrow(/invalid, expired, or already used/i)
+  })
+
+  it('delivers a desktop session once without exposing a GitHub OAuth token', async () => {
+    const started = await auth.startDesktop()
+    const state = new URL(started.authorization_url).searchParams.get('state') ?? undefined
+    await auth.complete('desktop-code', state)
+
+    const delivered = await auth.exchangeDesktop(started.transaction_id, started.poll_token)
+    expect(delivered).toMatchObject({ status: 'COMPLETE' })
+    if (delivered.status !== 'COMPLETE') throw new Error('Desktop session was not completed.')
+    expect(delivered.session.user.github.user_id).toBe('900004')
+    await expect(auth.session(delivered.session_token)).resolves.toMatchObject({ authenticated: true })
+    await expect(
+      auth.exchangeDesktop(started.transaction_id, started.poll_token),
+    ).rejects.toThrow(/already delivered/i)
   })
 })

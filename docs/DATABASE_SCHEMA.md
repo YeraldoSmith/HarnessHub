@@ -1,12 +1,12 @@
 # HarnessHub 数据库设计
 
-状态：Phase 1-D Registry Foundation 已实现；其余为后续概念模型
+状态：Phase 1-D Registry Foundation 与 Phase 2-B1 GitHub Identity Foundation 已实现
 
 目标数据库：PostgreSQL + Prisma
 
-## 0. Phase 1-B 已实现模型
+## 0. 已实现模型
 
-当前迁移只创建 Registry 所需的四张表，不提前创建身份、社区、支付或审核表。
+Phase 1 migrations 创建 Registry 表；Phase 2-B1 migration 只增加 GitHub identity 与 Session 所需表，不提前创建社区、支付、Developer Claim 或审核表。
 
 ```text
 plugins
@@ -26,6 +26,34 @@ plugin_snapshots
 
 sync_jobs
   id, plugin_id, source, status, started_at, finished_at, error, created_at
+
+users
+  id, status, security_version, created_at, updated_at,
+  suspended_at, deactivated_at, deleted_at
+
+oauth_identities
+  id, user_id, provider, issuer, provider_user_id, metadata,
+  created_at, updated_at, last_authenticated_at, disabled_at
+
+role_assignments
+  id, user_id, role, scope_type, scope_id, reason,
+  created_at, expires_at, revoked_at
+
+user_badge_grants
+  id, user_id, badge, evidence_type, evidence_ref,
+  created_at, expires_at, revoked_at
+
+oauth_transactions
+  id, state_hash, code_verifier_ciphertext, client, status,
+  desktop_poll_token_hash, desktop_session_ciphertext,
+  expires_at, consumed_at, completed_at, delivered_at
+
+auth_sessions
+  id, user_id, token_hash, client, created_at,
+  expires_at, last_seen_at, revoked_at
+
+audit_events
+  id, actor_user_id, action, target_type, target_id, metadata, created_at
 ```
 
 - `plugin_versions.identity_key` 是插件 ID、版本、commit SHA 与 npm 版本的 SHA-256 组合身份；
@@ -38,6 +66,9 @@ sync_jobs
 - 名称、描述、分类和作者使用 PostgreSQL `pg_trgm` GIN 索引，标签使用数组 GIN 索引；
 - `plugin_sources` 增加 `status`、`last_verified_at`、`unavailable_since` 和 `last_error`；来源失效不级联删除历史数据；
 - `sync_jobs.status` 为 PENDING / RUNNING / SUCCESS / FAILED，任务错误限制在可展示的来源级信息，不保存 token 或调用栈。
+- `oauth_transactions.state_hash` 与 `auth_sessions.token_hash` 均唯一；数据库不保存 state 或 Session 明文；
+- Founder 的 GitHub ID `120692294`、Role 与 Badge 由 migration 预置，两个部分唯一索引各自保证全平台唯一；
+- 当前只有 GitHub provider。`auth_principals`、`identity_link_intents`、Profile 与 Developer Claim 仍是后续设计，不在 Phase 2-B1 migration 中。
 
 对应实现以 `apps/api/prisma/schema.prisma` 和已提交 migration 为准。
 
@@ -55,15 +86,80 @@ sync_jobs
 
 ### users
 
-认证主体，不直接充当公开资料。
+HarnessHub 内部主体，不直接充当公开资料，也不保存 provider 专用 ID。
 
 ```text
-id, auth_subject, email_hash?, status, role, created_at, updated_at, deleted_at?
+id, status, security_version, created_at, updated_at,
+suspended_at?, deactivated_at?, deleted_at?
 ```
 
-- `auth_subject` 唯一，对应 Supabase Auth user ID；
-- 不因 OAuth 提供方返回邮箱就默认公开保存；
-- `status`: active / suspended / deleted。
+- `id` 为应用生成的 UUID/ULID；
+- `status`: active / suspended / deactivated / deleted；
+- provider user ID、username、display name 和 email 不进入权限判断；
+- 不保存单一 `role` 字段，权限通过多条有效 `role_assignments` 计算；
+- `security_version` 为后续批量会话失效策略预留；Phase 2-B1 通过逐条 `revoked_at` 撤销 Session。
+
+### oauth_identities
+
+```text
+id, user_id, provider, issuer, provider_user_id, metadata,
+created_at, updated_at, last_authenticated_at?, disabled_at?
+```
+
+- 唯一约束：`(provider, issuer, provider_user_id)`；
+- Phase 2 默认同一 User 在一个 provider/issuer 下最多一个有效身份；
+- GitHub 使用数字 user ID，Google 使用 `sub`，Microsoft 使用经 provider adapter 规范化的稳定 subject；
+- metadata 只保存 allowlist 后的展示快照，不保存 token、原始 ID Token 或完整 provider payload；
+- email 即使已验证也不触发自动账号合并。
+
+### auth_principals（未来 Auth broker 模式，尚未实现）
+
+```text
+id, user_id, broker, issuer, subject, created_at, disabled_at?
+```
+
+- 唯一约束：`(broker, issuer, subject)`；
+- 只映射经过完整 JWT 验证的 Auth broker session subject 到内部 User；
+- 不替代 OAuthIdentity，也不读取 Supabase `user_metadata`、email 或 username 授权。
+
+### roles / role_assignments
+
+```text
+roles
+  code, description, is_privileged
+
+role_assignments
+  id, user_id, role_code, scope_type, scope_id?, granted_by?, reason,
+  created_at, expires_at?, revoked_at?, revoked_by?
+```
+
+Role code：founder / admin / moderator / reviewer / developer / user。Founder 的有效 assignment 使用部分唯一约束保证全平台唯一；普通管理流程不可创建、撤销或转移 Founder。
+
+Phase 2-B1 使用 Prisma/PostgreSQL `PlatformRole` enum，不创建 `roles` lookup table；上面的 `roles` 表是未来需要动态角色描述时的候选设计。
+
+### badge_definitions / user_badge_grants
+
+```text
+badge_definitions
+  code, label, public_description
+
+user_badge_grants
+  id, user_id, badge_code, granted_by?, evidence_type, evidence_ref?,
+  created_at, expires_at?, revoked_at?
+```
+
+Badge 只用于公开展示。API 授权只能读取 RoleAssignment，不读取 Badge。组织账号未来使用独立的 `organization_badge_grants`，不使用无外键多态记录。
+
+Phase 2-B1 使用 `IdentityBadge` enum，不创建 `badge_definitions` lookup table；公开文案由共享 UI 映射。
+
+### identity_link_intents
+
+```text
+id, user_id, provider, issuer, state_hash, nonce_hash, session_id_hash,
+status, expires_at, consumed_at?, created_at
+```
+
+短时、单次使用，承载显式账号绑定；不能根据相同 email 自动产生绑定。
 
 ### profiles
 
@@ -73,14 +169,6 @@ id, user_id, handle, display_name, bio, avatar_url, support_url?, created_at, up
 
 - `user_id`、`handle` 唯一；
 - Support URL 仅允许 HTTPS 和明确允许的平台/域名策略。
-
-### external_identities
-
-```text
-id, user_id, provider, provider_subject, username, profile_url, verified_at, metadata_json
-```
-
-唯一约束：`(provider, provider_subject)`。
 
 ## 3. 插件目录
 
@@ -181,11 +269,21 @@ evidence_object_key?, effective_until?, created_at
 ### developer_claims
 
 ```text
-id, plugin_id, claimant_user_id, proof_type, proof_payload,
-status, reviewed_by?, created_at, resolved_at?
+id, plugin_id, claimant_user_id, oauth_identity_id, provider,
+source_external_id, proof_type, evidence_redacted, challenge_hash?,
+challenge_expires_at?, status, verified_at?, reviewed_by?,
+created_at, updated_at
 ```
 
-证明内容避免保存长期有效的访问 token。
+`status`: pending / verifying / approved / rejected / revoked / expired。仓库/包使用 provider 的稳定外部 ID；证明内容避免保存长期有效的访问 token。
+
+### plugin_ownerships
+
+```text
+id, plugin_id, user_id, developer_claim_id, status, created_at, revoked_at?
+```
+
+实际插件写权限读取有效 ownership，不因全局 Developer role 或 Verified Developer badge 自动获得。
 
 ## 5. 社区
 
@@ -275,6 +373,11 @@ DSH 兼容性故障时，可快速关闭特定版本的安装入口而不删除�
 
 ```text
 users 1──1 profiles
+users 1──* oauth_identities
+users 1──* auth_principals
+users 1──* role_assignments *──1 roles
+users 1──* user_badge_grants *──1 badge_definitions
+users 1──* identity_link_intents
 profiles 1──* plugins (owner)
 plugins 1──* plugin_sources
 plugins 1──* plugin_versions
@@ -289,6 +392,10 @@ plugin_requests 1──* request_updates
 ## 9. 索引与约束
 
 - `plugins(slug)` 唯一；
+- `oauth_identities(provider, issuer, provider_user_id)` 唯一；
+- `auth_principals(broker, issuer, subject)` 唯一；
+- 同一 `user_id + provider + issuer` 最多一个有效 OAuth identity；
+- 全平台最多一个有效 Founder RoleAssignment 和 Founder Badge；
 - `plugin_sources(source_type, locator)` 唯一；
 - `plugin_versions(plugin_id, version)` 唯一；
 - `scan_runs(plugin_version_id, target_digest, ruleset_version)` 索引；

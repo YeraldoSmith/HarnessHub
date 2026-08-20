@@ -1,6 +1,5 @@
 import type { Plugin } from '@harnesshub/types'
 
-import { IdentityBadge } from './identity-badge.js'
 
 export interface PluginCardProps {
   plugin: Plugin
@@ -26,7 +25,6 @@ export function PluginCard({ plugin, href }: PluginCardProps) {
           <h2>{plugin.name}</h2>
           <div className="hh-plugin-card__author">
             <span>by {plugin.author.name}</span>
-            {plugin.author.handle === 'YeraldoSmith' ? <IdentityBadge kind="founder" /> : null}
           </div>
         </div>
       </div>

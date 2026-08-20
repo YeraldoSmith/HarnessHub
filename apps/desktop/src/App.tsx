@@ -1,16 +1,30 @@
 import { useEffect, useState } from 'react'
+import { openUrl } from '@tauri-apps/plugin-opener'
 
-import { registryResponseSchema } from '@harnesshub/plugin-schema'
-import type { Plugin } from '@harnesshub/types'
+import {
+  desktopOAuthStartResponseSchema,
+  desktopSessionExchangeResponseSchema,
+  registryResponseSchema,
+} from '@harnesshub/plugin-schema'
+import type { AuthSessionResponse, Plugin } from '@harnesshub/types'
 import { IdentityBadge, PluginDetail } from '@harnesshub/ui'
+
+const apiUrl = 'http://127.0.0.1:3001'
+
+function wait(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds))
+}
 
 export function App() {
   const [plugin, setPlugin] = useState<Plugin | null>(null)
   const [error, setError] = useState('')
+  const [auth, setAuth] = useState<AuthSessionResponse>({ authenticated: false })
+  const [authState, setAuthState] = useState<'idle' | 'waiting' | 'error'>('idle')
+  const [sessionToken, setSessionToken] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
-    void fetch('http://127.0.0.1:3001/plugins', { headers: { Accept: 'application/json' } })
+    void fetch(`${apiUrl}/plugins`, { headers: { Accept: 'application/json' } })
       .then(async (response) => {
         if (!response.ok) throw new Error(`Registry request failed with status ${response.status}.`)
         return registryResponseSchema.parse(await response.json())
@@ -26,6 +40,56 @@ export function App() {
       active = false
     }
   }, [])
+
+  async function signIn(): Promise<void> {
+    setAuthState('waiting')
+    setError('')
+    try {
+      const startResponse = await fetch(`${apiUrl}/auth/github/desktop/start`, {
+        method: 'POST',
+        headers: { Accept: 'application/json' },
+      })
+      if (!startResponse.ok) throw new Error(`Login could not start (${startResponse.status}).`)
+      const started = desktopOAuthStartResponseSchema.parse(await startResponse.json())
+      await openUrl(started.authorization_url)
+
+      while (Date.now() < Date.parse(started.expires_at)) {
+        await wait(1500)
+        const exchangeResponse = await fetch(`${apiUrl}/auth/github/desktop/exchange`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
+            transaction_id: started.transaction_id,
+            poll_token: started.poll_token,
+          }),
+        })
+        if (!exchangeResponse.ok) throw new Error(`Login could not finish (${exchangeResponse.status}).`)
+        const exchange = desktopSessionExchangeResponseSchema.parse(await exchangeResponse.json())
+        if (exchange.status === 'COMPLETE') {
+          setSessionToken(exchange.session_token)
+          setAuth(exchange.session)
+          setAuthState('idle')
+          return
+        }
+      }
+      throw new Error('GitHub login expired. Please try again.')
+    } catch (reason) {
+      setAuthState('error')
+      setError(reason instanceof Error ? reason.message : 'GitHub login failed.')
+    }
+  }
+
+  async function signOut(): Promise<void> {
+    if (sessionToken) {
+      await fetch(`${apiUrl}/auth/logout`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${sessionToken}` },
+      }).catch(() => undefined)
+    }
+    setSessionToken(null)
+    setAuth({ authenticated: false })
+    setAuthState('idle')
+  }
 
   return (
     <div className="desktop-shell">
@@ -47,8 +111,8 @@ export function App() {
         </nav>
 
         <div className="desktop-scope-note">
-          <strong>Phase 1-D</strong>
-          <p>Read-only Registry. Install and account actions are not enabled.</p>
+          <strong>Phase 2-B1</strong>
+          <p>GitHub identity and secure sessions are enabled. Registry access remains read-only.</p>
         </div>
       </aside>
 
@@ -58,7 +122,21 @@ export function App() {
             <span>Plugin Registry</span>
             <strong>Foundation preview</strong>
           </div>
-          <IdentityBadge kind="founder" />
+          <div className="desktop-auth">
+            {auth.authenticated ? (
+              <>
+                <span>{auth.user.github.login ?? `GitHub ${auth.user.github.user_id}`}</span>
+                {auth.user.badges.includes('FOUNDER') ? <IdentityBadge kind="founder" /> : null}
+                <button onClick={() => void signOut()} type="button">
+                  Sign out
+                </button>
+              </>
+            ) : (
+              <button disabled={authState === 'waiting'} onClick={() => void signIn()} type="button">
+                {authState === 'waiting' ? 'Waiting for GitHub…' : 'Sign in with GitHub'}
+              </button>
+            )}
+          </div>
         </header>
 
         <section className="desktop-content">
@@ -69,7 +147,8 @@ export function App() {
             </div>
             <p>
               The desktop shell reads the same PostgreSQL-backed Registry API as the Web app. No local
-              DSH command is exposed in this phase.
+              DSH command is exposed in this phase. OAuth opens in your system browser and GitHub tokens
+              remain on the server.
             </p>
           </div>
           {plugin ? <PluginDetail plugin={plugin} /> : null}

@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common'
 import { APP_FILTER, APP_GUARD } from '@nestjs/core'
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 
+import { AuthModule } from './auth/auth.module.js'
+import { DatabaseModule } from './database/database.module.js'
 import { HealthController } from './health.controller.js'
 import { ApiExceptionFilter } from './http/api-exception.filter.js'
 import { RegistryModule } from './registry/registry.module.js'
@@ -16,6 +18,7 @@ function positiveInteger(name: string, fallback: number): number {
 
 @Module({
   imports: [
+    DatabaseModule,
     ThrottlerModule.forRoot([
       {
         ttl: positiveInteger('API_RATE_LIMIT_TTL_MS', 60_000),
@@ -23,6 +26,7 @@ function positiveInteger(name: string, fallback: number): number {
       },
     ]),
     RegistryModule,
+    AuthModule,
   ],
   controllers: [HealthController],
   providers: [

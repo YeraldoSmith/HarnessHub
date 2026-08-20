@@ -118,6 +118,35 @@ body {
   display: block;
 }
 
+.desktop-auth {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.desktop-auth > span {
+  color: var(--hh-ink);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.desktop-auth button {
+  padding: 0.58rem 0.8rem;
+  border: 0;
+  border-radius: 10px;
+  background: var(--hh-ink);
+  color: white;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.desktop-auth button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
 .desktop-toolbar span {
   color: var(--hh-muted);
   font-size: 0.7rem;

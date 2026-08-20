@@ -92,6 +92,34 @@ Phase 1 至此结束。Phase 2 Identity Foundation 不在本阶段实现。
 
 让开发者完成从认领到发布的闭环。
 
+### Phase 2-A：Identity Foundation Architecture（已完成）
+
+- User 与 OAuthIdentity 多身份模型；
+- 显式 Account Linking、冲突与恢复规则；
+- Founder/Admin/Moderator/Reviewer/Developer/User Role 模型；
+- Role 与公开 Badge 分离；
+- Founder 绑定 GitHub 数字 user ID 的数据库 bootstrap；
+- Developer Claim 与 PluginOwnership 预留模型；
+- GitHub-only 先行、Google 延后到安全绑定门槛通过的实施顺序。
+
+本阶段未创建 Prisma 身份表、OAuth 回调、登录 UI、用户中心或社区功能。
+
+### Phase 2-B1：GitHub OAuth（已完成）
+
+- 只启用 GitHub provider；
+- 创建身份数据迁移、服务端 callback/session 和 Founder bootstrap；
+- username、display name、email 不得影响用户匹配或授权；
+- 普通 API 无法创建、撤销或转移 Founder。
+- Web 使用 HttpOnly Cookie，Desktop 使用一次性 exchange 获取服务端 opaque Session；
+- GitHub access token 不进入客户端或业务数据库；
+- state 回放、Founder 改名/冒名和 Desktop 重复交付具备安全回归测试。
+
+### Phase 2-B2：Google OAuth 与 Account Linking（安全门槛后）
+
+- 目标 Auth broker 必须禁用或隔离按 email 自动合并；
+- 实现 recent-auth、短时 Link Intent、PKCE/state/nonce、冲突拒绝和解绑；
+- 通过账号接管、重放、并发和高权限测试后再开放。
+
 ### 交付
 
 - GitHub 登录和公开资料；

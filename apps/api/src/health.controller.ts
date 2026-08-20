@@ -7,7 +7,7 @@ export class HealthController {
     return {
       status: 'ok',
       service: 'harnesshub-registry',
-      phase: '1-d-production-hardening',
+      phase: '2-b1-github-oauth',
     } as const
   }
 }

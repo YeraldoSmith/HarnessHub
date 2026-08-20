@@ -40,6 +40,8 @@ Phase 1-C 增加 Snapshot 历史/比较只读接口、隔离 PostgreSQL 集成�
 
 Phase 1-D 将列表查询下推 PostgreSQL：稳定排序、分页、trigram 文本索引和 GIN 标签索引。同步流程写入 SyncJob，并独立维护 GitHub/npm 当前可用状态；上游失效只改变当前状态，不删除版本或 Snapshot。
 
+Phase 2-B1 已实现 GitHub-only 身份基础：内部 User 与 OAuthIdentity 分离，Role 与公开 Badge 分离，Founder 绑定 GitHub 数字 user ID。NestJS 后端拥有 callback、PKCE/state、Session 和授权事实；Web/Desktop 不接收 GitHub token。
+
 当前只读 Registry 的依赖方向：
 
 ```text
@@ -80,7 +82,7 @@ API 和 UI 只依赖 `PluginRepository` 契约，不读取静态数组，也不�
 - `PluginService` 通过 `PluginRepository` token 注入持久化实现；
 - 模块：Auth、Catalog、Ingestion、Moderation、Community、Requests、Audit；
 - Prisma 访问 PostgreSQL；
-- 验证 Supabase Auth 签发的 JWT，在服务端完成授权；
+- Phase 2-B1 直接处理 GitHub Authorization Code + PKCE callback，并在服务端完成 Session 与授权；
 - 长任务写入队列，由 Worker 执行抓取、解析和扫描。
 
 ### 数据与对象存储
@@ -94,7 +96,7 @@ API 和 UI 只依赖 `PluginRepository` 契约，不读取静态数组，也不�
 
 - GitHub：登录、仓库控制权、topic 候选发现和仓库元数据；
 - npm Registry：包版本与制品元数据；
-- Supabase：PostgreSQL 与 Auth（最终托管地区待定）；
+- Supabase 或兼容 PostgreSQL：数据库托管候选；Phase 2-B1 Auth 不依赖 Supabase Auth；
 - 第三方赞助平台：仅跳转链接，不进入交易链路。
 
 ## 4. 部署边界
@@ -103,7 +105,7 @@ API 和 UI 只依赖 `PluginRepository` 契约，不读取静态数组，也不�
 
 - Web 静态资源：Cloudflare Pages；
 - API/Worker：支持完整 Node.js 运行时的容器平台；
-- 数据库/Auth：Supabase；
+- 数据库：Supabase PostgreSQL 或兼容托管 PostgreSQL；Auth callback 运行在 HarnessHub API；
 - 报告和图片：S3 兼容对象存储或 Cloudflare R2；
 - CDN/WAF/DNS：Cloudflare。
 
@@ -214,12 +216,19 @@ POST   /plugin-requests/:id/claims
 
 ## 9. 身份与授权
 
-- Supabase Auth 使用 GitHub OAuth；
-- HarnessHub `users` 保存认证主体，`profiles` 保存公开资料；
+- Phase 2-B1 已以 GitHub-only OAuth 实现；Google 只能在安全账号绑定门槛通过后启用；
+- HarnessHub `users` 保存内部主体，`oauth_identities` 保存 `(provider, issuer, provider_user_id)` 映射；当前直接 Session 模式不需要 `auth_principals`，该表只为未来 Auth broker 保留设计；`profiles` 也尚未实现；
+- GitHub username、display name、email 和可编辑 provider metadata 不参与账号匹配或授权；
+- NestJS 后端交换 GitHub code、读取稳定数字 ID 并签发 opaque HarnessHub Session；应用授权只读取数据库中的稳定 identity 与有效 RoleAssignment；
+- 不允许 Auth broker 按相同 email 自动合并跨 provider 身份；目标部署无法关闭或隔离该行为时，不启用第二个 provider；
 - 仓库控制权验证与 GitHub 登录是不同证据；
-- 角色至少包括 user、moderator、admin，使用服务端策略判定；
+- Role 代表权限，Badge 只代表公开身份；两者使用独立表和独立读取路径；
+- 角色包括 founder、admin、moderator、reviewer、developer、user，并由服务端 action + scope 策略判定；
+- Founder 通过 GitHub 数字 user ID 的数据库 bootstrap 绑定，不通过用户名判断；
 - 管理员高风险操作要求重新认证并记录审计事件；
 - 服务端密钥绝不进入 Web 或 Desktop 前端包。
+
+完整设计见 `docs/IDENTITY_ARCHITECTURE.md`。
 
 ## 10. 可观测性与隐私
 

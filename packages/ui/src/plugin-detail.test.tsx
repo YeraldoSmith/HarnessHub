@@ -32,5 +32,6 @@ describe('PluginDetail', () => {
     expect(markup).toContain('Not available')
     expect(markup).toContain('Test fixture')
     expect(markup).toContain('Snapshot history')
+    expect(markup).not.toContain('◆ Founder')
   })
 })

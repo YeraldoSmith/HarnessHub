@@ -107,6 +107,53 @@ nav a:hover,
   font-weight: 800;
 }
 
+.header-auth,
+.signed-in-user {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.header-auth {
+  justify-self: end;
+}
+
+.signed-in-user > img {
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 50%;
+}
+
+.signed-in-user > span {
+  max-width: 10rem;
+  overflow: hidden;
+  font-size: 0.78rem;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.github-login,
+.signed-in-user button {
+  padding: 0.58rem 0.8rem;
+  border: 1px solid var(--hh-ink);
+  border-radius: 10px;
+  background: var(--hh-ink);
+  color: white;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.signed-in-user button {
+  cursor: pointer;
+}
+
+.signed-in-user button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
 .hero {
   display: grid;
   grid-template-columns: minmax(0, 1.75fr) minmax(260px, 0.7fr);

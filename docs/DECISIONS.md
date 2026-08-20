@@ -28,6 +28,13 @@
 | D-020 | Phase 1-D 使用 PostgreSQL trigram/GIN 搜索，不引入外部搜索服务 | 满足早期数千插件规模并保持架构简单 |
 | D-021 | 来源当前状态与不可变历史分离 | 上游失效时保留版本、证据和 Snapshot |
 | D-022 | 基础限流使用单进程内存存储 | 当前无需 Redis；多实例部署前必须升级共享存储 |
+| D-023 | User 与 OAuthIdentity 分离，外部身份以 provider + issuer + stable provider user ID 唯一 | 支持多 provider，并阻止 username、display name 或 email 进入授权 |
+| D-024 | RoleAssignment 与 BadgeGrant 分离 | Role 是服务端权限事实；Badge 只是公开身份展示，不能产生授权 |
+| D-025 | Founder 通过数据库 bootstrap 绑定 GitHub 数字 user ID `120692294` | 用户名可变，只能用于展示；普通 API 不得转移 Founder |
+| D-026 | Phase 2-B1 先启用 GitHub-only OAuth，跨 provider email 自动合并被禁止 | Supabase 当前文档描述的按 email 自动 linking 会让新身份间接继承既有权限；Google 必须等待显式绑定门槛通过 |
+| D-027 | Account Linking 必须由已登录用户 recent-auth 后显式发起 | 防止预注册接管、email 碰撞和会话劫持后的静默绑定 |
+| D-028 | Phase 2-B1 由 NestJS 后端直接持有 GitHub OAuth callback 与平台 Session；此项取代 D-009 的 Phase 2-B1 Auth 实现部分 | 精确执行 PKCE/state、稳定 GitHub ID 和禁止 email 自动合并；PostgreSQL + Prisma 部分保持不变 |
+| D-029 | Web 使用 HttpOnly Cookie；Desktop 通过单次 poll token 换取 opaque Session；数据库只保存 Session 摘要 | GitHub token 不进入客户端，桌面无需在 URL 或本地存储中传递长期凭据 |
 
 ## P0：进入代码阶段前确认
 

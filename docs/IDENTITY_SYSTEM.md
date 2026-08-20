@@ -19,13 +19,14 @@
 规则：
 
 - 仅授予 **YeraldoSmith**；
+- 底层唯一绑定为 GitHub 数字 user ID `120692294`，用户名只作为公开展示快照；
 - 全平台唯一；
 - 不可申请；
 - 不可由 Administrator、Moderator 或 Reviewer 转移、复制或撤销；
 - 仅代表 HarnessHub 项目创建者身份；
 - 不代表任何插件的质量、兼容性或绝对安全。
 
-实现时，Founder 身份由受保护的 founding record 建立，普通角色管理接口不能创建第二个 Founder。
+实现时，Founder 身份由受保护的数据库 bootstrap record、Founder RoleAssignment 和独立 Founder BadgeGrant 建立。权限只读取 RoleAssignment，普通角色管理接口不能创建第二个 Founder；Badge 本身不授予权限。
 
 ## 3. Official Badge
 

@@ -74,6 +74,12 @@ Phase 1-C 新增人工白名单来源：
 - [GitHub REST Commits API](https://docs.github.com/en/rest/commits/commits)：按 path 和 branch 读取最后修改证明文件的 commit SHA。
 - [GitHub REST authentication](https://docs.github.com/en/rest/authentication/authenticating-to-the-rest-api)：未认证请求只用于公开资源；私有仓库和直接权限检查留给后续 fine-grained GitHub App。
 
+## Phase 3-B Installation Security 基线
+
+Phase 3-B 没有探测本机环境或执行 DSH。设计继续使用本页顶部锁定的 DSH commit 与官方安装/CLI 资料，特别依赖以下已核验边界：Git 来源可能触发安装构建、构建发生在 Agent 沙箱之外、Git 应固定 commit、构建授权不能静默批准、Bundle 变更后 Profile 可能需要重启。
+
+进入任何真实 Installation Prototype 前必须重新核验 DSH 版本、CLI、Bundle/Profile 契约、Node/pnpm 要求和 `allowBuilds` 行为；文档中的 Adapter 接口不能被当作当前 DSH 永久契约。
+
 ## 更新规则
 
 以下事件发生时必须重新核验并更新本页：

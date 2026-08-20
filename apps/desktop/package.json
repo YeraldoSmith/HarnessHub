@@ -7,11 +7,13 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b --pretty false",
+    "test": "vitest run",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build"
   },
   "dependencies": {
     "@harnesshub/i18n": "workspace:*",
+    "@harnesshub/installation-prototype": "workspace:*",
     "@harnesshub/plugin-schema": "workspace:*",
     "@harnesshub/types": "workspace:*",
     "@harnesshub/ui": "workspace:*",
@@ -25,6 +27,7 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^6.0.1",
-    "vite": "^8.2.1"
+    "vite": "^8.2.1",
+    "vitest": "^4.1.11"
   }
 }

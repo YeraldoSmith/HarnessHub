@@ -96,6 +96,38 @@ verification_evidence
 
 对应实现以 `apps/api/prisma/schema.prisma` 和已提交 migration 为准。
 
+### Phase 3-A 仅设计、尚未实现的 Submission 模型
+
+以下模型只在 `docs/PLUGIN_SUBMISSION_ARCHITECTURE.md` 中定义，当前 Prisma Schema 和 migration 均不存在：
+
+- `PluginSubmission`：提交工作流容器，区分新插件、新版本和元数据更正；
+- `SubmissionVersion`：提交后不可变的候选 revision；
+- `SubmissionSourceEvidence`：来源、控制权和精确摘要证据；
+- `SubmissionCheckRun` / `SubmissionFinding`：元数据、来源、兼容性和安全检查；
+- `PermissionDeclaration` / `RiskAssessment`：作者声明与版本级风险结论；
+- `ReviewDecision` / `SubmissionAppeal`：透明决定、理由与申诉；
+- `RegistryPublication`：SubmissionVersion 到 PluginVersion/Snapshot 的发布映射及发布后状态。
+
+实现时不得直接把 Draft 写入 `plugins`，也不得修改现有不可变 PluginVersion、PluginSnapshot 或 VerificationEvidence。
+
+### Phase 3-B 仅设计、默认本机保存的 Installation 模型
+
+以下同样尚未实现，而且不应默认进入服务端业务数据库：
+
+- `InstallationManifest`：服务端发布事实到 Desktop 的版本化不可变目标；
+- `EnvironmentSnapshot`：本机最小化 OS/runtime/DSH/Profile 探测事实；
+- `InstallationPlan` / `InstallationRiskAssessment`：本机步骤、差异、风险和阻断；
+- `ConsentRecord`：与 plan/version/Profile/permissions/environment digest 绑定的短时单次确认；
+- `InstallationTransaction` / `InstallationStep`：安装、更新、卸载和 Repair 的状态历史；
+- `RecoveryJournal`：事务前事实、受管备份、可逆步骤和人工恢复指引；
+- `LocalInstallation`：本机已安装版本、目标 Profile 和最后验证状态。
+
+本机详细日志、绝对路径和 Profile 内容默认不上传。未来具体存储必须通过崩溃一致性、文件权限和诊断脱敏测试后决定。
+
+### Phase 3-C Prototype 的存储说明
+
+Phase 3-C 没有新增 Prisma model 或 migration。`packages/installation-prototype` 中的 `InstallationTransaction`、`InstallationStep` 与 `InstallationAuditEvent` 只是进程内测试模型：不写 PostgreSQL、不写本机文件，Desktop 退出后消失。它们验证状态机和 UI，不能替代 Phase 3-B 设计的持久 Recovery Journal、ConsentRecord 或 LocalInstallation。
+
 ## 1. 设计规则
 
 - 公共 ID 使用 UUID/ULID，不暴露递增主键；

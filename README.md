@@ -8,7 +8,7 @@ HarnessHub 是面向 DeepSeek Harness（DSH）生态起步的第三方社区平�
 
 HarnessHub 由 **YeraldoSmith** 创建，初始身份为 **Founder & Initial Maintainer**。
 
-> 当前状态：Phase 2-C Developer Trust Foundation 已完成。公开 GitHub 仓库的一次性挑战可建立不可变验证证据、Plugin Ownership、Developer Role 与 Verified Developer Badge；插件上传、安装、社区、支付、Google OAuth 和审核后台尚未实现。
+> 当前状态：Phase 3-C Installation Prototype 已完成。Desktop 已具备权限确认、用户取消、模拟成功、模拟失败回滚与 Recovery Required 闭环；实现只使用内存状态机和 Mock Environment Manager，不会下载或安装插件、执行第三方代码、探测或修改用户环境。
 
 ## v0.1 的最小闭环
 
@@ -92,10 +92,13 @@ pnpm db:local:stop
 - [Phase 2-B1 GitHub OAuth](docs/PHASE_2B1_GITHUB_OAUTH.md)
 - [Localization Foundation](docs/LOCALIZATION.md)
 - [Developer Trust Foundation](docs/DEVELOPER_TRUST.md)
+- [Plugin Submission Architecture](docs/PLUGIN_SUBMISSION_ARCHITECTURE.md)
+- [Installation Security Architecture](docs/INSTALLATION_SECURITY_ARCHITECTURE.md)
+- [Installation Prototype](docs/INSTALLATION_PROTOTYPE.md)
 
 ## 后续门槛
 
-Phase 2-C 已完成已有 Registry 插件的开发者归属基础。下一步应先评估 Plugin Submission 的不可变来源、权限声明和审核边界；仍不得直接开放 Google 或自动账号绑定。
+Phase 3-C 已证明 Analyze、Permission Review、Confirmation、Simulated Transaction 和 Recovery 状态能形成闭环，但没有触碰用户环境。进入真实 DSH 安装执行前，必须先完成 Manifest 真实性、原生命令 allowlist、持久 Recovery Journal、隔离测试环境、跨平台支持矩阵和外部桌面安全评审；仍不得直接开放 Google 或自动账号绑定。
 
 ## Copyright
 

@@ -127,12 +127,18 @@
 - 不接受远端下发的任意命令；
 - 深链只包含插件/版本标识，桌面端重新从可信 API 获取并验证；
 - GitHub 安装固定 commit，npm 安装固定精确版本；
-- 不自动编辑 `pnpm-workspace.yaml` 的 `allowBuilds`；
-- 构建授权作为独立步骤，显示其将在 Agent 沙箱之外执行代码；
+- 用户确认绑定 plan/version/Profile/permissions/environment digest，任何关键变化使确认失效；
+- 不自动编辑 `pnpm-workspace.yaml` 的 `allowBuilds`；构建授权作为独立步骤，以“安装时执行第三方代码”说明其在 Agent 沙箱之外执行；
 - 更新必须展示新增依赖、脚本、权限和风险差异；
-- 操作前后验证 Profile；失败时保留可读诊断和恢复建议；
+- Profile 级互斥锁和持久 Recovery Journal 在第一项目标变更前建立；
+- 操作前后验证 Profile；失败时明确区分自动 ROLLED_BACK 和 RECOVERY_REQUIRED；
+- 回滚覆盖度显示 FULL/PARTIAL/NONE，不承诺撤销脚本网络调用、未知文件修改或凭据访问；
+- 卸载只删除明确受管资源，用户数据默认保留；
+- Publication 暂停阻止新安装/更新并提示风险，但不能远程静默卸载；
 - 不收集命令完整输出，除非用户预览并主动提交；
 - 安装计数不以设备指纹或隐蔽遥测实现。
+
+完整设计见 `docs/INSTALLATION_SECURITY_ARCHITECTURE.md`。
 
 ## 9. Web/API 安全基线
 
@@ -200,3 +206,25 @@
 - 管理员权限、备份恢复和关键事件演练通过；
 - 安全联系人、漏洞报告方式和响应时限公开；
 - 正式服务条款、隐私政策、版权流程经目标司法辖区律师复核。
+
+## 14. Plugin Submission 安全边界（Phase 3-A 设计）
+
+- Draft 与公开 Registry 隔离；提交后的 SubmissionVersion 绑定精确 commit/package/integrity 并保持不可变；
+- Source、Metadata、Compatibility、Security 和 Human Review 使用独立 CheckRun/Decision，任一结果不能冒充另一类结论；
+- 上游临时错误记录为可重试 `ERROR`，不能把检查故障写成开发者 `REJECTED`；
+- Risk Level 决定审核深度，不是安全认证或开发者信誉分；
+- HIGH/CRITICAL 需要更强 Evidence 与人工复核；确认恶意、来源冲突、无授权和审核后摘要变化属于硬阻断；
+- 检查结果公开对象摘要、工具/规则版本、时间、发现和未覆盖范围；拒绝、Changes Requested、暂停与人工覆盖提供 reason code、可执行解释和申诉路径；
+- Publication 暂停安装/更新入口但保留 PluginVersion、Snapshot、决定理由和历史证据；
+- 发布必须以幂等事务创建 PluginVersion、首个 Snapshot、Publication 及必要 Ownership，任何部分失败全部回滚。
+
+## 15. Installation Prototype 安全边界（Phase 3-C 实现）
+
+- `MockInstallationEngine` 只接受 `simulationOnly: true`、`executionPolicy: SIMULATION_ONLY` 的 Manifest；
+- `MockEnvironmentManager` 固定声明 `dshExecutionAvailable: false` 和 `systemMutationAllowed: false`，不探测真实系统；
+- Prototype 包不导入文件系统、网络、子进程、Tauri command、包管理器或 DSH Adapter；
+- 未认证用户不能创建事务；事务绑定 HarnessHub 内部 User ID，跨用户读取和操作被拒绝；
+- 权限确认在模拟应用前发生，取消后不能继续运行；
+- 回滚失败必须进入 `RECOVERY_REQUIRED`，不得显示为成功；
+- 状态变化只追加 Audit Event；当前仅在内存中存在，不冒充持久审计或 Recovery Journal；
+- Desktop 持续显示“仅模拟”，`INSTALLED` 只表示模拟终态，不代表本机已安装插件。

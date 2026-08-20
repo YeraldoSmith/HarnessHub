@@ -26,6 +26,7 @@ HarnessHub/
 │   ├── domain/              # 纯业务类型与状态机
 │   ├── plugin-schema/       # HarnessHub 元数据与 DSH 解析模型
 │   ├── i18n/                # Web/Desktop/UI 共用语言资源与运行时
+│   ├── installation-prototype/ # 无系统副作用的安装状态机与 Fixture
 │   ├── dsh-adapter/         # CLI/清单/版本兼容适配
 │   ├── api-client/          # 类型安全 API 客户端
 │   └── config/              # lint、TypeScript、Tailwind 等共享配置
@@ -46,6 +47,12 @@ Phase 2-B1 已实现 GitHub-only 身份基础：内部 User 与 OAuthIdentity �
 Phase 2-B1.5 新增 `packages/i18n`：Web、Desktop 与共享 UI 使用同一强类型 translation key、React Provider 和 `zh-CN`/`en-US` JSON。默认中文，手动语言选择仅保存在本机；第三方插件内容不进入平台翻译资源。
 
 Phase 2-C 在 NestJS 模块化单体内新增 `DeveloperTrustModule`。它复用服务端 HarnessHub Session，但把登录身份、仓库控制权、插件 Ownership、平台 Role 和公开 Badge 分成独立事实。首版 GitHub verifier 只读取公开仓库，不扩大 OAuth scope。
+
+Phase 3-A 只定义 Plugin Submission 候选域，不创建模块或数据表。Submission 与公开 Registry 分离：Draft 可编辑，提交后的 SubmissionVersion 不可变；只有批准后的精确 revision 才能在幂等事务中生成 PluginVersion、首个 Snapshot 和 RegistryPublication。审核工作流状态与发布后的 ACTIVE/SUSPENDED/DELISTED 状态分离。
+
+Phase 3-B 只定义 Installation Security 边界。Desktop 将服务端不可变版本事实转换为本机生成的 InstallationPlan；用户确认绑定 plan/version/Profile/permissions/environment digest。Environment Manager 通过 DSH Adapter 和 Platform Adapter 探测与执行，服务端、深链和 UI 都不能下发任意命令。事务使用 Profile 锁、持久 Recovery Journal 和明确的 FULL/PARTIAL/NONE 回滚覆盖度。
+
+Phase 3-C 新增 `packages/installation-prototype` 纯内存状态机和 Desktop 权限确认面板。该包只接受 `SIMULATION_ONLY` Manifest；Mock Environment Manager 固定拒绝 DSH 执行与系统修改。成功、取消、失败回滚和 Recovery Required 都只追加模拟步骤与审计，不调用文件系统、网络、子进程、Tauri command 或包管理器。
 
 当前只读 Registry 的依赖方向：
 
@@ -71,6 +78,21 @@ DeveloperTrustController -> AuthService (server session)
 
 challenge success -> immutable evidence + unique ownership + role + badge + audit
 ```
+
+未来 Submission 的依赖方向：
+
+```text
+DeveloperTrust / Ownership
+  -> PluginSubmission -> immutable SubmissionVersion
+       -> Source Verification
+       -> Metadata / Compatibility / Security CheckRun
+       -> Human Review when required
+  -> publication transaction
+       -> PluginVersion + initial PluginSnapshot + RegistryPublication
+  -> Registry
+```
+
+新插件在发布前不创建公开 Plugin，从而避免未审核候选进入只读 Registry。首个插件开发者可在 Submission 内完成来源挑战，发布时才原子建立 Ownership，避免把平台变成只有既有开发者可进入的封闭目录。
 
 ## 3. 组件
 
@@ -168,28 +190,31 @@ type InstallCandidate = {
 
 ## 7. 安装事务
 
-桌面端安装按状态机执行：
+Phase 3-B 的规范状态机：
 
 ```text
-resolved → consented → preflight_ok → installing → verifying → installed
-                                      ↘ failed_recoverable
-                                      ↘ failed_manual_recovery
+requested → resolving → analyzing → permission_review → awaiting_confirmation
+  → confirmed → preparing → applying → verifying → committing
+  → installed | updated | uninstalled
+
+before_apply → cancelled | blocked | failed
+after_change → rolling_back → rolled_back | recovery_required
 ```
 
 ### 预检
 
-- 校验桌面端接收的深链和服务端响应签名；
+- 校验深链结构与服务端响应真实性；Installation Manifest 的签名/密钥方案在 Prototype 前确认；
 - 重新解析版本，确认 SHA/摘要未变；
 - 检测 DSH、Node、pnpm 和 Profile；
 - 记录 Profile 清单与补丁文件的只读快照信息；
-- 检测安装构建脚本和 `allowBuilds` 要求；
-- 展示配置差异预览；无法可靠预览时明确说明。
+- 检测安装期第三方代码，并在普通模式显示“安装时执行第三方代码”；`allowBuilds` 等字段只进入开发者详情；
+- 展示配置、权限和版本差异预览；无法可靠预览时明确说明并提高风险或阻断。
 
 ### 执行
 
-- 仅执行显示给用户并确认过的参数；
+- 仅执行与用户确认的 plan digest 绑定的步骤；底层参数只在开发者详情展示；
 - GitHub 来源默认固定 commit；npm 来源固定精确版本；
-- 不自动修改 `allowBuilds`；需要安装构建时暂停并让用户单独授权；
+- 不自动修改 `allowBuilds`；需要安装构建时暂停并用普通用户可理解的独立步骤确认；
 - 捕获退出码和有限、脱敏的输出。
 
 ### 验证
@@ -199,7 +224,7 @@ resolved → consented → preflight_ok → installing → verifying → install
 - 提示添加、删除或更新 Bundle 后重启 Profile；
 - 不为“命令返回 0”自动标记完全安全。
 
-卸载和更新使用同一状态机。更新必须重新展示版本差异和新增风险。
+卸载和更新使用同一事务模型。更新必须重新展示版本差异和新增风险；卸载只删除明确受管资源。脚本和外部服务副作用可能无法完整回滚，因此终态必须区分 `ROLLED_BACK` 与 `RECOVERY_REQUIRED`。完整设计见 `docs/INSTALLATION_SECURITY_ARCHITECTURE.md`。
 
 ## 8. API 边界
 
@@ -233,7 +258,7 @@ POST   /plugin-requests/:id/claims
 ## 9. 身份与授权
 
 - Phase 2-B1 已以 GitHub-only OAuth 实现；Google 只能在安全账号绑定门槛通过后启用；
-- HarnessHub `users` 保存内部主体，`oauth_identities` 保存 `(provider, issuer, provider_user_id)` 映射；当前直接 Session 模式不需要 `auth_principals`，该表只为未来 Auth broker 保留设计；`profiles` 也尚未实现；
+- HarnessHub `users` 保存内部主体，`oauth_identities` 保存 `(provider, issuer, provider_user_id)` 映射；当前直接 Session 模式不需要 `auth_principals`，该表只为未来 Auth broker 保留设计；Phase 2-C 已实现 DeveloperProfile，通用公开 User Profile 仍未实现；
 - GitHub username、display name、email 和可编辑 provider metadata 不参与账号匹配或授权；
 - NestJS 后端交换 GitHub code、读取稳定数字 ID 并签发 opaque HarnessHub Session；应用授权只读取数据库中的稳定 identity 与有效 RoleAssignment；
 - 不允许 Auth broker 按相同 email 自动合并跨 provider 身份；目标部署无法关闭或隔离该行为时，不启用第二个 provider；

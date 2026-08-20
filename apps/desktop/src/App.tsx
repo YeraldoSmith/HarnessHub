@@ -10,6 +10,8 @@ import {
 import type { AuthSessionResponse, Plugin } from '@harnesshub/types'
 import { IdentityBadge, PluginDetail } from '@harnesshub/ui'
 
+import { InstallationPrototypePanel } from './installation-prototype.js'
+
 const apiUrl = 'http://127.0.0.1:3001'
 
 function wait(milliseconds: number): Promise<void> {
@@ -112,6 +114,7 @@ export function App() {
           <a className="active" href="#registry">
             {t('nav.registry')}
           </a>
+          <a href="#installation-prototype">{t('installation.title')}</a>
           <span>{t('nav.developers')}</span>
           <span>{t('nav.requests')}</span>
         </nav>
@@ -134,7 +137,7 @@ export function App() {
                 <span>{auth.user.github.login ?? `GitHub ${auth.user.github.user_id}`}</span>
                 {auth.user.badges.includes('FOUNDER') ? <IdentityBadge kind="founder" /> : null}
                 <button onClick={() => void signOut()} type="button">
-                {t('auth.signOut')}
+                  {t('auth.signOut')}
                 </button>
               </>
             ) : (
@@ -157,6 +160,7 @@ export function App() {
           {plugin ? <PluginDetail plugin={plugin} /> : null}
           {!plugin && !error ? <div className="desktop-message">{t('desktop.loading')}</div> : null}
           {error ? <div className="desktop-message desktop-message--error">{error}</div> : null}
+          <InstallationPrototypePanel auth={auth} />
         </section>
       </main>
     </div>

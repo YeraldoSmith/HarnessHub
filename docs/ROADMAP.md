@@ -157,29 +157,59 @@ Phase 1 至此结束。Phase 2 Identity Foundation 不在本阶段实现。
 - 审核状态、作者验证和扫描状态在 UI 中明确分离；
 - 下架不会删除证据或历史版本信息。
 
-## Phase 3：安全桌面安装
+## Phase 3：可信发布与安全安装
 
-### 目标
+### Phase 3-A：Plugin Submission Architecture Design（已完成）
 
-打通用户发现到本机安装的核心闭环。
+- 开放提交与首个新开发者来源验证路径；
+- Draft、不可变 SubmissionVersion 和发布后 Publication 双层状态机；
+- Source、Metadata、Compatibility、Security、Human Review 边界；
+- LOW/MEDIUM/HIGH/CRITICAL 风险路由与权限声明；
+- 透明 reason code、Changes Requested、拒绝、暂停和申诉模型；
+- 与现有 Ownership、PluginVersion、PluginSnapshot、Source Evidence 的发布事务设计。
 
-### 交付
+本阶段没有创建数据表、API、上传 UI、扫描 Worker、Reviewer 后台或安装代码。
 
-- Tauri 桌面壳和签名更新机制；
-- DSH/Node/pnpm/Profile 检测；
-- 不可变候选解析和安装预检；
-- 独立的构建脚本授权步骤；
-- 安装、验证、更新、卸载和恢复状态机；
-- 本机日志与用户主动提交诊断；
-- DSH 版本兼容 kill switch。
+### Phase 3-B：Installation Security Architecture（已完成）
 
-### 退出条件
+- 安装、更新、卸载、Repair 的事务与本机安装状态分离；
+- 可理解权限、内部能力来源与实际 enforcement 范围；
+- Submission Risk + 本机环境/权限差异形成 Installation Risk；
+- 与精确 plan/version/Profile/permissions/environment digest 绑定的单次确认；
+- Profile 锁、Recovery Journal、FULL/PARTIAL/NONE 回滚覆盖度；
+- macOS/Windows/Linux Platform Adapter 与 capability matrix；
+- DSH Adapter、Environment Manager 和独立 Setup Assistant 接口；
+- Publication suspension 阻止新安装/更新但不远程静默卸载。
 
-- 测试 Bundle 在支持平台完成完整生命周期；
-- shell 注入、恶意深链、摘要变化和中断场景通过测试；
-- Git 构建脚本永远不会被静默批准；
-- 失败后 Profile 状态可解释并有恢复路径；
-- 外部桌面安全评审的阻断问题已解决。
+本阶段没有探测或修改用户环境，没有执行 DSH、Shell、pnpm 或 Node 命令。
+
+### Phase 3-C：Plugin Installation Prototype（已完成）
+
+已建立 Analyze → Permission Review → Confirmation → Simulated Transaction → Recovery 闭环。Prototype 使用纯内存 Fixture 与 Mock Environment Manager，不接触 DSH Home/Profile、真实凭据、插件制品、安装脚本或用户环境。
+
+#### Phase 3-C 目标
+
+验证用户可理解的安全安装流程能够形成完整模拟闭环。
+
+#### Phase 3-C 交付
+
+- `packages/installation-prototype` 纯 TypeScript Mock Engine；
+- simulation-only Manifest 与无害 Fixture；
+- Desktop 权限、原因、范围与风险确认 UI；
+- 成功、取消、失败、回滚和 Recovery Required 状态；
+- 绑定内部 User ID 的事务访问控制；
+- 只追加、不可修改的进程内 Audit Event；
+- `EnvironmentManager` 跨平台接口与无执行 Mock 实现。
+
+#### Phase 3-C 退出条件
+
+- 正常、取消、失败回滚、恢复失败和未授权访问测试通过；
+- Permission Review 使用普通用户可理解文案；
+- Engine 不导入或调用执行、下载、文件系统或环境修改能力；
+- Mock Environment 明确禁止 DSH 执行和系统修改；
+- Web/API/Desktop/共享包/Rust 壳回归检查通过。
+
+真实 Installation Engine 与 DSH Setup Assistant 仍是独立评估阶段，不属于 Phase 3-C。
 
 ## Phase 4：社区与需求市场
 

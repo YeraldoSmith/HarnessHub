@@ -38,6 +38,20 @@
 | D-030 | `packages/i18n` 是 Web/Desktop/共享 UI 的唯一平台界面语言层；默认 `zh-CN`，同时支持 `en-US` | 提前阻止硬编码文案扩散，同时保持第三方插件作者内容原样与产品边界清晰 |
 | D-031 | Phase 2-C 以 canonical public GitHub repository 默认分支的一次性文件挑战证明仓库控制权 | 不扩大登录 OAuth scope、不保存 GitHub token；随机挑战能证明实际写入/合并能力，并固定 repository/owner 数字 ID 与 commit evidence |
 | D-032 | PluginOwnership、Developer Role 与 Verified Developer Badge 在成功验证事务中同时建立，但三者语义分离 | Ownership 是插件管理授权，Role 是平台权限事实，Badge 只是公开信任展示且不构成安全保证 |
+| D-033 | Plugin Submission 是 Registry 之前的独立候选域；只有批准后的精确 SubmissionVersion 才能生成 PluginVersion/Snapshot | 防止 Draft 或审核中内容进入公开目录，并保持审核对象与安装对象一致 |
+| D-034 | 已提交 revision 不可修改；修复和补充创建新的 SubmissionVersion | 保留每次检查、决定和申诉对应的精确事实，避免审核后换包 |
+| D-035 | 首个插件允许非受限 DeveloperProfile 进入提交，但发布前必须完成来源控制权证明 | 避免只有现有 Verified Developer 才能加入的封闭生态，同时不降低来源验证门槛 |
+| D-036 | Risk Level 只决定审核与用户确认深度；确认恶意、来源不一致、无授权和故意隐瞒是独立拒绝条件 | 保持开放提交与透明风险，避免把高能力插件等同恶意，也避免把 Critical 当作可自动发布 |
+| D-037 | Submission 审核状态与发布后的 ACTIVE/SUSPENDED/DELISTED 状态分离 | 暂停分发不能抹除原审核历史，恢复/下架也需要独立理由和审计 |
+| D-038 | Desktop 只从稳定 ID 重新获取版本化 Installation Manifest；深链和服务端都不能下发任意命令 | 防止命令注入，并保证 UI 展示、确认和实际目标来自同一不可变版本 |
+| D-039 | 用户确认是短时单次 ConsentRecord，并绑定 plan、version、Profile、permission 与 environment digest | 版本、权限、计划或本机关键事实变化后旧确认必须失效，避免确认后换包/换计划 |
+| D-040 | Installation Transaction 使用 Profile 锁与持久 Recovery Journal，并公开 FULL/PARTIAL/NONE 回滚覆盖度 | 防止并发和崩溃造成不可解释状态，同时承认安装脚本与外部副作用不能保证完整撤销 |
+| D-041 | 服务端暂停可阻止新安装/更新并提示风险，但不能远程静默执行或卸载本机插件 | 保持用户对本机操作的最终控制，避免把安全 kill switch 变成远程命令通道 |
+| D-042 | Environment Manager 只能通过版本化 DSH Adapter 与 Platform Adapter 处理本机差异；业务 UI 不解析 CLI 或拼装命令 | 隔离 DSH 预览版与跨平台变化，统一参数、路径和错误安全边界 |
+| D-043 | 安装详情、绝对路径和 Recovery Journal 默认仅本机保存，诊断上传需用户预览确认 | 安装行为可追踪不等于必须集中上传，兼顾恢复能力与隐私最小化 |
+| D-044 | Phase 3-C 使用独立纯 TypeScript 内存 Mock Engine，不复用 API、Registry 或 Tauri 原生命令作为执行入口 | 验证状态机和体验，同时以结构隔离证明原型不会下载、执行或修改用户环境 |
+| D-045 | Prototype Manifest 必须同时声明 `simulationOnly: true` 与 `executionPolicy: SIMULATION_ONLY`，Mock Environment 固定禁止 DSH 执行和系统修改 | 防止测试 Fixture 或未来 Adapter 被误接成真实执行能力；违反约束立即失败 |
+| D-046 | Prototype Audit Event 只追加并返回冻结快照，但不持久化 | 足够验证可追踪交互，又不把进程内日志误称为生产审计或恢复 Journal；真实安装前必须另行实现崩溃一致存储 |
 
 ## P0：进入代码阶段前确认
 

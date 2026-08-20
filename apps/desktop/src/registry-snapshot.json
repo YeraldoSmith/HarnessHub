@@ -1,0 +1,1567 @@
+{
+  "hasNext": false,
+  "items": [
+    {
+      "author": {
+        "handle": "AgentConnect",
+        "name": "AgentConnect"
+      },
+      "category": "Productivity",
+      "checked_at": "2026-08-20T06:19:37.147Z",
+      "compatibility": {
+        "dsh": "0.1.0-rc.7",
+        "status": "declared"
+      },
+      "description": "AWiki identity and messaging plugin for DeepSeek Harness",
+      "github_url": "https://github.com/AgentConnect/dsh-awiki",
+      "id": "dsh-awiki",
+      "is_mock": false,
+      "license": {
+        "name": "MIT",
+        "spdx": "MIT",
+        "url": "https://spdx.org/licenses/MIT.html"
+      },
+      "name": "AWiki for DSH",
+      "npm_url": "https://www.npmjs.com/package/@awiki/dsh-plugin/v/0.2.5",
+      "npm_version": "0.2.5",
+      "permissions": [],
+      "readme_excerpt": "# @awiki/dsh-plugin AWiki identity and messaging for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). The package installs one Host service, its production Rust SDK provider, the model tools, and a Web client with a draggable AWiki Me launcher. [中文说明](./README.zh.md) Registration failures preserve the form and local pending identity material. Closed registration, unavailable verification state, and commit conflicts each give a safe next action without exposing remote response",
+      "source": "github+npm",
+      "source_commit": "cdd3078d409bea693382f47647d57c78efd3b1ac",
+      "source_evidence": [
+        {
+          "commit_sha": "cdd3078d409bea693382f47647d57c78efd3b1ac",
+          "fetched_at": "2026-08-20T06:19:37.147Z",
+          "integrity": null,
+          "license_spdx": "MIT",
+          "npm_version": null,
+          "package_name": null,
+          "provider": "github",
+          "readme_sha256": "be1f080ba95addb7164a695ab379bc278291e1c7617e1051e899a52b45edd161",
+          "release_tag": "@awiki/dsh-plugin 0.2.4",
+          "repository_url": "https://github.com/AgentConnect/dsh-awiki",
+          "url": "https://github.com/AgentConnect/dsh-awiki/tree/cdd3078d409bea693382f47647d57c78efd3b1ac"
+        },
+        {
+          "commit_sha": null,
+          "fetched_at": "2026-08-20T06:19:35.814Z",
+          "integrity": "sha512-hss7FJeflXPMS9nvQj6SEspbvEdakonpcQdOSlkIE503oEYNvgmJB4Q63Ms7YIk/7DFNj7cys59m1+heBAPQVg==",
+          "license_spdx": "MIT",
+          "npm_version": "0.2.5",
+          "package_name": "@awiki/dsh-plugin",
+          "provider": "npm",
+          "readme_sha256": null,
+          "release_tag": null,
+          "repository_url": "https://github.com/AgentConnect/dsh-awiki",
+          "url": "https://registry.npmjs.org/@awiki/dsh-plugin/-/dsh-plugin-0.2.5.tgz"
+        }
+      ],
+      "source_status": [
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:37.147Z",
+          "provider": "github",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        },
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:35.814Z",
+          "provider": "npm",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        }
+      ],
+      "tags": [
+        "identity",
+        "messaging",
+        "awiki"
+      ],
+      "version": "0.2.5"
+    },
+    {
+      "author": {
+        "handle": "jiesou",
+        "name": "jiesou"
+      },
+      "category": "Developer Tools",
+      "checked_at": "2026-08-20T06:19:23.255Z",
+      "compatibility": {
+        "dsh": ">=0.1.0-rc.6 <0.2.0",
+        "status": "declared"
+      },
+      "description": "Cline free models provider for dsh: scan the Cline model catalog dynamically and serve the :free models through the harness LLM seam",
+      "github_url": "https://github.com/jiesou/dsh-cline-free-provider",
+      "id": "dsh-cline-free-provider",
+      "is_mock": false,
+      "license": {
+        "name": "MIT",
+        "spdx": "MIT",
+        "url": "https://spdx.org/licenses/MIT.html"
+      },
+      "name": "Cline Free Models Provider",
+      "npm_url": "https://www.npmjs.com/package/@jiesou/dsh-cline-free-provider/v/0.1.9",
+      "npm_version": "0.1.9",
+      "permissions": [],
+      "readme_excerpt": "# dsh-cline-free-provider Cline Free provider for dsh. [English](README.en.md) 本插件可以将 Cline 的免费模型，接入 dsh 使用。 <img height=\"650\" alt=\"截图 2026-08-17 10-39-41\" src=\"https://github.com/user-attachments/assets/849c8ca8-2f97-4603-898a-37598a2dede5\" /> Cline 提供 OpenRouter 上可用的各种免费模型，以及 DeepSeek V4 Flash。 如果你使用的是 Cline Pass 订阅计划，可以直接按照 Cline Pass 官方文档配置官方接口和 API Key，不需要本插件。 获取 API Key：<https://app.cline.bot/dashboard/account?tab=api-keys> ## 安装 从 npm 安装（预构建产物，推荐）： ```sh dsh plugin --profile web add @jies",
+      "source": "github+npm",
+      "source_commit": "79c37df51faef9f13cff94e77de86d25b87b42cb",
+      "source_evidence": [
+        {
+          "commit_sha": "79c37df51faef9f13cff94e77de86d25b87b42cb",
+          "fetched_at": "2026-08-20T06:19:23.255Z",
+          "integrity": null,
+          "license_spdx": "MIT",
+          "npm_version": null,
+          "package_name": null,
+          "provider": "github",
+          "readme_sha256": "117dc9c608c177b4847aef666b7d54617357694886f6dbcea89736707da2792a",
+          "release_tag": "0.1.9",
+          "repository_url": "https://github.com/jiesou/dsh-cline-free-provider",
+          "url": "https://github.com/jiesou/dsh-cline-free-provider/tree/79c37df51faef9f13cff94e77de86d25b87b42cb"
+        },
+        {
+          "commit_sha": null,
+          "fetched_at": "2026-08-20T06:19:21.858Z",
+          "integrity": "sha512-Lhqo2Y2I+jJ+w1WrqailmRZB4flImlRT7KPA/StY4Il70U/LcblThUqcldspU0L89uKnQV7ZVgepUqlGnidWSw==",
+          "license_spdx": "MIT",
+          "npm_version": "0.1.9",
+          "package_name": "@jiesou/dsh-cline-free-provider",
+          "provider": "npm",
+          "readme_sha256": null,
+          "release_tag": null,
+          "repository_url": "https://github.com/jiesou/dsh-cline-free-provider",
+          "url": "https://registry.npmjs.org/@jiesou/dsh-cline-free-provider/-/dsh-cline-free-provider-0.1.9.tgz"
+        }
+      ],
+      "source_status": [
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:23.255Z",
+          "provider": "github",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        },
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:21.858Z",
+          "provider": "npm",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        }
+      ],
+      "tags": [
+        "models",
+        "provider",
+        "cline"
+      ],
+      "version": "0.1.9"
+    },
+    {
+      "author": {
+        "handle": "NanmiCoder",
+        "name": "NanmiCoder"
+      },
+      "category": "Automation",
+      "checked_at": "2026-08-20T06:19:25.625Z",
+      "compatibility": {
+        "dsh": "^0.1.0-rc.6",
+        "status": "declared"
+      },
+      "description": "AgentTeams for DeepSeek Harness: multi-agent team collaboration (captain, members, tasks with dependencies, messaging) driven by natural language, with a tree monitor in the web GUI",
+      "github_url": "https://github.com/NanmiCoder/dsh-agent-teams",
+      "id": "dsh-agent-teams",
+      "is_mock": false,
+      "license": {
+        "name": "MIT",
+        "spdx": "MIT",
+        "url": "https://spdx.org/licenses/MIT.html"
+      },
+      "name": "DSH Agent Teams",
+      "npm_url": "https://www.npmjs.com/package/@nanmicoder/dsh-agent-teams/v/0.1.8",
+      "npm_version": "0.1.8",
+      "permissions": [],
+      "readme_excerpt": "<p align=\"right\"> <strong>English</strong> · <a href=\"./README_ZH.md\">简体中文</a> </p> <p align=\"center\"> <img src=\"./assets/readme/hero.svg\" width=\"100%\" alt=\"dsh-agent-teams turns one DeepSeek Harness session into a coordinated multi-agent team\"> </p> <p align=\"center\"> <a href=\"https://www.npmjs.com/package/@nanmicoder/dsh-agent-teams\"><img src=\"https://img.shields.io/npm/v/@nanmicoder/dsh-agent-teams.svg\" alt=\"npm version\"></a> <a href=\"./LICENSE\"><img src=\"https://img.shields.io/npm/l/@nanmico",
+      "source": "github+npm",
+      "source_commit": "801954dd7be67213cf4adc1aeb6f97bd3daa12cc",
+      "source_evidence": [
+        {
+          "commit_sha": "801954dd7be67213cf4adc1aeb6f97bd3daa12cc",
+          "fetched_at": "2026-08-20T06:19:25.625Z",
+          "integrity": null,
+          "license_spdx": "MIT",
+          "npm_version": null,
+          "package_name": null,
+          "provider": "github",
+          "readme_sha256": "8ca25ccafa4258edaacae0fbb79a30b41eeb18350834e61377d68bcb1fbd7226",
+          "release_tag": "v0.1.8",
+          "repository_url": "https://github.com/NanmiCoder/dsh-agent-teams",
+          "url": "https://github.com/NanmiCoder/dsh-agent-teams/tree/801954dd7be67213cf4adc1aeb6f97bd3daa12cc"
+        },
+        {
+          "commit_sha": null,
+          "fetched_at": "2026-08-20T06:19:23.713Z",
+          "integrity": "sha512-krims7yCJBKuUtEIzJuhk6nkQ9caWhiUZQ85MMqyMqUtH+SswsvKNTVDrH8waJvKlksVExjgSDvbaS8Wqb/2ZA==",
+          "license_spdx": "MIT",
+          "npm_version": "0.1.8",
+          "package_name": "@nanmicoder/dsh-agent-teams",
+          "provider": "npm",
+          "readme_sha256": null,
+          "release_tag": null,
+          "repository_url": "https://github.com/NanmiCoder/dsh-agent-teams",
+          "url": "https://registry.npmjs.org/@nanmicoder/dsh-agent-teams/-/dsh-agent-teams-0.1.8.tgz"
+        }
+      ],
+      "source_status": [
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:25.625Z",
+          "provider": "github",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        },
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:23.713Z",
+          "provider": "npm",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        }
+      ],
+      "tags": [
+        "agents",
+        "teams",
+        "orchestration"
+      ],
+      "version": "0.1.8"
+    },
+    {
+      "author": {
+        "handle": "AHGGG",
+        "name": "AHGGG"
+      },
+      "category": "Productivity",
+      "checked_at": "2026-08-20T06:19:32.269Z",
+      "compatibility": {
+        "dsh": "0.1.0-rc.7",
+        "status": "declared"
+      },
+      "description": "Codex-style side conversations for DeepSeek Harness",
+      "github_url": "https://github.com/AHGGG/dsh-side-chat",
+      "id": "dsh-side-chat",
+      "is_mock": false,
+      "license": {
+        "name": "MIT",
+        "spdx": "MIT",
+        "url": "https://spdx.org/licenses/MIT.html"
+      },
+      "name": "DSH Side Chat",
+      "npm_url": "https://www.npmjs.com/package/@ahggg/dsh-side-chat/v/0.6.2",
+      "npm_version": "0.6.2",
+      "permissions": [],
+      "readme_excerpt": "# dsh-side-chat Ask a focused follow-up about selected text without leaving your current DeepSeek Harness conversation. > Compatibility: this release targets `@deepseek-ai/dsh@0.1.0-rc.7` exactly. [简体中文](README.zh-CN.md) ![Ask about selected text in Side Chat, then add an annotated selection to the main chat](https://raw.githubusercontent.com/AHGGG/dsh-side-chat/master/docs/assets/side-chat-demo.gif) ## Install Install DSH rc.7 if it is not already available. Refresh only this package's registry",
+      "source": "github+npm",
+      "source_commit": "553a9aeb5c4adfc8dcb109ff40774f0925528dea",
+      "source_evidence": [
+        {
+          "commit_sha": "553a9aeb5c4adfc8dcb109ff40774f0925528dea",
+          "fetched_at": "2026-08-20T06:19:32.269Z",
+          "integrity": null,
+          "license_spdx": "MIT",
+          "npm_version": null,
+          "package_name": null,
+          "provider": "github",
+          "readme_sha256": "6d5db622868e6500dfe6a80d175c6942fb56dfbe90859c24e389bb8b72f977c3",
+          "release_tag": "v0.6.2",
+          "repository_url": "https://github.com/AHGGG/dsh-side-chat",
+          "url": "https://github.com/AHGGG/dsh-side-chat/tree/553a9aeb5c4adfc8dcb109ff40774f0925528dea"
+        },
+        {
+          "commit_sha": null,
+          "fetched_at": "2026-08-20T06:19:31.055Z",
+          "integrity": "sha512-Hz4wvmdiFW4omnB6AQkrxhZAd8Hjs0oYpWbLl9Udmx90p1lML7BhWGzQby44KHWyhx01YFkFnedLlbWA60ufNA==",
+          "license_spdx": "MIT",
+          "npm_version": "0.6.2",
+          "package_name": "@ahggg/dsh-side-chat",
+          "provider": "npm",
+          "readme_sha256": null,
+          "release_tag": null,
+          "repository_url": "https://github.com/AHGGG/dsh-side-chat",
+          "url": "https://registry.npmjs.org/@ahggg/dsh-side-chat/-/dsh-side-chat-0.6.2.tgz"
+        }
+      ],
+      "source_status": [
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:32.269Z",
+          "provider": "github",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        },
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:31.055Z",
+          "provider": "npm",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        }
+      ],
+      "tags": [
+        "conversation",
+        "side-chat",
+        "workspace"
+      ],
+      "version": "0.6.2"
+    },
+    {
+      "author": {
+        "handle": "AaLonG-2012",
+        "name": "AaLonG-2012"
+      },
+      "category": "Research",
+      "checked_at": "2026-08-20T06:19:30.681Z",
+      "compatibility": {
+        "dsh": "^0.0.1-rc.1",
+        "status": "declared"
+      },
+      "description": "Model-facing vision tool for DeepSeek Harness: analyze images via any OpenAI-compatible vision API.",
+      "github_url": "https://github.com/AaLonG-2012/dsh-tool-vision",
+      "id": "dsh-tool-vision",
+      "is_mock": false,
+      "license": {
+        "name": "MIT",
+        "spdx": "MIT",
+        "url": "https://spdx.org/licenses/MIT.html"
+      },
+      "name": "DSH Tool Vision",
+      "npm_url": "https://www.npmjs.com/package/@aalongaa/dsh-tool-vision/v/2.1.0",
+      "npm_version": "2.1.0",
+      "permissions": [],
+      "readme_excerpt": "",
+      "source": "github+npm",
+      "source_commit": "1ae20c2ae3d85f97e363ed7254e6b6c3a81c6cc1",
+      "source_evidence": [
+        {
+          "commit_sha": "1ae20c2ae3d85f97e363ed7254e6b6c3a81c6cc1",
+          "fetched_at": "2026-08-20T06:19:30.680Z",
+          "integrity": null,
+          "license_spdx": "MIT",
+          "npm_version": null,
+          "package_name": null,
+          "provider": "github",
+          "readme_sha256": null,
+          "release_tag": null,
+          "repository_url": "https://github.com/AaLonG-2012/dsh-tool-vision",
+          "url": "https://github.com/AaLonG-2012/dsh-tool-vision/tree/1ae20c2ae3d85f97e363ed7254e6b6c3a81c6cc1"
+        },
+        {
+          "commit_sha": null,
+          "fetched_at": "2026-08-20T06:19:27.696Z",
+          "integrity": "sha512-Lx/k41D1/Wg17L0iCBapZSGkzV7+n61RZ3mG4BDWY8HE1gSjERE5OOrJVHLMSqE1Jk3jzd6rkZ9S8nRv/kg2uA==",
+          "license_spdx": "MIT",
+          "npm_version": "2.1.0",
+          "package_name": "@aalongaa/dsh-tool-vision",
+          "provider": "npm",
+          "readme_sha256": null,
+          "release_tag": null,
+          "repository_url": "https://github.com/AaLonG-2012/dsh-tool-vision",
+          "url": "https://registry.npmjs.org/@aalongaa/dsh-tool-vision/-/dsh-tool-vision-2.1.0.tgz"
+        }
+      ],
+      "source_status": [
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:30.680Z",
+          "provider": "github",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        },
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:27.696Z",
+          "provider": "npm",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        }
+      ],
+      "tags": [
+        "vision",
+        "images",
+        "openai-compatible"
+      ],
+      "version": "2.1.0"
+    },
+    {
+      "author": {
+        "handle": "Anionex",
+        "name": "Anionex"
+      },
+      "category": "Developer Tools",
+      "checked_at": "2026-08-20T06:19:33.602Z",
+      "compatibility": {
+        "dsh": "unknown",
+        "status": "unknown"
+      },
+      "description": "Turn-level conversation and workspace rewind for DeepSeek Harness, powered by a persistent Change Ledger",
+      "github_url": "https://github.com/Anionex/dsh-turn-rewind",
+      "id": "dsh-turn-rewind",
+      "is_mock": false,
+      "license": {
+        "name": "BSD-3-Clause",
+        "spdx": "BSD-3-Clause",
+        "url": "https://spdx.org/licenses/BSD-3-Clause.html"
+      },
+      "name": "DSH Turn Rewind",
+      "npm_url": "https://www.npmjs.com/package/@anionex/dsh-turn-rewind/v/0.1.1",
+      "npm_version": "0.1.1",
+      "permissions": [],
+      "readme_excerpt": "# DSH Turn Rewind [![X (Twitter)](https://img.shields.io/badge/-@anion__ex-000000?style=flat-square&logo=x&logoColor=white)](https://x.com/anion_ex) [中文说明](README.zh.md) Message-anchored project-file recovery for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness), with an option to restart from the restored request. **Turn Rewind** is the user-facing feature, repository, and Profile Bundle name. **Change Ledger** is the durable restore engine underneath it: the `ctx.changeLedger",
+      "source": "github+npm",
+      "source_commit": "b1b85f18aaaaf71d76c84613429ce04d71f69620",
+      "source_evidence": [
+        {
+          "commit_sha": "b1b85f18aaaaf71d76c84613429ce04d71f69620",
+          "fetched_at": "2026-08-20T06:19:33.602Z",
+          "integrity": null,
+          "license_spdx": "BSD-3-Clause",
+          "npm_version": null,
+          "package_name": null,
+          "provider": "github",
+          "readme_sha256": "d7e017e05997c33c7d6cd73b719c705ecb04bdc46ee3d6b4b9f1ea3f9b4bbbc7",
+          "release_tag": "v0.1.1",
+          "repository_url": "https://github.com/Anionex/dsh-turn-rewind",
+          "url": "https://github.com/Anionex/dsh-turn-rewind/tree/b1b85f18aaaaf71d76c84613429ce04d71f69620"
+        },
+        {
+          "commit_sha": null,
+          "fetched_at": "2026-08-20T06:19:32.505Z",
+          "integrity": "sha512-pgFXZmvQDynLDDbpSltCTxWEgPOFuvZojuPgWDZ3Em/OlFicoRoHQQbhHRuitvXgVF/t4tvCApaDtAhs0+ZvOg==",
+          "license_spdx": "BSD-3-Clause",
+          "npm_version": "0.1.1",
+          "package_name": "@anionex/dsh-turn-rewind",
+          "provider": "npm",
+          "readme_sha256": null,
+          "release_tag": null,
+          "repository_url": "https://github.com/Anionex/dsh-turn-rewind",
+          "url": "https://registry.npmjs.org/@anionex/dsh-turn-rewind/-/dsh-turn-rewind-0.1.1.tgz"
+        }
+      ],
+      "source_status": [
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:33.602Z",
+          "provider": "github",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        },
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:32.505Z",
+          "provider": "npm",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        }
+      ],
+      "tags": [
+        "rewind",
+        "workspace",
+        "history"
+      ],
+      "version": "0.1.1"
+    },
+    {
+      "author": {
+        "handle": "dream-num",
+        "name": "dream-num"
+      },
+      "category": "Productivity",
+      "checked_at": "2026-08-20T06:19:42.179Z",
+      "compatibility": {
+        "dsh": "0.1.0-rc.6",
+        "status": "declared"
+      },
+      "description": "DSH × Univer integration with a bundled collaboration Gateway and Viewer: inline previews, live floating Worktree windows, and session-end review actions in DeepSeek Harness.",
+      "github_url": "https://github.com/dream-num/dsh-univer-office",
+      "id": "dsh-univer-office",
+      "is_mock": false,
+      "license": {
+        "name": "Apache-2.0",
+        "spdx": "Apache-2.0",
+        "url": "https://spdx.org/licenses/Apache-2.0.html"
+      },
+      "name": "DSH Univer Office",
+      "npm_url": "https://www.npmjs.com/package/dsh-univer-office/v/0.2.6",
+      "npm_version": "0.2.6",
+      "permissions": [],
+      "readme_excerpt": "# DSH × Univer Office > Give DeepSeek Harness the ability to create, edit, inspect, and deliver spreadsheets, documents, presentations, databases, and canvases. English · [简体中文](README.zh-CN.md) [![npm](https://img.shields.io/npm/v/dsh-univer-office)](https://www.npmjs.com/package/dsh-univer-office) [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D22.19-339933?logo=node.js&logoColor=white)](package.json) [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE) `dsh-univ",
+      "source": "github+npm",
+      "source_commit": "8b24547d8c6e8442b5e4445ef6d11f6d3df3ae9c",
+      "source_evidence": [
+        {
+          "commit_sha": "8b24547d8c6e8442b5e4445ef6d11f6d3df3ae9c",
+          "fetched_at": "2026-08-20T06:19:42.179Z",
+          "integrity": null,
+          "license_spdx": "Apache-2.0",
+          "npm_version": null,
+          "package_name": null,
+          "provider": "github",
+          "readme_sha256": "a7634dceceaaeb1bd3325bae3fcf40aa5349295c59171d303fe2a9bb1a6076f3",
+          "release_tag": "v0.2.6",
+          "repository_url": "https://github.com/dream-num/dsh-univer-office",
+          "url": "https://github.com/dream-num/dsh-univer-office/tree/8b24547d8c6e8442b5e4445ef6d11f6d3df3ae9c"
+        },
+        {
+          "commit_sha": null,
+          "fetched_at": "2026-08-20T06:19:40.867Z",
+          "integrity": "sha512-YU3DkyZYsabr0R0hO6nw4AhC3RCdioaArKJ3JCWxrfjSBM/lMEChFdil0QjGmIOYUJAmwDkhXBXulG6+dz7arQ==",
+          "license_spdx": "Apache-2.0",
+          "npm_version": "0.2.6",
+          "package_name": "dsh-univer-office",
+          "provider": "npm",
+          "readme_sha256": null,
+          "release_tag": null,
+          "repository_url": "https://github.com/dream-num/dsh-univer-office",
+          "url": "https://registry.npmjs.org/dsh-univer-office/-/dsh-univer-office-0.2.6.tgz"
+        }
+      ],
+      "source_status": [
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:42.179Z",
+          "provider": "github",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        },
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:40.867Z",
+          "provider": "npm",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        }
+      ],
+      "tags": [
+        "office",
+        "documents",
+        "collaboration"
+      ],
+      "version": "0.2.6"
+    },
+    {
+      "author": {
+        "handle": "Airmetro",
+        "name": "Airmetro"
+      },
+      "category": "Developer Tools",
+      "checked_at": "2026-08-20T06:19:43.779Z",
+      "compatibility": {
+        "dsh": "unknown",
+        "status": "unknown"
+      },
+      "description": "Auto-check DeepSeek Harness and third-party plugin updates, notify in the Web GUI, one-click update with backup/rollback and restart watchdog.",
+      "github_url": "https://github.com/Airmetro/dsh-update-checker",
+      "id": "dsh-update-checker",
+      "is_mock": false,
+      "license": {
+        "name": "MIT",
+        "spdx": "MIT",
+        "url": "https://spdx.org/licenses/MIT.html"
+      },
+      "name": "DSH Update Checker",
+      "npm_url": "https://www.npmjs.com/package/dsh-update-checker/v/1.4.8",
+      "npm_version": "1.4.8",
+      "permissions": [],
+      "readme_excerpt": "# dsh-update-checker English | [中文](README.zh.md) A permanent Cordis plugin for the [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) Web GUI that **auto-checks for new DeepSeek Harness releases and installed third-party plugin updates** (the former standalone `dsh-plugin-checker` was merged in v1.1.0), asks the user, and one-click updates with success/failure feedback. ## Features - **Full update lifecycle** — check, backup, update, **rollback**, and restart, all in one plugin",
+      "source": "github+npm",
+      "source_commit": "bea57c020bb8a32889079b8f3a04182bc94e4982",
+      "source_evidence": [
+        {
+          "commit_sha": "bea57c020bb8a32889079b8f3a04182bc94e4982",
+          "fetched_at": "2026-08-20T06:19:43.779Z",
+          "integrity": null,
+          "license_spdx": "MIT",
+          "npm_version": null,
+          "package_name": null,
+          "provider": "github",
+          "readme_sha256": "196f9eec602c65e5b04eed68c724151b4b597e231a59974793bbe12e614afdf0",
+          "release_tag": "v1.4.8",
+          "repository_url": "https://github.com/Airmetro/dsh-update-checker",
+          "url": "https://github.com/Airmetro/dsh-update-checker/tree/bea57c020bb8a32889079b8f3a04182bc94e4982"
+        },
+        {
+          "commit_sha": null,
+          "fetched_at": "2026-08-20T06:19:42.624Z",
+          "integrity": "sha512-qR0ztvI4zVqwtAydAlH4e//F/oppQITVIAReO1vQOH9g9l0w5pVvEknbcKjafdYQnbmK4psbi/TSZmdSjJ4x0w==",
+          "license_spdx": "MIT",
+          "npm_version": "1.4.8",
+          "package_name": "dsh-update-checker",
+          "provider": "npm",
+          "readme_sha256": null,
+          "release_tag": null,
+          "repository_url": "https://github.com/Airmetro/dsh-update-checker",
+          "url": "https://registry.npmjs.org/dsh-update-checker/-/dsh-update-checker-1.4.8.tgz"
+        }
+      ],
+      "source_status": [
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:43.779Z",
+          "provider": "github",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        },
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:42.624Z",
+          "provider": "npm",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        }
+      ],
+      "tags": [
+        "updates",
+        "rollback",
+        "maintenance"
+      ],
+      "version": "1.4.8"
+    },
+    {
+      "author": {
+        "handle": "hezhongtang",
+        "name": "hezhongtang"
+      },
+      "category": "Developer Tools",
+      "checked_at": "2026-08-20T06:19:45.367Z",
+      "compatibility": {
+        "dsh": ">=0.0.1-rc.1",
+        "status": "declared"
+      },
+      "description": "Update copilot for DeepSeek Harness: tracks the DSH core, bundled packages, and every profile plugin across npm and git, summarizes what changed for agent-assisted upgrade decisions, and updates only after explicit confirmation. · DSH 更新助手：追踪 dsh 本体、bundl",
+      "github_url": "https://github.com/hezhongtang/dsh-update-copilot",
+      "id": "dsh-update-copilot",
+      "is_mock": false,
+      "license": {
+        "name": "MIT",
+        "spdx": "MIT",
+        "url": "https://spdx.org/licenses/MIT.html"
+      },
+      "name": "DSH Update Copilot",
+      "npm_url": "https://www.npmjs.com/package/dsh-update-copilot/v/0.4.3",
+      "npm_version": "0.4.3",
+      "permissions": [],
+      "readme_excerpt": "# dsh-update-copilot [![License: MIT](https://img.shields.io/badge/license-MIT-0B7285?style=flat-square)](LICENSE) [![DSH core](https://img.shields.io/badge/DSH-%3E%3D%200.1.0--rc.7-5B4CF0?style=flat-square)](https://www.npmjs.com/package/@deepseek-ai/dsh) [![Zero build](https://img.shields.io/badge/zero--build-no%20bundler-2EA44F?style=flat-square)](lib) [![GitHub stars](https://img.shields.io/github/stars/hezhongtang/dsh-update-copilot?style=flat-square&logo=github)](https://github.com/hezhong",
+      "source": "github+npm",
+      "source_commit": "19bfed0f062799ac4aae7585c62b54c73ccad191",
+      "source_evidence": [
+        {
+          "commit_sha": "19bfed0f062799ac4aae7585c62b54c73ccad191",
+          "fetched_at": "2026-08-20T06:19:45.367Z",
+          "integrity": null,
+          "license_spdx": "MIT",
+          "npm_version": null,
+          "package_name": null,
+          "provider": "github",
+          "readme_sha256": "5910c648e3c3c444682cb2b72cb39a5d79fad03290d849447740413ffdb7902d",
+          "release_tag": "v0.4.3",
+          "repository_url": "https://github.com/hezhongtang/dsh-update-copilot",
+          "url": "https://github.com/hezhongtang/dsh-update-copilot/tree/19bfed0f062799ac4aae7585c62b54c73ccad191"
+        },
+        {
+          "commit_sha": null,
+          "fetched_at": "2026-08-20T06:19:44.279Z",
+          "integrity": "sha512-X8Wg1sy2o7DIqlNlhDeXtCyge3TprBYb5Mm5Scd5j57dsA7RwjaUqQIE63N5P8NuV19NWAMrcZze9NpCVVIsQw==",
+          "license_spdx": "MIT",
+          "npm_version": "0.4.3",
+          "package_name": "dsh-update-copilot",
+          "provider": "npm",
+          "readme_sha256": null,
+          "release_tag": null,
+          "repository_url": "https://github.com/hezhongtang/dsh-update-copilot",
+          "url": "https://registry.npmjs.org/dsh-update-copilot/-/dsh-update-copilot-0.4.3.tgz"
+        }
+      ],
+      "source_status": [
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:45.367Z",
+          "provider": "github",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        },
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:44.279Z",
+          "provider": "npm",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        }
+      ],
+      "tags": [
+        "updates",
+        "dependencies",
+        "maintenance"
+      ],
+      "version": "0.4.3"
+    },
+    {
+      "author": {
+        "handle": "lanlandeli",
+        "name": "lanlandeli"
+      },
+      "category": "Data",
+      "checked_at": "2026-08-20T06:19:46.749Z",
+      "compatibility": {
+        "dsh": ">=0.1.0-rc.6 <0.2.0",
+        "status": "declared"
+      },
+      "description": "Lightweight usage analytics for DeepSeek Harness — token trends, activity heatmaps, model breakdowns, and exports.",
+      "github_url": "https://github.com/lanlandeli/dsh-usage-stats",
+      "id": "dsh-usage-stats",
+      "is_mock": false,
+      "license": {
+        "name": "MIT",
+        "spdx": "MIT",
+        "url": "https://spdx.org/licenses/MIT.html"
+      },
+      "name": "DSH Usage Stats",
+      "npm_url": "https://www.npmjs.com/package/dsh-usage-stats/v/0.1.16",
+      "npm_version": "0.1.16",
+      "permissions": [],
+      "readme_excerpt": "# 📊 dsh-usage-stats [English](./README.en.md) > DeepSeek Harness Token 使用情况，一目了然。 [![npm version](https://img.shields.io/npm/v/dsh-usage-stats?style=flat-square&logo=npm)](https://www.npmjs.com/package/dsh-usage-stats) [![npm downloads](https://img.shields.io/npm/dm/dsh-usage-stats?style=flat-square)](https://www.npmjs.com/package/dsh-usage-stats) [![CI](https://img.shields.io/github/actions/workflow/status/lanlandeli/dsh-usage-stats/ci.yml?branch=main&style=flat-square&label=CI)](https://githu",
+      "source": "github+npm",
+      "source_commit": "ee0c818310071c542330ed0df95e6ed91482ed19",
+      "source_evidence": [
+        {
+          "commit_sha": "ee0c818310071c542330ed0df95e6ed91482ed19",
+          "fetched_at": "2026-08-20T06:19:46.749Z",
+          "integrity": null,
+          "license_spdx": "MIT",
+          "npm_version": null,
+          "package_name": null,
+          "provider": "github",
+          "readme_sha256": "ead99cd44dc7be27ca75fee98002f01a9a23a19c549874ac6c32d015d141cca1",
+          "release_tag": "v0.1.16",
+          "repository_url": "https://github.com/lanlandeli/dsh-usage-stats",
+          "url": "https://github.com/lanlandeli/dsh-usage-stats/tree/ee0c818310071c542330ed0df95e6ed91482ed19"
+        },
+        {
+          "commit_sha": null,
+          "fetched_at": "2026-08-20T06:19:45.692Z",
+          "integrity": "sha512-4ae3TYLzm2Yx7eZTyOmzKbwz1dLzkRi4n54OA7tnN7w66HCeK1hYR654DmLmxGmEplkrUCNhiWki3iQFsx9A+g==",
+          "license_spdx": "MIT",
+          "npm_version": "0.1.16",
+          "package_name": "dsh-usage-stats",
+          "provider": "npm",
+          "readme_sha256": null,
+          "release_tag": null,
+          "repository_url": "https://github.com/lanlandeli/dsh-usage-stats",
+          "url": "https://registry.npmjs.org/dsh-usage-stats/-/dsh-usage-stats-0.1.16.tgz"
+        }
+      ],
+      "source_status": [
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:46.749Z",
+          "provider": "github",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        },
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:45.692Z",
+          "provider": "npm",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        }
+      ],
+      "tags": [
+        "analytics",
+        "tokens",
+        "telemetry"
+      ],
+      "version": "0.1.16"
+    },
+    {
+      "author": {
+        "handle": "Ox0400",
+        "name": "Ox0400"
+      },
+      "category": "Developer Tools",
+      "checked_at": "2026-08-20T06:19:48.328Z",
+      "compatibility": {
+        "dsh": ">=0.1.0-rc.6",
+        "status": "declared"
+      },
+      "description": "Encrypted credential vault for DeepSeek Harness: store and retrieve usernames, emails, phone numbers, passwords, TOTP secrets, SSH/API-key/OAuth developer credentials through model tools and a Settings UI page.",
+      "github_url": "https://github.com/Ox0400/dsh-vault",
+      "id": "dsh-vault",
+      "is_mock": false,
+      "license": {
+        "name": "MIT",
+        "spdx": "MIT",
+        "url": "https://spdx.org/licenses/MIT.html"
+      },
+      "name": "DSH Vault",
+      "npm_url": "https://www.npmjs.com/package/dsh-vault/v/1.9.2",
+      "npm_version": "1.9.2",
+      "permissions": [],
+      "readme_excerpt": "# dsh-vault — Encrypted Credential Vault for DeepSeek Harness [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![npm version](https://img.shields.io/npm/v/dsh-vault?color=cb3837&logo=npm)](https://www.npmjs.com/package/dsh-vault) [![GitHub Release](https://img.shields.io/github/v/release/Ox0400/dsh-vault?logo=github)](https://github.com/Ox0400/dsh-vault/releases) [![npm downloads](https://img.shields.io/npm/dm/dsh-vault)](https://www.npmjs.com/package/dsh-vault) [![",
+      "source": "github+npm",
+      "source_commit": "555fdddda0b4517e0540d66a66f772bb84dc0b82",
+      "source_evidence": [
+        {
+          "commit_sha": "555fdddda0b4517e0540d66a66f772bb84dc0b82",
+          "fetched_at": "2026-08-20T06:19:48.327Z",
+          "integrity": null,
+          "license_spdx": "MIT",
+          "npm_version": null,
+          "package_name": null,
+          "provider": "github",
+          "readme_sha256": "4cd9970efe57a18077526d7347a82c9b6b70f2f00efaeeeee597e746725d28c6",
+          "release_tag": "v1.9.2 正式版",
+          "repository_url": "https://github.com/Ox0400/dsh-vault",
+          "url": "https://github.com/Ox0400/dsh-vault/tree/555fdddda0b4517e0540d66a66f772bb84dc0b82"
+        },
+        {
+          "commit_sha": null,
+          "fetched_at": "2026-08-20T06:19:47.763Z",
+          "integrity": "sha512-FfAnCWgToFZP9GQV0sRLicdrmRyv49NkgYe3O0mFQm09S6PTDfC09ucDg404DVeMj3vdxWs/2fxmJT5UiyOiRg==",
+          "license_spdx": "MIT",
+          "npm_version": "1.9.2",
+          "package_name": "dsh-vault",
+          "provider": "npm",
+          "readme_sha256": null,
+          "release_tag": null,
+          "repository_url": "https://github.com/Ox0400/dsh-vault",
+          "url": "https://registry.npmjs.org/dsh-vault/-/dsh-vault-1.9.2.tgz"
+        }
+      ],
+      "source_status": [
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:48.327Z",
+          "provider": "github",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        },
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:47.763Z",
+          "provider": "npm",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        }
+      ],
+      "tags": [
+        "credentials",
+        "security",
+        "vault"
+      ],
+      "version": "1.9.2"
+    },
+    {
+      "author": {
+        "handle": "ysr666",
+        "name": "ysr666"
+      },
+      "category": "Research",
+      "checked_at": "2026-08-20T06:19:50.506Z",
+      "compatibility": {
+        "dsh": "^0.1.0-rc.6",
+        "status": "declared"
+      },
+      "description": "Eyes for text-only DeepSeek Harness agents: built-in free vision chain (no key) + pixel-level vision tools (Q&A, grounding, crop, pixel diff, colors, OCR, SVG trace, cutout, screenshots). One-command install, no Python, image turns work like ordinary tool",
+      "github_url": "https://github.com/ysr666/dsh-vision-router",
+      "id": "dsh-vision-router",
+      "is_mock": false,
+      "license": {
+        "name": "MIT",
+        "spdx": "MIT",
+        "url": "https://spdx.org/licenses/MIT.html"
+      },
+      "name": "DSH Vision Router",
+      "npm_url": "https://www.npmjs.com/package/dsh-vision-router/v/1.7.3",
+      "npm_version": "1.7.3",
+      "permissions": [],
+      "readme_excerpt": "<p align=\"center\"> <img src=\"assets/hero.svg\" width=\"100%\" alt=\"DSH Vision Router — eyes for text-only DeepSeek Harness agents\" /> </p> <h1 align=\"center\">dsh-vision-router</h1> <p align=\"center\"><strong>Paste an image and it just works — eyes for text-only agents on DeepSeek Harness. Free out of the box, no key, no Python, one command.</strong></p> <p align=\"center\">DeepSeek keeps thinking; the built-in free vision chain and fourteen deep tools do the seeing. Image turns behave like ordinary to",
+      "source": "github+npm",
+      "source_commit": "26e82a7c2317f6292b8760c6ded665ba1b9ad4ae",
+      "source_evidence": [
+        {
+          "commit_sha": "26e82a7c2317f6292b8760c6ded665ba1b9ad4ae",
+          "fetched_at": "2026-08-20T06:19:50.505Z",
+          "integrity": null,
+          "license_spdx": "MIT",
+          "npm_version": null,
+          "package_name": null,
+          "provider": "github",
+          "readme_sha256": "044be8cc8699c47c2294e1e36fe1b7137d4933dd4b6e7eedb844ba07a38c11a9",
+          "release_tag": "v1.7.3",
+          "repository_url": "https://github.com/ysr666/dsh-vision-router",
+          "url": "https://github.com/ysr666/dsh-vision-router/tree/26e82a7c2317f6292b8760c6ded665ba1b9ad4ae"
+        },
+        {
+          "commit_sha": null,
+          "fetched_at": "2026-08-20T06:19:49.084Z",
+          "integrity": "sha512-cWTjRMYJfvsf7uwxJ16OOoXboAcyyd9jAM10x7cEwSGOahVrngY8Srdy4sPul2og1uT32wbJRNU3ZjdN/zrMAg==",
+          "license_spdx": "MIT",
+          "npm_version": "1.7.3",
+          "package_name": "dsh-vision-router",
+          "provider": "npm",
+          "readme_sha256": null,
+          "release_tag": null,
+          "repository_url": "https://github.com/ysr666/dsh-vision-router",
+          "url": "https://registry.npmjs.org/dsh-vision-router/-/dsh-vision-router-1.7.3.tgz"
+        }
+      ],
+      "source_status": [
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:50.505Z",
+          "provider": "github",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        },
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:49.084Z",
+          "provider": "npm",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        }
+      ],
+      "tags": [
+        "vision",
+        "ocr",
+        "routing"
+      ],
+      "version": "1.7.3"
+    },
+    {
+      "author": {
+        "handle": "Anionex",
+        "name": "Anionex"
+      },
+      "category": "Research",
+      "checked_at": "2026-08-20T06:19:35.101Z",
+      "compatibility": {
+        "dsh": "^0.1.0-rc.6",
+        "status": "declared"
+      },
+      "description": "DeepSeek Harness-native integration for agent-vision-toolkit: image Q&A, OCR, grounding, UI restoration, pixel diff, Artifacts, and Web UI.",
+      "github_url": "https://github.com/Anionex/dsh-vision-toolkit",
+      "id": "dsh-vision-toolkit",
+      "is_mock": false,
+      "license": {
+        "name": "MIT",
+        "spdx": "MIT",
+        "url": "https://spdx.org/licenses/MIT.html"
+      },
+      "name": "DSH Vision Toolkit",
+      "npm_url": "https://www.npmjs.com/package/@anionex/dsh-vision-toolkit/v/0.1.35",
+      "npm_version": "0.1.35",
+      "permissions": [],
+      "readme_excerpt": "<p align=\"center\"> <img src=\"assets/hero-v2.png\" alt=\"DSH Vision Toolkit helps text-only DeepSeek Harness agents understand images and complete visual tasks\" /> </p> <div align=\"center\"> # DSH Vision Toolkit <a href=\"https://trendshift.io/repositories/149708?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-149708\" target=\"_blank\" rel=\"noopener noreferrer\"><img src=\"https://trendshift.io/api/badge/trendshift/repositories/149708/daily?language=TypeScript\" alt=\"Ani",
+      "source": "github+npm",
+      "source_commit": "4c6f70dfead1e9b47b0ba5d2a73d4f8be620dabe",
+      "source_evidence": [
+        {
+          "commit_sha": "4c6f70dfead1e9b47b0ba5d2a73d4f8be620dabe",
+          "fetched_at": "2026-08-20T06:19:35.100Z",
+          "integrity": null,
+          "license_spdx": "MIT",
+          "npm_version": null,
+          "package_name": null,
+          "provider": "github",
+          "readme_sha256": "71aa6f8ab146b31b8c873c7a16befbd1247a02904a7d7610bf5bdaed85f45dbb",
+          "release_tag": "v0.1.35",
+          "repository_url": "https://github.com/Anionex/dsh-vision-toolkit",
+          "url": "https://github.com/Anionex/dsh-vision-toolkit/tree/4c6f70dfead1e9b47b0ba5d2a73d4f8be620dabe"
+        },
+        {
+          "commit_sha": null,
+          "fetched_at": "2026-08-20T06:19:34.121Z",
+          "integrity": "sha512-khTVkyrcfx7smR65QpFKfKpOvcc4+4Xgappgv209/whjTo6eAqhM8aaiZppTQ1BISEwxQsX+jSOappZ9kf5MBw==",
+          "license_spdx": "MIT",
+          "npm_version": "0.1.35",
+          "package_name": "@anionex/dsh-vision-toolkit",
+          "provider": "npm",
+          "readme_sha256": null,
+          "release_tag": null,
+          "repository_url": "https://github.com/Anionex/dsh-vision-toolkit",
+          "url": "https://registry.npmjs.org/@anionex/dsh-vision-toolkit/-/dsh-vision-toolkit-0.1.35.tgz"
+        }
+      ],
+      "source_status": [
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:35.100Z",
+          "provider": "github",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        },
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:34.121Z",
+          "provider": "npm",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        }
+      ],
+      "tags": [
+        "vision",
+        "ocr",
+        "grounding"
+      ],
+      "version": "0.1.35"
+    },
+    {
+      "author": {
+        "handle": "shaodushu",
+        "name": "shaodushu"
+      },
+      "category": "Automation",
+      "checked_at": "2026-08-20T06:19:52.601Z",
+      "compatibility": {
+        "dsh": "^0.1.0-rc.6",
+        "status": "declared"
+      },
+      "description": "微信消息网关 dsh 插件：复用 Tencent openclaw-weixin 协议层，dsh (deepseek-harness) 作为执行层",
+      "github_url": "https://github.com/shaodushu/dsh-weixin-gateway",
+      "id": "dsh-weixin-gateway",
+      "is_mock": false,
+      "license": {
+        "name": "MIT",
+        "spdx": "MIT",
+        "url": "https://spdx.org/licenses/MIT.html"
+      },
+      "name": "DSH Weixin Gateway",
+      "npm_url": "https://www.npmjs.com/package/dsh-weixin-gateway/v/0.4.1",
+      "npm_version": "0.4.1",
+      "permissions": [],
+      "readme_excerpt": "# weixin-dsh-gateway **微信消息网关：dsh (deepseek-harness) 作为执行层，微信协议层复用腾讯 openclaw-weixin。** ``` 微信 ←→ 腾讯 openclaw-weixin 协议层（扫码登录/getUpdates 轮询/sendMessage） ↓ 文本消息 AgentBridge（ctx.agents.create + agent.followup） ↓ dsh agent（DeepSeek-V4-Flash，AI 网关） ↓ 回复 sendMessageWeixin → 微信 ``` ## 快速开始 | 你是 | 走哪条 | |---|---| | **使用者**：只想把微信接入 dsh 当机器人跑 | [使用手册 →](docs/usage.md) 安装 → 登录 → 启动 | | **开发者**：clone 仓库改代码 / 调试 | [开发文档 →](docs/development.md) 构建 → 测试 → 部署 | ### 使用者 3 步 ```bash npm install -g dsh-weixin-gat",
+      "source": "github+npm",
+      "source_commit": "a5a8298bda2bb051a599a7825896aea6f84f68f6",
+      "source_evidence": [
+        {
+          "commit_sha": "a5a8298bda2bb051a599a7825896aea6f84f68f6",
+          "fetched_at": "2026-08-20T06:19:52.601Z",
+          "integrity": null,
+          "license_spdx": "MIT",
+          "npm_version": null,
+          "package_name": null,
+          "provider": "github",
+          "readme_sha256": "3ea3d2be18211f1d1e170a494482213d5f09f178068c450fce3e28278a30ead7",
+          "release_tag": null,
+          "repository_url": "https://github.com/shaodushu/dsh-weixin-gateway",
+          "url": "https://github.com/shaodushu/dsh-weixin-gateway/tree/a5a8298bda2bb051a599a7825896aea6f84f68f6"
+        },
+        {
+          "commit_sha": null,
+          "fetched_at": "2026-08-20T06:19:51.029Z",
+          "integrity": "sha512-jH2pEwtQ4iWDVv0slu4hKS2HT5XCVONwKueTNrenOTR5ee8fBOwB8VQlQx4vxQa5rwFsaj5/NwOLFoP6i0ttyQ==",
+          "license_spdx": "MIT",
+          "npm_version": "0.4.1",
+          "package_name": "dsh-weixin-gateway",
+          "provider": "npm",
+          "readme_sha256": null,
+          "release_tag": null,
+          "repository_url": "https://github.com/shaodushu/dsh-weixin-gateway",
+          "url": "https://registry.npmjs.org/dsh-weixin-gateway/-/dsh-weixin-gateway-0.4.1.tgz"
+        }
+      ],
+      "source_status": [
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:52.601Z",
+          "provider": "github",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        },
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:51.029Z",
+          "provider": "npm",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        }
+      ],
+      "tags": [
+        "weixin",
+        "messaging",
+        "gateway"
+      ],
+      "version": "0.4.1"
+    },
+    {
+      "author": {
+        "handle": "lee259",
+        "name": "lee259"
+      },
+      "category": "Coding",
+      "checked_at": "2026-08-20T06:19:56.751Z",
+      "compatibility": {
+        "dsh": "*",
+        "status": "declared"
+      },
+      "description": "A right-side file workspace for DeepSeek Harness Web.",
+      "github_url": "https://github.com/lee259/dsh-workbench",
+      "id": "dsh-workbench",
+      "is_mock": false,
+      "license": {
+        "name": "MIT",
+        "spdx": "MIT",
+        "url": "https://spdx.org/licenses/MIT.html"
+      },
+      "name": "DSH Workbench",
+      "npm_url": "https://www.npmjs.com/package/dsh-workbench/v/0.8.0",
+      "npm_version": "0.8.0",
+      "permissions": [],
+      "readme_excerpt": "# DSH Workbench [![npm version](https://img.shields.io/npm/v/dsh-workbench?color=cb3837&logo=npm)](https://www.npmjs.com/package/dsh-workbench) [![CI](https://github.com/lee259/dsh-workbench/actions/workflows/ci.yml/badge.svg)](https://github.com/lee259/dsh-workbench/actions) [![License](https://img.shields.io/github/license/lee259/dsh-workbench)](./LICENSE) [中文文档](./README.zh-CN.md) · [Issues](https://github.com/lee259/dsh-workbench/issues) · [npm](https://www.npmjs.com/package/dsh-workbench) R",
+      "source": "github+npm",
+      "source_commit": "5c4f6a66c600de3908e452be2355e27f1f9cb813",
+      "source_evidence": [
+        {
+          "commit_sha": "5c4f6a66c600de3908e452be2355e27f1f9cb813",
+          "fetched_at": "2026-08-20T06:19:56.750Z",
+          "integrity": null,
+          "license_spdx": "MIT",
+          "npm_version": null,
+          "package_name": null,
+          "provider": "github",
+          "readme_sha256": "916f02dd99d1868c866834370799134f1695b1f404e12b0947c932fc2a7cfa61",
+          "release_tag": "v0.8.0",
+          "repository_url": "https://github.com/lee259/dsh-workbench",
+          "url": "https://github.com/lee259/dsh-workbench/tree/5c4f6a66c600de3908e452be2355e27f1f9cb813"
+        },
+        {
+          "commit_sha": null,
+          "fetched_at": "2026-08-20T06:19:55.143Z",
+          "integrity": "sha512-1AzG/8xZPMRS1BgX2BRSoxc0XWct9TV0iNxww/Jah/wueaHkOs5188y9M9yGEFXnKXo+p5jGQ4fysYXr2j2PvA==",
+          "license_spdx": "MIT",
+          "npm_version": "0.8.0",
+          "package_name": "dsh-workbench",
+          "provider": "npm",
+          "readme_sha256": null,
+          "release_tag": null,
+          "repository_url": "https://github.com/lee259/dsh-workbench",
+          "url": "https://registry.npmjs.org/dsh-workbench/-/dsh-workbench-0.8.0.tgz"
+        }
+      ],
+      "source_status": [
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:56.750Z",
+          "provider": "github",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        },
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:55.143Z",
+          "provider": "npm",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        }
+      ],
+      "tags": [
+        "files",
+        "workspace",
+        "editor"
+      ],
+      "version": "0.8.0"
+    },
+    {
+      "author": {
+        "handle": "IWAIBAOLI",
+        "name": "IWAIBAOLI"
+      },
+      "category": "Productivity",
+      "checked_at": "2026-08-20T06:19:54.609Z",
+      "compatibility": {
+        "dsh": "^0.1.0-rc.6",
+        "status": "declared"
+      },
+      "description": "Session-aware Pencil integration for DeepSeek Harness with official MCP tools and an on-demand browser canvas.",
+      "github_url": "https://github.com/IWAIBAOLI/dsh-with-pencil",
+      "id": "dsh-with-pencil",
+      "is_mock": false,
+      "license": {
+        "name": "MIT",
+        "spdx": "MIT",
+        "url": "https://spdx.org/licenses/MIT.html"
+      },
+      "name": "DSH with Pencil",
+      "npm_url": "https://www.npmjs.com/package/dsh-with-pencil/v/0.5.2",
+      "npm_version": "0.5.2",
+      "permissions": [],
+      "readme_excerpt": "# dsh-with-pencil [![Awesome DSH Plugin](https://beancookie.github.io/awesome-dsh-plugin/badge.svg)](https://beancookie.github.io/awesome-dsh-plugin) [English](#english) · [简体中文](#简体中文) ## English Use the official pen.dev Pencil editing capabilities inside DeepSeek Harness. DeepSeek remains the design agent; this community DSH plugin makes its model tools, the active conversation, and the Pencil canvas work together. This is not a Pencil rewrite or a standalone design product. It integrates the ",
+      "source": "github+npm",
+      "source_commit": "5d05c4d782d825325d7bbb441ad1e7da9c396f1f",
+      "source_evidence": [
+        {
+          "commit_sha": "5d05c4d782d825325d7bbb441ad1e7da9c396f1f",
+          "fetched_at": "2026-08-20T06:19:54.608Z",
+          "integrity": null,
+          "license_spdx": "MIT",
+          "npm_version": null,
+          "package_name": null,
+          "provider": "github",
+          "readme_sha256": "251fe7b50753c42b04d6874c8261272e176b5899b0440a0ca185a977543eb187",
+          "release_tag": "v0.5.1",
+          "repository_url": "https://github.com/IWAIBAOLI/dsh-with-pencil",
+          "url": "https://github.com/IWAIBAOLI/dsh-with-pencil/tree/5d05c4d782d825325d7bbb441ad1e7da9c396f1f"
+        },
+        {
+          "commit_sha": null,
+          "fetched_at": "2026-08-20T06:19:52.983Z",
+          "integrity": "sha512-aa9xhjHVT8cmqfXIf+kDEIjnGtlWbeYhbrRqBMZU8UAIAmzE91gby4EP8Zl2a75M1Eo+CIj4JYFRj5mAwajXkw==",
+          "license_spdx": "MIT",
+          "npm_version": "0.5.2",
+          "package_name": "dsh-with-pencil",
+          "provider": "npm",
+          "readme_sha256": null,
+          "release_tag": null,
+          "repository_url": "https://github.com/IWAIBAOLI/dsh-with-pencil",
+          "url": "https://registry.npmjs.org/dsh-with-pencil/-/dsh-with-pencil-0.5.2.tgz"
+        }
+      ],
+      "source_status": [
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:54.608Z",
+          "provider": "github",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        },
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:52.983Z",
+          "provider": "npm",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        }
+      ],
+      "tags": [
+        "pencil",
+        "mcp",
+        "canvas"
+      ],
+      "version": "0.5.2"
+    },
+    {
+      "author": {
+        "handle": "weijiafu14",
+        "name": "weijiafu14"
+      },
+      "category": "Developer Tools",
+      "checked_at": "2026-08-20T06:19:59.347Z",
+      "compatibility": {
+        "dsh": "^0.1.0-rc.6",
+        "status": "declared"
+      },
+      "description": "Bridge the Pi and DeepSeek Harness ecosystems: a general Pi Host ABI that runs unmodified Pi extensions as native DSH plugins, plus per-package conversion and MCP config translation.",
+      "github_url": "https://github.com/weijiafu14/pi2dsh",
+      "id": "pi2dsh",
+      "is_mock": false,
+      "license": {
+        "name": "MIT",
+        "spdx": "MIT",
+        "url": "https://spdx.org/licenses/MIT.html"
+      },
+      "name": "Pi to DSH Bridge",
+      "npm_url": "https://www.npmjs.com/package/pi2dsh/v/0.13.0",
+      "npm_version": "0.13.0",
+      "permissions": [],
+      "readme_excerpt": "# pi2dsh **English** | [中文](README.zh.md) **Run the Pi ecosystem's plugins on DeepSeek Harness, unmodified.** ```sh dsh plugin add pi2dsh # once dsh plugin add <any-pi-plugin> # then any Pi plugin, straight from npm ``` ## Why this exists [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) is built on ideas worth betting on — a durable, reconstructable session log, a clean service composition, an agent loop you can actually reason about. What it does not have yet is a large plugi",
+      "source": "github+npm",
+      "source_commit": "c343fd3c2f74ffcd6f48e8baf8e7e8a6224845df",
+      "source_evidence": [
+        {
+          "commit_sha": "c343fd3c2f74ffcd6f48e8baf8e7e8a6224845df",
+          "fetched_at": "2026-08-20T06:19:59.347Z",
+          "integrity": null,
+          "license_spdx": "MIT",
+          "npm_version": null,
+          "package_name": null,
+          "provider": "github",
+          "readme_sha256": "72bbb1df658f36002c26dc6d2ab8dc952cdfa40a1eacce23d062116cceaaeb0a",
+          "release_tag": "v0.12.4",
+          "repository_url": "https://github.com/weijiafu14/pi2dsh",
+          "url": "https://github.com/weijiafu14/pi2dsh/tree/c343fd3c2f74ffcd6f48e8baf8e7e8a6224845df"
+        },
+        {
+          "commit_sha": null,
+          "fetched_at": "2026-08-20T06:19:57.714Z",
+          "integrity": "sha512-RNfH4Fa3capvLxtG+HpdC5YGkwA1wXcxUYRwXiXc9/4foqjcuw9DbrFhnAfxDO1Bd2SJ4ga1ZiwmPo+AmbsDxw==",
+          "license_spdx": "MIT",
+          "npm_version": "0.13.0",
+          "package_name": "pi2dsh",
+          "provider": "npm",
+          "readme_sha256": null,
+          "release_tag": null,
+          "repository_url": "https://github.com/weijiafu14/pi2dsh",
+          "url": "https://registry.npmjs.org/pi2dsh/-/pi2dsh-0.13.0.tgz"
+        }
+      ],
+      "source_status": [
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:59.347Z",
+          "provider": "github",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        },
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:57.714Z",
+          "provider": "npm",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        }
+      ],
+      "tags": [
+        "bridge",
+        "pi",
+        "mcp"
+      ],
+      "version": "0.13.0"
+    },
+    {
+      "author": {
+        "handle": "cocofhu",
+        "name": "cocofhu"
+      },
+      "category": "Productivity",
+      "checked_at": "2026-08-20T06:19:38.466Z",
+      "compatibility": {
+        "dsh": "*",
+        "status": "declared"
+      },
+      "description": "DeepSeek Harness 插件：在对话中搜索、安装和管理 SkillHub 技能",
+      "github_url": "https://github.com/cocofhu/skillhub",
+      "id": "dsh-skillhub",
+      "is_mock": false,
+      "license": {
+        "name": "MIT",
+        "spdx": "MIT",
+        "url": "https://spdx.org/licenses/MIT.html"
+      },
+      "name": "SkillHub for DSH",
+      "npm_url": "https://www.npmjs.com/package/@cocofhu/skillhub/v/0.2.9",
+      "npm_version": "0.2.9",
+      "permissions": [],
+      "readme_excerpt": "# skillhub [![CI](https://github.com/cocofhu/skillhub/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/cocofhu/skillhub/actions/workflows/ci.yml?query=branch%3Amain) [![npm](https://img.shields.io/npm/v/@cocofhu/skillhub.svg)](https://www.npmjs.com/package/@cocofhu/skillhub) [![Release](https://img.shields.io/github/v/release/cocofhu/skillhub?display_name=tag)](https://github.com/cocofhu/skillhub/releases/latest) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.s",
+      "source": "github+npm",
+      "source_commit": "193eb726a63cfea8ac61ae21fa4fdc7f31b8b5f1",
+      "source_evidence": [
+        {
+          "commit_sha": "193eb726a63cfea8ac61ae21fa4fdc7f31b8b5f1",
+          "fetched_at": "2026-08-20T06:19:38.465Z",
+          "integrity": null,
+          "license_spdx": "MIT",
+          "npm_version": null,
+          "package_name": null,
+          "provider": "github",
+          "readme_sha256": "84f940fb3ffea961d656f334ef93e88847724ec6e647c1daa4c97cb328e0bcd9",
+          "release_tag": "0.2.9",
+          "repository_url": "https://github.com/cocofhu/skillhub",
+          "url": "https://github.com/cocofhu/skillhub/tree/193eb726a63cfea8ac61ae21fa4fdc7f31b8b5f1"
+        },
+        {
+          "commit_sha": null,
+          "fetched_at": "2026-08-20T06:19:37.598Z",
+          "integrity": "sha512-U/dQehUsjo8VDNod586m2OHFNW4XjdOChgx0EJTAI0i5gZhm3foW3kd6LKTHllhC6f/ThL4vXzoWyPdwUU+tTA==",
+          "license_spdx": "MIT",
+          "npm_version": "0.2.9",
+          "package_name": "@cocofhu/skillhub",
+          "provider": "npm",
+          "readme_sha256": null,
+          "release_tag": null,
+          "repository_url": "https://github.com/cocofhu/skillhub",
+          "url": "https://registry.npmjs.org/@cocofhu/skillhub/-/skillhub-0.2.9.tgz"
+        }
+      ],
+      "source_status": [
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:38.465Z",
+          "provider": "github",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        },
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:37.598Z",
+          "provider": "npm",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        }
+      ],
+      "tags": [
+        "skills",
+        "discovery",
+        "management"
+      ],
+      "version": "0.2.9"
+    },
+    {
+      "author": {
+        "handle": "Noelune",
+        "name": "Noelune"
+      },
+      "category": "Research",
+      "checked_at": "2026-08-20T06:19:40.270Z",
+      "compatibility": {
+        "dsh": "^0.1.0-rc.6",
+        "status": "declared"
+      },
+      "description": "Unified agent memory for DeepSeek Harness — one shared Obsidian vault for every agent (dsh, Codex, Claude, Hermes). Ships the dependency-free Python core (search/promote/adjudicate/forget), a vault template, and a dsh plugin with memory_search / memory_sh",
+      "github_url": "https://github.com/Noelune/unified-agent-memory",
+      "id": "dsh-unified-agent-memory",
+      "is_mock": false,
+      "license": {
+        "name": "MIT",
+        "spdx": "MIT",
+        "url": "https://spdx.org/licenses/MIT.html"
+      },
+      "name": "Unified Agent Memory",
+      "npm_url": "https://www.npmjs.com/package/dsh-unified-agent-memory/v/0.3.0",
+      "npm_version": "0.3.0",
+      "permissions": [],
+      "readme_excerpt": "<div align=\"center\"> # 🧠 unified-agent-memory ### *Unified Fleet-Wide Agent Memory System for DeepSeek Harness & Multi-Agent Runtimes* *跨 Agent 统一持久化记忆系统 — 基于 Obsidian Vault 存储规范与 SQLite FTS5 本地索引的知识生命周期管理基座* [![npm version](https://img.shields.io/npm/v/dsh-unified-agent-memory?style=flat-square&color=c084fc)](https://www.npmjs.com/package/dsh-unified-agent-memory) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE) [![Python Stdlib](https://img.shiel",
+      "source": "github+npm",
+      "source_commit": "bba1f0838de3f82c3ee8c4a990e678dd926005c6",
+      "source_evidence": [
+        {
+          "commit_sha": "bba1f0838de3f82c3ee8c4a990e678dd926005c6",
+          "fetched_at": "2026-08-20T06:19:40.270Z",
+          "integrity": null,
+          "license_spdx": "MIT",
+          "npm_version": null,
+          "package_name": null,
+          "provider": "github",
+          "readme_sha256": "e1a8241419b21be19f64c868124d13c1b17654fedcf80fd4b10300746db9316d",
+          "release_tag": null,
+          "repository_url": "https://github.com/Noelune/unified-agent-memory",
+          "url": "https://github.com/Noelune/unified-agent-memory/tree/bba1f0838de3f82c3ee8c4a990e678dd926005c6"
+        },
+        {
+          "commit_sha": null,
+          "fetched_at": "2026-08-20T06:19:38.842Z",
+          "integrity": "sha512-nYSLf1Wckg+2scXwu8cJemhHQeGDZmsoEEkXLS7gvaTBpzRAZZZETFUxLcUhdA96vQIc7djouHYPRIxKF3a6xg==",
+          "license_spdx": "MIT",
+          "npm_version": "0.3.0",
+          "package_name": "dsh-unified-agent-memory",
+          "provider": "npm",
+          "readme_sha256": null,
+          "release_tag": null,
+          "repository_url": "https://github.com/Noelune/unified-agent-memory",
+          "url": "https://registry.npmjs.org/dsh-unified-agent-memory/-/dsh-unified-agent-memory-0.3.0.tgz"
+        }
+      ],
+      "source_status": [
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:40.270Z",
+          "provider": "github",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        },
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:38.842Z",
+          "provider": "npm",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        }
+      ],
+      "tags": [
+        "memory",
+        "obsidian",
+        "knowledge"
+      ],
+      "version": "0.3.0"
+    },
+    {
+      "author": {
+        "handle": "ccch1mneyyy",
+        "name": "ccch1mneyyy"
+      },
+      "category": "Developer Tools",
+      "checked_at": "2026-08-20T06:19:27.121Z",
+      "compatibility": {
+        "dsh": "^0.1.0-rc.7",
+        "status": "declared"
+      },
+      "description": "Claude Code style interactive TUI front door for DeepSeek Harness agents, built on the ported Ink core.",
+      "github_url": "https://github.com/ccch1mneyyy/dsh-TUI",
+      "id": "dsh-tui",
+      "is_mock": false,
+      "license": {
+        "name": "MIT",
+        "spdx": "MIT",
+        "url": "https://spdx.org/licenses/MIT.html"
+      },
+      "name": "dsh-TUI",
+      "npm_url": "https://www.npmjs.com/package/@deepseek-harness-tui/dsh-tui/v/0.8.5",
+      "npm_version": "0.8.5",
+      "permissions": [],
+      "readme_excerpt": "<p align=\"center\"> <img src=\"docs/assets/logo.svg\" alt=\"dsh-TUI - DeepSeek Harness terminal interface\" width=\"560\"> </p> <p align=\"center\"> <strong>简体中文</strong> | <a href=\"README_EN.md\">English</a> </p> <p align=\"center\"> <a href=\"https://www.npmjs.com/package/@deepseek-harness-tui/dsh-tui\"><img alt=\"npm\" src=\"https://img.shields.io/npm/v/@deepseek-harness-tui/dsh-tui?style=flat-square&color=4b6fff\"></a> <a href=\"https://github.com/ccch1mneyyy/dsh-TUI/actions/workflows/ci.yml\"><img alt=\"CI\" src",
+      "source": "github+npm",
+      "source_commit": "1f93efe85360560e3da49726d7a55af659e771fe",
+      "source_evidence": [
+        {
+          "commit_sha": "1f93efe85360560e3da49726d7a55af659e771fe",
+          "fetched_at": "2026-08-20T06:19:27.120Z",
+          "integrity": null,
+          "license_spdx": "MIT",
+          "npm_version": null,
+          "package_name": null,
+          "provider": "github",
+          "readme_sha256": "2da3cf96d5fdb230bb87912c1b7cd8abb940c0cd9345f08f2d55a0757732bf45",
+          "release_tag": "v0.8.5",
+          "repository_url": "https://github.com/ccch1mneyyy/dsh-TUI",
+          "url": "https://github.com/ccch1mneyyy/dsh-TUI/tree/1f93efe85360560e3da49726d7a55af659e771fe"
+        },
+        {
+          "commit_sha": null,
+          "fetched_at": "2026-08-20T06:19:26.659Z",
+          "integrity": "sha512-zfn53cpB8emobK12b1GFTXDEVOtz7MLHNr34HA2ju5i8mf/J62yaG091eyvOWqZy4GTW6YDSygkeGkg64eBo5A==",
+          "license_spdx": "MIT",
+          "npm_version": "0.8.5",
+          "package_name": "@deepseek-harness-tui/dsh-tui",
+          "provider": "npm",
+          "readme_sha256": null,
+          "release_tag": null,
+          "repository_url": "https://github.com/ccch1mneyyy/dsh-TUI",
+          "url": "https://registry.npmjs.org/@deepseek-harness-tui/dsh-tui/-/dsh-tui-0.8.5.tgz"
+        }
+      ],
+      "source_status": [
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:27.120Z",
+          "provider": "github",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        },
+        {
+          "error": null,
+          "last_verified_at": "2026-08-20T06:19:26.659Z",
+          "provider": "npm",
+          "status": "AVAILABLE",
+          "unavailable_since": null
+        }
+      ],
+      "tags": [
+        "tui",
+        "terminal",
+        "interface"
+      ],
+      "version": "0.8.5"
+    }
+  ],
+  "page": 1,
+  "total": 20
+}

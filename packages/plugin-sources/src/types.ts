@@ -53,3 +53,26 @@ export interface NpmSourceResult {
   package_manifest: Record<string, unknown>
   evidence: SourceEvidence
 }
+
+export type PublicSourceCandidateStatus = 'COLLECTED_UNVERIFIED'
+
+export interface PublicSourceCandidate {
+  provider: 'github'
+  external_id: string
+  repository: string
+  repository_url: string
+  author: string
+  description: string
+  default_branch: string
+  license_spdx: string | null
+  version: string | null
+  commit_sha: string | null
+  package_integrity: string | null
+  metadata_sha256: string
+  discovered_at: string
+  status: PublicSourceCandidateStatus
+}
+
+export interface SourceAggregationAdapter {
+  discover(): Promise<PublicSourceCandidate[]>
+}

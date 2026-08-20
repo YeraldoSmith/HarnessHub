@@ -1,5 +1,6 @@
 export { GitHubSourceAdapter } from './github-adapter.js'
 export { NpmSourceAdapter } from './npm-adapter.js'
+export { GitHubDiscoveryAdapter, type GitHubDiscoveryOptions } from './github-discovery-adapter.js'
 export { PluginSourceSync } from './plugin-source-sync.js'
 export { SourceFetchError } from './http.js'
 export {
@@ -9,4 +10,7 @@ export {
   type ManualPluginSource,
   type NpmSourceResult,
   type SourceAdapterOptions,
+  type PublicSourceCandidate,
+  type PublicSourceCandidateStatus,
+  type SourceAggregationAdapter,
 } from './types.js'

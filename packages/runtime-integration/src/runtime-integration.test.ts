@@ -29,8 +29,10 @@ function nativeSnapshot(
     platform: 'macOS',
     architecture: 'aarch64',
     node: tool('Node.js', 'AVAILABLE', 'v22.19.0'),
+    pnpm: tool('pnpm', 'AVAILABLE', '11.19.0'),
     git: tool('Git', 'AVAILABLE', 'git version 2.51.0'),
     dsh: tool('DSH', dshStatus, dshVersion),
+    managedToolchainReady: false,
     capturedAtUnixMs: Date.parse('2026-08-20T00:00:00.000Z'),
     readOnly: true,
     systemMutationAllowed: false,
@@ -49,6 +51,8 @@ describe('controlled runtime integration', () => {
     expect(result.platform).toBe('macOS')
     expect(result.architecture).toBe('aarch64')
     expect(result.node.version).toBe('22.19.0')
+    expect(result.pnpm.version).toBe('11.19.0')
+    expect(result.managedToolchainReady).toBe(false)
     expect(result.git.version).toBe('2.51.0')
     expect(result.readOnly).toBe(true)
     expect(result.systemMutationAllowed).toBe(false)

@@ -1,0 +1,16 @@
+[
+  {
+    "id": "beta-control-plane-foundation",
+    "title": {
+      "zh-CN": "HarnessHub Beta 运行基础已更新",
+      "en-US": "HarnessHub Beta foundation updated"
+    },
+    "body": {
+      "zh-CN": "公开插件浏览与 Runtime 准备不要求登录。远程服务不可用时，HarnessHub 会继续使用内置只读数据。",
+      "en-US": "Public plugin browsing and Runtime preparation do not require sign-in. HarnessHub keeps using its bundled read-only data when remote services are unavailable."
+    },
+    "severity": "UPDATE",
+    "published_at": "2026-08-20T12:00:00.000Z",
+    "expires_at": null
+  }
+]

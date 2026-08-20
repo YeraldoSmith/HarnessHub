@@ -65,6 +65,26 @@ describe('Runtime Bridge Desktop UI', () => {
     expect(visibleText).not.toContain('fixture')
   })
 
+  it('keeps the real Runtime start action disabled until setup is complete', () => {
+    const markup = renderToStaticMarkup(
+      <RuntimeBridgeView
+        auditCount={0}
+        error=""
+        events={[]}
+        onReconnect={() => undefined}
+        onStart={() => undefined}
+        onStop={() => undefined}
+        pending={false}
+        runtimeReady={false}
+        snapshot={{ ...initialSnapshot, implementation: 'LOCAL_DSH' }}
+      />,
+    )
+
+    expect(markup).toMatch(/<button disabled=""[^>]*>启动<\/button>/)
+    expect(markup).toContain('启动本地 Runtime 后，这里会显示经过校验的运行事件。')
+    expect(markup).not.toContain('runtimeBridge.noRealEvents')
+  })
+
   it('renders validated runtime events after the Fixture starts', async () => {
     let value = 0
     const fixture = new ContractDshRuntimeFixture({

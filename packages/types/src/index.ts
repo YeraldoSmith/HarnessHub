@@ -141,10 +141,18 @@ export interface SyncJobRecord {
 
 export type AuthUserStatus = 'ACTIVE' | 'SUSPENDED' | 'DEACTIVATED' | 'DELETED'
 export type AuthRole = 'FOUNDER' | 'ADMIN' | 'MODERATOR' | 'REVIEWER' | 'DEVELOPER' | 'USER'
-export type AuthBadge = 'FOUNDER' | 'OFFICIAL' | 'VERIFIED_DEVELOPER' | 'MODERATOR' | 'REVIEWER'
+export type AuthBadge =
+  | 'FOUNDER'
+  | 'OFFICIAL'
+  | 'VERIFIED_DEVELOPER'
+  | 'MODERATOR'
+  | 'REVIEWER'
+  | 'EARLY_USER'
+  | 'BETA_TESTER'
 
 export interface AuthUser {
   id: string
+  public_id: string
   status: AuthUserStatus
   github: {
     user_id: string
@@ -153,6 +161,32 @@ export interface AuthUser {
   }
   roles: AuthRole[]
   badges: AuthBadge[]
+}
+
+export interface RemoteConfig {
+  schema_version: 1
+  features: {
+    github_login: boolean
+    announcements: boolean
+  }
+  services: {
+    api_url: string
+    announcements_url: string
+  }
+  ui: {
+    notice: string
+  }
+}
+
+export type AnnouncementSeverity = 'INFO' | 'UPDATE' | 'SECURITY' | 'MAINTENANCE'
+
+export interface Announcement {
+  id: string
+  title: Record<string, string>
+  body: Record<string, string>
+  severity: AnnouncementSeverity
+  published_at: string
+  expires_at: string | null
 }
 
 export type AuthSessionResponse =

@@ -36,7 +36,9 @@ export interface RuntimeBridgeViewProps {
   onStart(): void
   onStop(): void
   onReconnect(): void
+  onOpen?(): void
   showDevelopmentDetails?: boolean
+  runtimeReady?: boolean
 }
 
 export function RuntimeBridgeView({
@@ -48,11 +50,14 @@ export function RuntimeBridgeView({
   onStart,
   onStop,
   onReconnect,
+  onOpen,
   showDevelopmentDetails = false,
+  runtimeReady = true,
 }: RuntimeBridgeViewProps) {
   const { t } = useI18n()
   const connected = snapshot.connection === 'CONNECTED'
-  const canStart = connected && (snapshot.status === 'NOT_RUNNING' || snapshot.status === 'ERROR')
+  const realRuntime = snapshot.implementation === 'LOCAL_DSH'
+  const canStart = runtimeReady && connected && (snapshot.status === 'NOT_RUNNING' || snapshot.status === 'ERROR')
   const canStop = connected && ['RUNNING', 'BUSY', 'WAITING_INPUT', 'ERROR'].includes(snapshot.status)
 
   return (
@@ -63,18 +68,18 @@ export function RuntimeBridgeView({
           <h2>{t('runtimeBridge.title')}</h2>
         </div>
         <p>
-          {t(showDevelopmentDetails ? 'runtimeBridge.description' : 'runtimeBridge.previewDescription')}
+          {t(realRuntime ? 'runtimeBridge.realDescription' : showDevelopmentDetails ? 'runtimeBridge.description' : 'runtimeBridge.previewDescription')}
         </p>
       </div>
 
-      <div className="runtime-fixture-notice" role="note">
+      <div className={realRuntime ? 'runtime-fixture-notice runtime-fixture-notice--real' : 'runtime-fixture-notice'} role="note">
         <span aria-hidden="true">◇</span>
         <div>
           <strong>
-            {t(showDevelopmentDetails ? 'runtimeBridge.fixtureTitle' : 'runtimeBridge.previewTitle')}
+            {t(realRuntime ? 'runtimeBridge.realTitle' : showDevelopmentDetails ? 'runtimeBridge.fixtureTitle' : 'runtimeBridge.previewTitle')}
           </strong>
           <p>
-            {t(showDevelopmentDetails ? 'runtimeBridge.fixtureBody' : 'runtimeBridge.previewBody')}
+            {t(realRuntime ? 'runtimeBridge.realBody' : showDevelopmentDetails ? 'runtimeBridge.fixtureBody' : 'runtimeBridge.previewBody')}
           </p>
         </div>
       </div>
@@ -88,7 +93,7 @@ export function RuntimeBridgeView({
               <h3>DSH</h3>
             </div>
             <small>
-              {t(showDevelopmentDetails ? 'runtimeBridge.fixtureBadge' : 'runtimeBridge.previewBadge')}
+              {t(realRuntime ? 'runtimeBridge.realBadge' : showDevelopmentDetails ? 'runtimeBridge.fixtureBadge' : 'runtimeBridge.previewBadge')}
             </small>
           </div>
 
@@ -121,7 +126,12 @@ export function RuntimeBridgeView({
             <button disabled={!canStop || pending} onClick={onStop} type="button">
               {t('runtimeBridge.stop')}
             </button>
-            {!connected ? (
+            {realRuntime && snapshot.status === 'RUNNING' && onOpen ? (
+              <button disabled={pending} onClick={onOpen} type="button">
+                {t('runtimeBridge.openWorkspace')}
+              </button>
+            ) : null}
+            {runtimeReady && !connected ? (
               <button disabled={pending} onClick={onReconnect} type="button">
                 {t('runtimeBridge.reconnect')}
               </button>
@@ -136,7 +146,7 @@ export function RuntimeBridgeView({
             <small>{t('runtimeBridge.auditCount', { count: auditCount })}</small>
           </div>
           {events.length === 0 ? (
-            <p>{t('runtimeBridge.noEvents')}</p>
+            <p>{t(realRuntime ? 'runtimeBridge.noRealEvents' : 'runtimeBridge.noEvents')}</p>
           ) : (
             <ol>
               {[...events.slice(-8)].reverse().map((event) => (

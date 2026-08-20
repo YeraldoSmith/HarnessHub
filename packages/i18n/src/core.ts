@@ -1,7 +1,10 @@
 import enUS from './locales/en-US.json' with { type: 'json' }
+import esES from './locales/es-ES.json' with { type: 'json' }
+import jaJP from './locales/ja-JP.json' with { type: 'json' }
+import koKR from './locales/ko-KR.json' with { type: 'json' }
 import zhCN from './locales/zh-CN.json' with { type: 'json' }
 
-export const supportedLocales = ['zh-CN', 'en-US'] as const
+export const supportedLocales = ['zh-CN', 'en-US', 'ja-JP', 'ko-KR', 'es-ES'] as const
 export type Locale = (typeof supportedLocales)[number]
 export const defaultLocale: Locale = 'zh-CN'
 
@@ -19,10 +22,16 @@ export type TranslationParams = Record<string, string | number>
 const resources: Record<Locale, Record<string, unknown>> = {
   'zh-CN': zhCN,
   'en-US': enUS,
+  'ja-JP': jaJP,
+  'ko-KR': koKR,
+  'es-ES': esES,
 }
 
 export function normalizeLocale(value: string | null | undefined): Locale {
   const normalized = value?.trim().toLowerCase()
+  if (normalized?.startsWith('ja')) return 'ja-JP'
+  if (normalized?.startsWith('ko')) return 'ko-KR'
+  if (normalized?.startsWith('es')) return 'es-ES'
   if (normalized?.startsWith('en')) return 'en-US'
   if (normalized?.startsWith('zh')) return 'zh-CN'
   return defaultLocale
@@ -32,6 +41,9 @@ export function detectSystemLocale(languages?: readonly string[]): Locale {
   const candidates = languages ?? (typeof navigator === 'undefined' ? [] : navigator.languages)
   for (const candidate of candidates) {
     const normalized = candidate.trim().toLowerCase()
+    if (normalized.startsWith('ja')) return 'ja-JP'
+    if (normalized.startsWith('ko')) return 'ko-KR'
+    if (normalized.startsWith('es')) return 'es-ES'
     if (normalized.startsWith('zh')) return 'zh-CN'
     if (normalized.startsWith('en')) return 'en-US'
   }

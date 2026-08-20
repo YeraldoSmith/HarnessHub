@@ -9,4 +9,4 @@ export {
   type TranslationKey,
   type TranslationParams,
 } from './core.js'
-export { I18nProvider, LanguageSelect, useI18n, type I18nContextValue } from './react.js'
+export { I18nProvider, LanguageSelect, ThemeSelect, useI18n, type I18nContextValue, type ThemePreference } from './react.js'

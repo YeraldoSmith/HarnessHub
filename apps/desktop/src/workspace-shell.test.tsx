@@ -44,7 +44,10 @@ describe('Desktop workspace shell', () => {
     expect(markup).toContain('设置')
     expect(markup).toContain('aria-current="page"')
     expect(markup).toContain('本地 Runtime')
-    expect(markup).toContain('Beta 后续开放')
+    expect(markup).toContain('任务')
+    expect(markup).toContain('账户')
+    expect(markup).toContain('设置')
+    expect(markup).not.toContain('Beta 后续开放')
     expect(markup).not.toContain('Fixture')
   })
 

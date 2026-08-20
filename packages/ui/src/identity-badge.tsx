@@ -6,6 +6,8 @@ export type IdentityBadgeKind =
   | 'verified-developer'
   | 'moderator'
   | 'reviewer'
+  | 'early-user'
+  | 'beta-tester'
 
 const labelKeys: Record<IdentityBadgeKind, TranslationKey> = {
   founder: 'badge.founder',
@@ -13,6 +15,8 @@ const labelKeys: Record<IdentityBadgeKind, TranslationKey> = {
   'verified-developer': 'badge.verifiedDeveloper',
   moderator: 'badge.moderator',
   reviewer: 'badge.reviewer',
+  'early-user': 'badge.earlyUser',
+  'beta-tester': 'badge.betaTester',
 }
 
 export interface IdentityBadgeProps {

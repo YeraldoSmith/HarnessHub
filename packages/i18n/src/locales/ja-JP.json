@@ -1,0 +1,25 @@
+{
+  "language": {
+    "select": "言語を選択",
+    "zhCN": "簡体字中国語",
+    "enUS": "English",
+    "jaJP": "日本語",
+    "koKR": "韓国語",
+    "esES": "Español"
+  },
+  "nav": {
+    "home": "ホーム",
+    "plugins": "プラグイン",
+    "agent": "エージェント",
+    "runtime": "ランタイム",
+    "tasks": "タスク",
+    "account": "アカウント",
+    "settings": "設定"
+  },
+  "productPages": {
+    "settingsTitle": "設定とプライバシー",
+    "settingsBody": "表示、言語、ローカル Runtime の安全境界を管理します。",
+    "about": "HarnessHub について",
+    "copyright": "Created by YeraldoSmith · Copyright © 2026 YeraldoSmith"
+  }
+}

@@ -44,7 +44,7 @@ export interface RuntimeAuditEvent {
 export interface RuntimeSnapshot {
   readonly runtimeId: string
   readonly runtimeName: 'DSH'
-  readonly implementation: 'CONTRACT_FIXTURE'
+  readonly implementation: 'CONTRACT_FIXTURE' | 'LOCAL_DSH'
   readonly version: string
   readonly status: FixtureRuntimeStatus
   readonly connection: RuntimeConnectionStatus

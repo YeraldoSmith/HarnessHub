@@ -1,0 +1,25 @@
+{
+  "language": {
+    "select": "Elegir idioma",
+    "zhCN": "Chino simplificado",
+    "enUS": "English",
+    "jaJP": "日本語",
+    "koKR": "한국어",
+    "esES": "Español"
+  },
+  "nav": {
+    "home": "Inicio",
+    "plugins": "Plugins",
+    "agent": "Agente",
+    "runtime": "Runtime",
+    "tasks": "Tareas",
+    "account": "Cuenta",
+    "settings": "Ajustes"
+  },
+  "productPages": {
+    "settingsTitle": "Ajustes y privacidad",
+    "settingsBody": "Gestiona la apariencia, el idioma y los límites seguros del Runtime local.",
+    "about": "Acerca de HarnessHub",
+    "copyright": "Created by YeraldoSmith · Copyright © 2026 YeraldoSmith"
+  }
+}

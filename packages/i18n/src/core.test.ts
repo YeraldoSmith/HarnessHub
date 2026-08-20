@@ -14,10 +14,14 @@ describe('HarnessHub i18n', () => {
     expect(normalizeLocale(undefined)).toBe('zh-CN')
     expect(normalizeLocale('en-GB')).toBe('en-US')
     expect(normalizeLocale('zh-Hans')).toBe('zh-CN')
+    expect(normalizeLocale('ja-JP')).toBe('ja-JP')
+    expect(normalizeLocale('ko-KR')).toBe('ko-KR')
+    expect(normalizeLocale('es-MX')).toBe('es-ES')
   })
 
   it('exposes system detection for future automatic selection without changing the default', () => {
     expect(detectSystemLocale(['fr-FR', 'en-CA'])).toBe('en-US')
+    expect(detectSystemLocale(['ko-KR', 'en-CA'])).toBe('ko-KR')
     expect(detectSystemLocale(['fr-FR'])).toBe('zh-CN')
   })
 

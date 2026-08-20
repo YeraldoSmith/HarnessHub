@@ -304,6 +304,7 @@ describe.sequential('GitHub OAuth identity foundation', () => {
       user_id: '900001',
       login: 'ordinary-developer',
     })
+    expect(completed.session.user.public_id).toMatch(/^HH-\d{10}$/)
     expect(completed.session.user.roles).toEqual(['USER'])
     expect(completed.session.user.badges).toEqual([])
     await expect(
@@ -329,6 +330,7 @@ describe.sequential('GitHub OAuth identity foundation', () => {
     })
     expect(completed.session.user.roles).toContain('FOUNDER')
     expect(completed.session.user.badges).toContain('FOUNDER')
+    expect(completed.session.user.public_id).toBe('HH-0000000001')
   })
 
   it.each([

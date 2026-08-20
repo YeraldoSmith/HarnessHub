@@ -1,16 +1,33 @@
 import { useMemo, useState } from 'react'
 
 import { useI18n } from '@harnesshub/i18n'
-import type { Plugin } from '@harnesshub/types'
+import type { AuthSessionResponse, Plugin } from '@harnesshub/types'
 import { PluginDetail, PluginIcon, isPluginSourceVerified, pluginRiskSummary } from '@harnesshub/ui'
+
+import { ManagedPluginInstall } from './managed-plugin-install.js'
+import type { ManagedRuntimeStatus } from './native-runtime.js'
 
 interface DesktopMarketplaceProps {
   plugins: Plugin[]
   loading: boolean
   error: string
+  notice: string
+  auth: AuthSessionResponse
+  runtime: ManagedRuntimeStatus
+  onRuntimeChange(runtime: ManagedRuntimeStatus): void
+  onAuditChange(): void
 }
 
-export function DesktopMarketplace({ plugins, loading, error }: DesktopMarketplaceProps) {
+export function DesktopMarketplace({
+  plugins,
+  loading,
+  error,
+  notice,
+  auth,
+  runtime,
+  onRuntimeChange,
+  onAuditChange,
+}: DesktopMarketplaceProps) {
   const { t } = useI18n()
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('')
@@ -65,6 +82,7 @@ export function DesktopMarketplace({ plugins, loading, error }: DesktopMarketpla
       </div>
 
       {loading ? <div className="desktop-message">{t('desktop.loading')}</div> : null}
+      {!loading && !error && notice ? <div className="desktop-message desktop-message--notice">{notice}</div> : null}
       {error ? <div className="desktop-message desktop-message--error">{error}</div> : null}
       {!loading && !error && filtered.length === 0 ? <div className="desktop-message">{t('desktop.marketplaceEmpty')}</div> : null}
       {selected ? (
@@ -87,7 +105,16 @@ export function DesktopMarketplace({ plugins, loading, error }: DesktopMarketpla
               )
             })}
           </aside>
-          <div className="desktop-plugin-detail"><PluginDetail plugin={selected} /></div>
+          <div className="desktop-plugin-detail">
+            <PluginDetail plugin={selected} />
+            <ManagedPluginInstall
+              auth={auth}
+              onAuditChange={onAuditChange}
+              onRuntimeChange={onRuntimeChange}
+              plugin={selected}
+              runtime={runtime}
+            />
+          </div>
         </div>
       ) : null}
     </section>

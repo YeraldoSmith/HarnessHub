@@ -3,7 +3,7 @@ import type { RuntimeEvent, RuntimeSnapshot } from '@harnesshub/runtime-bridge'
 import type { RuntimeEnvironmentSnapshot } from '@harnesshub/runtime-integration'
 import type { Plugin } from '@harnesshub/types'
 
-export type WorkspaceSection = 'home' | 'plugins' | 'agent' | 'runtime'
+export type WorkspaceSection = 'home' | 'plugins' | 'agent' | 'runtime' | 'tasks' | 'account' | 'settings'
 type WorkspaceIconName = 'home' | 'plugins' | 'agent' | 'runtime' | 'tasks' | 'account' | 'settings'
 
 const runtimeStatusKeys: Record<RuntimeSnapshot['status'], TranslationKey> = {
@@ -63,11 +63,11 @@ export function WorkspaceSidebar({
     { icon: 'plugins', label: 'nav.plugins', section: 'plugins' },
     { icon: 'agent', label: 'nav.agent', section: 'agent' },
     { icon: 'runtime', label: 'nav.runtime', section: 'runtime' },
-    { icon: 'tasks', label: 'nav.tasks' },
+    { icon: 'tasks', label: 'nav.tasks', section: 'tasks' },
   ]
-  const secondary: readonly { icon: WorkspaceIconName; label: TranslationKey }[] = [
-    { icon: 'account', label: 'nav.account' },
-    { icon: 'settings', label: 'nav.settings' },
+  const secondary: readonly { icon: WorkspaceIconName; label: TranslationKey; section: WorkspaceSection }[] = [
+    { icon: 'account', label: 'nav.account', section: 'account' },
+    { icon: 'settings', label: 'nav.settings', section: 'settings' },
   ]
 
   const item = (entry: (typeof primary)[number]) => {

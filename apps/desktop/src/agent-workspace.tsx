@@ -4,6 +4,8 @@ import { useI18n, type TranslationKey } from '@harnesshub/i18n'
 import type { RuntimeEvent, RuntimeSnapshot } from '@harnesshub/runtime-bridge'
 import type { RuntimeEnvironmentSnapshot } from '@harnesshub/runtime-integration'
 
+import { openManagedRuntimeWorkspace } from './native-runtime.js'
+
 const runtimeStatusKeys: Record<RuntimeSnapshot['status'], TranslationKey> = {
   NOT_RUNNING: 'runtimeBridge.statusNotRunning',
   STARTING: 'runtimeBridge.statusStarting',
@@ -27,6 +29,7 @@ interface AgentWorkspaceProps {
   events: readonly Readonly<RuntimeEvent>[]
   environment: RuntimeEnvironmentSnapshot | null
   showDevelopmentDetails?: boolean
+  runtimeUrl?: string | null
 }
 
 export function AgentWorkspace({
@@ -34,9 +37,11 @@ export function AgentWorkspace({
   events,
   environment,
   showDevelopmentDetails = false,
+  runtimeUrl = null,
 }: AgentWorkspaceProps) {
   const { t } = useI18n()
   const [draft, setDraft] = useState('')
+  const [workspaceError, setWorkspaceError] = useState('')
   const connected = runtime?.connection === 'CONNECTED'
   const ready = connected && runtime.status !== 'ERROR' && runtime.status !== 'NOT_RUNNING'
   const runtimeVersion =
@@ -74,7 +79,7 @@ export function AgentWorkspace({
 
       <div className="agent-workspace__grid">
         <article className="agent-conversation">
-          <div className="agent-panel-heading"><h2>{t('agent.conversation')}</h2><span>Preview</span></div>
+          <div className="agent-panel-heading"><h2>{t('agent.conversation')}</h2><span>{t('agent.preview')}</span></div>
           <div className="agent-conversation__empty">
             <span aria-hidden="true">✦</span>
             <p>{t('agent.conversationEmpty')}</p>
@@ -90,8 +95,18 @@ export function AgentWorkspace({
           </label>
           <div className="agent-composer-footer">
             <small id="agent-input-safety">{t('agent.sendUnavailable')}</small>
-            <button disabled type="button">{t('agent.sendUnavailable')}</button>
+            <button
+              disabled={!runtimeUrl}
+              onClick={() => {
+                setWorkspaceError('')
+                void openManagedRuntimeWorkspace().catch(() => setWorkspaceError(t('agent.workspaceOpenFailed')))
+              }}
+              type="button"
+            >
+              {t('agent.openWorkspace')}
+            </button>
           </div>
+          {workspaceError ? <p className="agent-workspace__error" role="alert">{workspaceError}</p> : null}
         </article>
 
         <aside className="agent-side-panels">

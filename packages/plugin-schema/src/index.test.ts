@@ -74,6 +74,7 @@ describe('plugin schema', () => {
       authenticated: true,
       user: {
         id: 'a0fb0416-83b0-42a5-b368-00923c872b18',
+        public_id: 'HH-0000000001',
         status: 'ACTIVE',
         github: { user_id: '120692294', login: 'renamed-founder', avatar_url: null },
         roles: ['FOUNDER', 'USER'],

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "features": {
+    "github_login": false,
+    "announcements": true
+  },
+  "services": {
+    "api_url": "",
+    "announcements_url": ""
+  },
+  "ui": {
+    "notice": ""
+  }
+}

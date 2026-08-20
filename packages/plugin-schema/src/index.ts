@@ -110,6 +110,7 @@ export const syncJobSchema = z.object({
 
 export const authUserSchema = z.object({
   id: z.string().uuid(),
+  public_id: z.string().regex(/^HH-\d{10}$/),
   status: z.enum(['ACTIVE', 'SUSPENDED', 'DEACTIVATED', 'DELETED']),
   github: z.object({
     user_id: z.string().regex(/^\d+$/),
@@ -117,8 +118,47 @@ export const authUserSchema = z.object({
     avatar_url: z.string().url().nullable(),
   }),
   roles: z.array(z.enum(['FOUNDER', 'ADMIN', 'MODERATOR', 'REVIEWER', 'DEVELOPER', 'USER'])),
-  badges: z.array(z.enum(['FOUNDER', 'OFFICIAL', 'VERIFIED_DEVELOPER', 'MODERATOR', 'REVIEWER'])),
+  badges: z.array(z.enum([
+    'FOUNDER',
+    'OFFICIAL',
+    'VERIFIED_DEVELOPER',
+    'MODERATOR',
+    'REVIEWER',
+    'EARLY_USER',
+    'BETA_TESTER',
+  ])),
 })
+
+const localizedTextSchema = z.record(
+  z.string().regex(/^[a-z]{2}(?:-[A-Z]{2})?$/),
+  z.string().trim().min(1).max(2000),
+)
+
+export const remoteConfigSchema = z.object({
+  schema_version: z.literal(1),
+  features: z.object({
+    github_login: z.boolean(),
+    announcements: z.boolean(),
+  }).strict(),
+  services: z.object({
+    api_url: z.string().trim().max(500),
+    announcements_url: z.string().trim().max(500),
+  }).strict(),
+  ui: z.object({
+    notice: z.string().trim().max(500),
+  }).strict(),
+}).strict()
+
+export const announcementSchema = z.object({
+  id: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(120),
+  title: localizedTextSchema,
+  body: localizedTextSchema,
+  severity: z.enum(['INFO', 'UPDATE', 'SECURITY', 'MAINTENANCE']),
+  published_at: z.string().datetime({ offset: true }),
+  expires_at: z.string().datetime({ offset: true }).nullable(),
+}).strict()
+
+export const announcementListSchema = z.array(announcementSchema).max(50)
 
 export const authenticatedSessionSchema = z.object({
   authenticated: z.literal(true),

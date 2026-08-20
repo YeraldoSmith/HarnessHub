@@ -1,0 +1,25 @@
+{
+  "language": {
+    "select": "언어 선택",
+    "zhCN": "중국어(간체)",
+    "enUS": "English",
+    "jaJP": "日本語",
+    "koKR": "한국어",
+    "esES": "Español"
+  },
+  "nav": {
+    "home": "홈",
+    "plugins": "플러그인",
+    "agent": "에이전트",
+    "runtime": "런타임",
+    "tasks": "작업",
+    "account": "계정",
+    "settings": "설정"
+  },
+  "productPages": {
+    "settingsTitle": "설정 및 개인정보",
+    "settingsBody": "화면, 언어, 로컬 Runtime의 안전 경계를 관리합니다.",
+    "about": "HarnessHub 정보",
+    "copyright": "Created by YeraldoSmith · Copyright © 2026 YeraldoSmith"
+  }
+}

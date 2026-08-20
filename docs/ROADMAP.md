@@ -253,6 +253,21 @@ Phase 1 至此结束。Phase 2 Identity Foundation 不在本阶段实现。
 
 本阶段不绑定真实端口、不启动真实进程、不连接 DSH、不执行 Agent、不调用模型，也不安装插件。下一阶段 Phase 4-D 先接入锁定版本、无模型凭据的 DSH 测试实例，并保持只读状态与事件范围。
 
+### Phase 4-D：Managed DSH Runtime and Installation Beta（已完成）
+
+- 首次启动无需系统 Node.js/pnpm：HarnessHub 自动准备固定且校验哈希的 Node.js `22.19.0`、pnpm `11.19.0` 与独立缓存/Store；
+- 固定 `@deepseek-ai/dsh@0.1.0-rc.8` 并以受控 pnpm 在隔离 DSH_HOME 中准备；
+- 原生层仅接受编译时 Registry allowlist、固定 npm 版本和 sha512 完整性证据；
+- 安装前重新查询 npm 完整性，安装/更新禁用脚本并在完成后解析 DSH 配置；
+- 插件卸载、Profile 文件恢复点、ROLLED_BACK / RECOVERY_REQUIRED 与本地只追加审计；
+- 真实 DSH web Runtime 随机回环端口启动、就绪检查、打开工作区与受控停止；
+- Desktop OAuth Session 进入操作系统安全凭据存储；
+- Tasks、Account、Settings 从 Soon 状态转为可用页面；
+- Runtime 准备、插件变更和生命周期操作转入后台任务，长时间下载不阻塞 Desktop 窗口；
+- 在 Finder 启动环境（无可用系统 pnpm）完成受控工具链准备、DSH 准备、HTTP 200 Runtime 和受控停止冒烟验证。
+
+HarnessHub 仍不直接发送 Agent/模型请求，不保存模型凭据，也不把 Registry 来源核验描述为插件安全保证。详细边界见 `docs/MANAGED_RUNTIME_AND_INSTALLATION.md`。
+
 ## Phase 5：社区与需求市场
 
 ### 目标
@@ -305,3 +320,11 @@ Phase 1 至此结束。Phase 2 Identity Foundation 不在本阶段实现。
 - 每个收集的数据字段有用途、保留期限和删除规则；
 - 每个管理员动作可审计；
 - 每次 DSH 基线升级先运行适配器契约测试。
+## v0.7 Beta operations foundation
+
+- Replaceable, data-only Remote Config with bundled and cached fallback.
+- Plain-text official announcements with banner, list and local read state.
+- Guest-first Desktop entry; OAuth is optional and remotely enabled only when service is ready.
+- Permanent public HarnessHub IDs beginning with Founder `HH-0000000001`.
+- Early User and Beta Tester badge vocabulary, separate from roles and safety.
+- GitHub public-source discovery candidates remain `COLLECTED_UNVERIFIED` until the evidence pipeline completes.

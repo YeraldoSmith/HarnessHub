@@ -257,6 +257,7 @@ export class PrismaAuthRepository {
     const metadata = identity.metadata as Record<string, unknown>
     return {
       id: user.id,
+      public_id: `HH-${user.publicId.toString().padStart(10, '0')}`,
       status: user.status,
       github: {
         user_id: identity.providerUserId,

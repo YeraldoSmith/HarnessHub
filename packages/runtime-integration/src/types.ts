@@ -16,8 +16,10 @@ export interface NativeRuntimeEnvironmentSnapshot {
   platform: RuntimePlatform
   architecture: string
   node: NativeToolProbe
+  pnpm: NativeToolProbe
   git: NativeToolProbe
   dsh: NativeToolProbe
+  managedToolchainReady: boolean
   capturedAtUnixMs: number
   readOnly: true
   systemMutationAllowed: false
@@ -32,8 +34,10 @@ export interface RuntimeEnvironmentSnapshot {
   platform: RuntimePlatform
   architecture: string
   node: RuntimeToolState
+  pnpm: RuntimeToolState
   git: RuntimeToolState
   dsh: RuntimeToolState
+  managedToolchainReady: boolean
   capturedAt: string
   readOnly: true
   systemMutationAllowed: false

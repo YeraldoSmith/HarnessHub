@@ -28,6 +28,22 @@ async function request(path: string): Promise<unknown> {
 
 export const githubLoginUrl = `${apiUrl}/auth/github`
 
+export async function getAuthProviderStatus(): Promise<{ github: { available: boolean } }> {
+  const value = await request('/auth/status')
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    !('github' in value) ||
+    !value.github ||
+    typeof value.github !== 'object' ||
+    !('available' in value.github) ||
+    typeof value.github.available !== 'boolean'
+  ) {
+    throw new Error('Invalid authentication provider status.')
+  }
+  return { github: { available: value.github.available } }
+}
+
 export async function getAuthSession(): Promise<AuthSessionResponse> {
   return authSessionResponseSchema.parse(await request('/auth/session'))
 }

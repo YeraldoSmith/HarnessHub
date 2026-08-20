@@ -6,6 +6,7 @@ import { IdentityBadge, PluginCard, PluginDetail } from '@harnesshub/ui'
 
 import {
   getAuthSession,
+  getAuthProviderStatus,
   getPlugin,
   githubLoginUrl,
   listPlugins,
@@ -48,6 +49,7 @@ export function App() {
   const [error, setError] = useState('')
   const [auth, setAuth] = useState<AuthSessionResponse>({ authenticated: false })
   const [authBusy, setAuthBusy] = useState(true)
+  const [authNotice, setAuthNotice] = useState('')
 
   useEffect(() => {
     const timer = window.setTimeout(() => setAppliedQuery(query), 180)
@@ -70,6 +72,23 @@ export function App() {
       active = false
     }
   }, [])
+
+  async function startGitHubLogin(): Promise<void> {
+    setAuthBusy(true)
+    setAuthNotice('')
+    try {
+      const status = await getAuthProviderStatus()
+      if (!status.github.available) {
+        setAuthNotice(t('auth.serviceUnavailableBody'))
+        return
+      }
+      window.location.assign(githubLoginUrl)
+    } catch {
+      setAuthNotice(t('auth.serviceUnavailableBody'))
+    } finally {
+      setAuthBusy(false)
+    }
+  }
 
   useEffect(() => {
     let active = true
@@ -146,14 +165,24 @@ export function App() {
               </button>
             </div>
           ) : (
-            <a className="github-login" href={githubLoginUrl}>
-              {t('auth.signIn')}
-            </a>
+            <button className="github-login" disabled={authBusy} onClick={() => void startGitHubLogin()} type="button">
+              {authBusy ? t('auth.checking') : t('auth.signIn')}
+            </button>
           )}
         </div>
       </header>
 
       <main>
+        {authNotice ? (
+          <section className="auth-service-notice" role="alert">
+            <span aria-hidden="true">!</span>
+            <div>
+              <strong>{t('auth.serviceUnavailableTitle')}</strong>
+              <p>{authNotice}</p>
+            </div>
+            <button onClick={() => void startGitHubLogin()} type="button">{t('auth.retry')}</button>
+          </section>
+        ) : null}
         {pluginId ? (
           <section className="detail-layout">
             <a className="back-link" href="/">

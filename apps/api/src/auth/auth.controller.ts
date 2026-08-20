@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common'
 import type { Response } from 'express'
 
+import { AuthConfig } from './auth.config.js'
 import { AuthService } from './auth.service.js'
 import { extractSessionToken, sessionCookie } from './session-token.js'
 
@@ -24,7 +25,15 @@ function callbackPage(success: boolean): string {
 
 @Controller('auth')
 export class AuthController {
-  constructor(@Inject(AuthService) private readonly auth: AuthService) {}
+  constructor(
+    @Inject(AuthService) private readonly auth: AuthService,
+    @Inject(AuthConfig) private readonly config: AuthConfig,
+  ) {}
+
+  @Get('status')
+  status() {
+    return { github: { available: this.config.githubAvailable() } }
+  }
 
   @Get('github')
   async startGitHub(@Res() response: Response): Promise<void> {

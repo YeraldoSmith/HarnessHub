@@ -72,7 +72,15 @@ export function RuntimeSetupPlanReview({ plan }: { plan: RuntimeSetupPlan }) {
           </li>
         ))}
       </ol>
-      <h3>{t('runtime.permissions')}</h3>
+      <div className="runtime-plan-does-not">
+        <strong>{t('runtime.willNotDo')}</strong>
+        <ul>
+          <li>{t('runtime.willNotDownload')}</li>
+          <li>{t('runtime.willNotRun')}</li>
+          <li>{t('runtime.willNotChangeSystem')}</li>
+        </ul>
+      </div>
+      <h3>{t('runtime.permissionWhy')}</h3>
       <div className="runtime-plan-permissions">
         {plan.permissions.map((permission) => (
           <article key={permission.id}>
@@ -174,17 +182,6 @@ export function RuntimeIntegrationPanel({ onSnapshot, probe }: RuntimeIntegratio
 
       {environment ? (
         <>
-          <div className="runtime-platform-summary">
-            <div><span>{t('runtime.platform')}</span><strong>{environment.platform}</strong></div>
-            <div><span>{t('runtime.architecture')}</span><strong>{environment.architecture}</strong></div>
-            <div><span>{t('runtime.checkedAt')}</span><strong>{new Date(environment.capturedAt).toLocaleTimeString()}</strong></div>
-            <button onClick={() => void detect()} type="button">{t('runtime.refresh')}</button>
-          </div>
-          <div className="runtime-tools">
-            <ToolStatus tool={environment.node} />
-            <ToolStatus tool={environment.git} />
-            <ToolStatus tool={environment.dsh} />
-          </div>
           <div className={`runtime-dsh-status runtime-dsh-status--${compatibility?.status.toLowerCase()}`}>
             <div>
               <span>{t('runtime.dshStatus')}</span>
@@ -197,10 +194,25 @@ export function RuntimeIntegrationPanel({ onSnapshot, probe }: RuntimeIntegratio
                       ? t('runtime.dshMissing')
                       : t('runtime.dshUnknown')}
               </strong>
+              {compatibility?.status === 'MISSING' ? <p>{t('runtime.dshMissingHelp')}</p> : null}
             </div>
             <small>{t('runtime.supportedRange', { range: compatibility?.supportedRange ?? '' })}</small>
             {!plan ? <button onClick={preparePlan} type="button">{t('runtime.prepareSetup')}</button> : null}
           </div>
+          <details className="runtime-technical-details">
+            <summary>{t('runtime.technicalDetails')}</summary>
+            <div className="runtime-platform-summary">
+              <div><span>{t('runtime.platform')}</span><strong>{environment.platform}</strong></div>
+              <div><span>{t('runtime.architecture')}</span><strong>{environment.architecture}</strong></div>
+              <div><span>{t('runtime.checkedAt')}</span><strong>{new Date(environment.capturedAt).toLocaleTimeString()}</strong></div>
+              <button onClick={() => void detect()} type="button">{t('runtime.refresh')}</button>
+            </div>
+            <div className="runtime-tools">
+              <ToolStatus tool={environment.node} />
+              <ToolStatus tool={environment.git} />
+              <ToolStatus tool={environment.dsh} />
+            </div>
+          </details>
         </>
       ) : null}
 

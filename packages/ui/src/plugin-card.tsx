@@ -1,6 +1,7 @@
 import type { Plugin } from '@harnesshub/types'
 import { useI18n, type TranslationKey } from '@harnesshub/i18n'
 import { isPluginSourceVerified, pluginRiskSummary, type PluginRiskSummary } from './plugin-trust.js'
+import { PluginIcon } from './plugin-icon.js'
 
 export interface PluginCardProps {
   plugin: Plugin
@@ -32,9 +33,7 @@ export function PluginCard({ plugin, href }: PluginCardProps) {
         </span>
       </div>
       <div className="hh-plugin-card__heading">
-        <div className="hh-plugin-card__icon" aria-hidden="true">
-          {plugin.name.slice(0, 1).toUpperCase()}
-        </div>
+        <PluginIcon className="hh-plugin-card__icon" plugin={plugin} />
         <div>
           <h2>{plugin.name}</h2>
           <div className="hh-plugin-card__author">
@@ -45,7 +44,7 @@ export function PluginCard({ plugin, href }: PluginCardProps) {
       <p>{plugin.description}</p>
       <div className="hh-plugin-card__meta" aria-label={t('plugin.metadata')}>
         <span>v{plugin.version}</span>
-        <span>{plugin.compatibility.dsh}</span>
+        <span>DSH {plugin.compatibility.dsh}</span>
         <span>{plugin.license.spdx}</span>
         <span>{t('plugin.downloadsReserved')}</span>
       </div>

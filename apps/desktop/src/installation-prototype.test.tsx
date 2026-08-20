@@ -55,5 +55,8 @@ describe('installation permission review UI', () => {
     expect(markup).toContain('运行受控验证程序')
     expect(markup).toContain('当前不可执行')
     expect(markup).toContain('不会执行')
+    expect(markup).toContain('不会下载或安装任何软件')
+    expect(markup).toContain('不会执行 Shell、脚本或第三方代码')
+    expect(markup).toContain('不会修改 PATH、系统设置或现有文件')
   })
 })

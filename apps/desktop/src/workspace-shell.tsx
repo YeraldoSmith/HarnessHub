@@ -48,9 +48,15 @@ interface WorkspaceSidebarProps {
   active: WorkspaceSection
   runtimeConnected: boolean
   onNavigate(section: WorkspaceSection): void
+  showDevelopmentDetails?: boolean
 }
 
-export function WorkspaceSidebar({ active, runtimeConnected, onNavigate }: WorkspaceSidebarProps) {
+export function WorkspaceSidebar({
+  active,
+  runtimeConnected,
+  onNavigate,
+  showDevelopmentDetails = false,
+}: WorkspaceSidebarProps) {
   const { t } = useI18n()
   const primary: readonly { icon: WorkspaceIconName; label: TranslationKey; section?: WorkspaceSection }[] = [
     { icon: 'home', label: 'nav.home', section: 'home' },
@@ -73,11 +79,12 @@ export function WorkspaceSidebar({ active, runtimeConnected, onNavigate }: Works
         disabled={!enabled}
         key={entry.icon}
         onClick={() => entry.section && onNavigate(entry.section)}
+        title={!enabled ? t('nav.soon') : undefined}
         type="button"
       >
         <WorkspaceIcon name={entry.icon} />
         <span>{t(entry.label)}</span>
-        {!enabled ? <small>{t('nav.soon')}</small> : null}
+        {!enabled ? <small className="desktop-nav-planned">{t('nav.soon')}</small> : null}
       </button>
     )
   }
@@ -105,7 +112,7 @@ export function WorkspaceSidebar({ active, runtimeConnected, onNavigate }: Works
           <strong>{t('desktop.localRuntime')}</strong>
           <small>{runtimeConnected ? t('runtimeBridge.connected') : t('runtimeBridge.disconnected')}</small>
         </div>
-        <em>Fixture</em>
+        {showDevelopmentDetails ? <em>DEV</em> : null}
       </div>
     </aside>
   )

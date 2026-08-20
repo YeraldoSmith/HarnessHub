@@ -40,5 +40,7 @@ describe('Agent Workspace Beta entry', () => {
     expect(markup).toContain('Agent 已就绪')
     expect(markup).toContain('不会触发模型、Agent、Shell 或插件代码')
     expect(markup).toContain('disabled=""')
+    expect(markup).toContain('界面已就绪')
+    expect(markup).not.toContain('Fixture')
   })
 })

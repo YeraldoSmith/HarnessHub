@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 
 import { useI18n } from '@harnesshub/i18n'
 import type { Plugin } from '@harnesshub/types'
-import { PluginDetail, isPluginSourceVerified, pluginRiskSummary } from '@harnesshub/ui'
+import { PluginDetail, PluginIcon, isPluginSourceVerified, pluginRiskSummary } from '@harnesshub/ui'
 
 interface DesktopMarketplaceProps {
   plugins: Plugin[]
@@ -79,7 +79,7 @@ export function DesktopMarketplace({ plugins, loading, error }: DesktopMarketpla
                   onClick={() => setSelectedId(plugin.id)}
                   type="button"
                 >
-                  <span className="desktop-plugin-icon" aria-hidden="true">{plugin.name.slice(0, 1).toUpperCase()}</span>
+                  <PluginIcon className="desktop-plugin-icon" plugin={plugin} />
                   <span><strong>{plugin.name}</strong><small>{plugin.author.name} · v{plugin.version}</small></span>
                   <em className={`desktop-risk desktop-risk--${risk}`}>{risk === 'pending' ? t('plugin.riskPending') : risk.toUpperCase()}</em>
                   {isPluginSourceVerified(plugin) ? <i title={t('plugin.sourceVerified')}>✓</i> : null}

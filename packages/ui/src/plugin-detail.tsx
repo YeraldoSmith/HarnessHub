@@ -1,6 +1,7 @@
 import type { Plugin, PluginSnapshotRecord } from '@harnesshub/types'
 import { useI18n, type TranslationKey } from '@harnesshub/i18n'
 import { isPluginSourceVerified, pluginRiskSummary } from './plugin-trust.js'
+import { PluginIcon } from './plugin-icon.js'
 
 const statusKeys: Record<Plugin['source_status'][number]['status'], TranslationKey> = {
   AVAILABLE: 'plugin.available',
@@ -40,9 +41,7 @@ export function PluginDetail({ plugin, snapshots }: PluginDetailProps) {
       </div>
 
       <header className="hh-plugin-detail__header">
-        <div className="hh-plugin-detail__icon" aria-hidden="true">
-          {plugin.name.slice(0, 1).toUpperCase()}
-        </div>
+        <PluginIcon className="hh-plugin-detail__icon" plugin={plugin} />
         <div>
           <h1>{plugin.name}</h1>
           <div className="hh-plugin-card__author">

@@ -22,6 +22,19 @@ function required(name: string): string {
 
 @Injectable()
 export class AuthConfig {
+  githubAvailable(): boolean {
+    try {
+      this.github()
+      this.sessionSecret()
+      this.webSuccessUrl()
+      this.oauthTransactionTtlMs()
+      this.sessionTtlMs()
+      return true
+    } catch {
+      return false
+    }
+  }
+
   github(): GitHubOAuthConfig {
     const callbackUrl = required('GITHUB_CALLBACK_URL')
     this.assertCallbackUrl(callbackUrl)

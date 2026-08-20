@@ -155,6 +155,56 @@ nav a:hover,
   font-size: 0.74rem;
   font-weight: 800;
   text-decoration: none;
+  cursor: pointer;
+}
+
+.github-login:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.auth-service-notice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.9rem;
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #e1c985;
+  border-radius: 14px;
+  background: #fff8df;
+  color: #513e16;
+}
+
+.auth-service-notice > span {
+  display: grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  background: #f2dfa8;
+  font-weight: 900;
+}
+
+.auth-service-notice strong,
+.auth-service-notice p {
+  margin: 0;
+}
+
+.auth-service-notice p {
+  margin-top: 0.2rem;
+  color: #76663e;
+  font-size: 0.78rem;
+}
+
+.auth-service-notice button {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #b69643;
+  border-radius: 9px;
+  background: #fff;
+  color: #5b4613;
+  cursor: pointer;
+  font-weight: 800;
 }
 
 .signed-in-user button {

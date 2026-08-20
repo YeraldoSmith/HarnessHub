@@ -31,6 +31,7 @@ describe('Runtime Bridge Desktop UI', () => {
         onStart={() => undefined}
         onStop={() => undefined}
         pending={false}
+        showDevelopmentDetails
         snapshot={initialSnapshot}
       />,
     )
@@ -41,6 +42,27 @@ describe('Runtime Bridge Desktop UI', () => {
     expect(markup).toContain('停止')
     expect(markup).toContain('0.1.0-fixture.1')
     expect(markup).not.toContain('发送请求')
+  })
+
+  it('hides fixture terminology in the normal Beta experience', () => {
+    const markup = renderToStaticMarkup(
+      <RuntimeBridgeView
+        auditCount={0}
+        error=""
+        events={[]}
+        onReconnect={() => undefined}
+        onStart={() => undefined}
+        onStop={() => undefined}
+        pending={false}
+        snapshot={initialSnapshot}
+      />,
+    )
+    const visibleText = markup.replace(/<[^>]+>/g, ' ')
+
+    expect(markup).toContain('安全预览')
+    expect(markup).toContain('Beta 预览')
+    expect(visibleText).not.toContain('Fixture')
+    expect(visibleText).not.toContain('fixture')
   })
 
   it('renders validated runtime events after the Fixture starts', async () => {
@@ -67,6 +89,7 @@ describe('Runtime Bridge Desktop UI', () => {
         onStart={() => undefined}
         onStop={() => undefined}
         pending={false}
+        showDevelopmentDetails
         snapshot={bridge.snapshot()}
       />,
     )

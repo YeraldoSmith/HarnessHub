@@ -36,6 +36,7 @@ export interface RuntimeBridgeViewProps {
   onStart(): void
   onStop(): void
   onReconnect(): void
+  showDevelopmentDetails?: boolean
 }
 
 export function RuntimeBridgeView({
@@ -47,6 +48,7 @@ export function RuntimeBridgeView({
   onStart,
   onStop,
   onReconnect,
+  showDevelopmentDetails = false,
 }: RuntimeBridgeViewProps) {
   const { t } = useI18n()
   const connected = snapshot.connection === 'CONNECTED'
@@ -60,14 +62,20 @@ export function RuntimeBridgeView({
           <span>{t('runtimeBridge.phase')}</span>
           <h2>{t('runtimeBridge.title')}</h2>
         </div>
-        <p>{t('runtimeBridge.description')}</p>
+        <p>
+          {t(showDevelopmentDetails ? 'runtimeBridge.description' : 'runtimeBridge.previewDescription')}
+        </p>
       </div>
 
       <div className="runtime-fixture-notice" role="note">
         <span aria-hidden="true">◇</span>
         <div>
-          <strong>{t('runtimeBridge.fixtureTitle')}</strong>
-          <p>{t('runtimeBridge.fixtureBody')}</p>
+          <strong>
+            {t(showDevelopmentDetails ? 'runtimeBridge.fixtureTitle' : 'runtimeBridge.previewTitle')}
+          </strong>
+          <p>
+            {t(showDevelopmentDetails ? 'runtimeBridge.fixtureBody' : 'runtimeBridge.previewBody')}
+          </p>
         </div>
       </div>
 
@@ -79,7 +87,9 @@ export function RuntimeBridgeView({
               <span>{t('runtimeBridge.agentRuntime')}</span>
               <h3>DSH</h3>
             </div>
-            <small>{t('runtimeBridge.fixtureBadge')}</small>
+            <small>
+              {t(showDevelopmentDetails ? 'runtimeBridge.fixtureBadge' : 'runtimeBridge.previewBadge')}
+            </small>
           </div>
 
           <dl className="runtime-console-facts">
@@ -92,7 +102,11 @@ export function RuntimeBridgeView({
             </div>
             <div>
               <dt>{t('runtimeBridge.version')}</dt>
-              <dd>{snapshot.version}</dd>
+              <dd>
+                {showDevelopmentDetails || snapshot.implementation !== 'CONTRACT_FIXTURE'
+                  ? snapshot.version
+                  : t('runtimeBridge.previewVersion')}
+              </dd>
             </div>
             <div>
               <dt>{t('runtimeBridge.connection')}</dt>
@@ -152,9 +166,14 @@ interface RuntimeBridgePanelProps {
     snapshot: Readonly<RuntimeSnapshot>,
     events: readonly Readonly<RuntimeEvent>[],
   ): void
+  showDevelopmentDetails?: boolean
 }
 
-export function RuntimeBridgePanel({ bridge: injectedBridge, onStateChange }: RuntimeBridgePanelProps) {
+export function RuntimeBridgePanel({
+  bridge: injectedBridge,
+  onStateChange,
+  showDevelopmentDetails = false,
+}: RuntimeBridgePanelProps) {
   const { t } = useI18n()
   const translateRef = useRef(t)
   const disconnectTimerRef = useRef<number | null>(null)
@@ -221,6 +240,7 @@ export function RuntimeBridgePanel({ bridge: injectedBridge, onStateChange }: Ru
       onStop={() => void operate('stop')}
       pending={pending}
       snapshot={snapshot}
+      showDevelopmentDetails={showDevelopmentDetails}
     />
   )
 }

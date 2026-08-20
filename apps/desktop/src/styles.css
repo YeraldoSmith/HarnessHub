@@ -125,6 +125,13 @@ body {
   white-space: nowrap;
 }
 
+.desktop-nav-planned {
+  padding: 0.15rem 0.35rem;
+  border-radius: 999px;
+  background: #edf0ee;
+  letter-spacing: -0.01em;
+}
+
 .desktop-nav-label {
   margin: 0 0.65rem 0.45rem;
   color: #98a39d;
@@ -197,6 +204,62 @@ body {
   overscroll-behavior: contain;
   scroll-behavior: smooth;
   scrollbar-gutter: stable;
+}
+
+.desktop-auth-notice {
+  position: sticky;
+  z-index: 19;
+  top: 76px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0 2rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid #dfc16e;
+  border-radius: 12px;
+  background: #fff8dd;
+  box-shadow: 0 8px 24px rgba(54, 42, 13, 0.08);
+  color: #574315;
+}
+
+.desktop-auth-notice > span {
+  display: grid;
+  place-items: center;
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 50%;
+  background: #f1dfa9;
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.desktop-auth-notice strong,
+.desktop-auth-notice p {
+  margin: 0;
+}
+
+.desktop-auth-notice strong {
+  display: block;
+  font-size: 0.73rem;
+}
+
+.desktop-auth-notice p {
+  margin-top: 0.18rem;
+  color: #77663d;
+  font-size: 0.62rem;
+}
+
+.desktop-auth-notice button {
+  padding: 0.45rem 0.65rem;
+  border: 1px solid #c2a34e;
+  border-radius: 8px;
+  background: #fff;
+  color: #614c17;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.62rem;
+  font-weight: 800;
 }
 
 .desktop-toolbar {
@@ -1233,6 +1296,14 @@ body {
   display: block;
 }
 
+.runtime-dsh-status p {
+  max-width: 33rem;
+  margin: 0.3rem 0 0;
+  color: #d3d7c7;
+  font-size: 0.66rem;
+  line-height: 1.45;
+}
+
 .runtime-dsh-status span {
   color: #9fb2a7;
   font-size: 0.6rem;
@@ -1252,6 +1323,34 @@ body {
   padding: 0.65rem 0.8rem;
   background: #f3e9cc;
   color: #4a3611;
+}
+
+.runtime-technical-details {
+  margin-top: 0.7rem;
+  border: 1px solid #3f5549;
+  border-radius: 11px;
+  background: rgba(12, 30, 23, 0.5);
+}
+
+.runtime-technical-details summary {
+  padding: 0.75rem 0.9rem;
+  color: #c6d1ca;
+  cursor: pointer;
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.runtime-technical-details[open] summary {
+  border-bottom: 1px solid #3f5549;
+}
+
+.runtime-technical-details .runtime-platform-summary,
+.runtime-technical-details .runtime-tools {
+  margin-inline: 0.75rem;
+}
+
+.runtime-technical-details .runtime-tools {
+  margin-bottom: 0.75rem;
 }
 
 .runtime-plan {
@@ -1289,6 +1388,36 @@ body {
 .runtime-plan h3 {
   margin: 1rem 0 0.65rem;
   font-size: 0.77rem;
+}
+
+.runtime-plan-does-not {
+  margin-top: 0.8rem;
+  padding: 0.8rem;
+  border: 1px solid #cfe0d4;
+  border-radius: 10px;
+  background: #edf7ef;
+}
+
+.runtime-plan-does-not strong {
+  color: #28583b;
+  font-size: 0.72rem;
+}
+
+.runtime-plan-does-not ul {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  color: #45614e;
+  font-size: 0.65rem;
+  list-style: none;
+}
+
+.runtime-plan-does-not li::before {
+  content: '✓';
+  margin-right: 0.45rem;
+  color: #2d7b4b;
+  font-weight: 900;
 }
 
 .runtime-plan ol {
@@ -2085,6 +2214,11 @@ body {
   background: #173127;
   color: #f5dfa0;
   font-family: Georgia, serif;
+}
+
+.desktop-plugin-icon svg {
+  width: 1.05rem;
+  height: 1.05rem;
 }
 
 .desktop-plugin-list button > span:nth-child(2) {

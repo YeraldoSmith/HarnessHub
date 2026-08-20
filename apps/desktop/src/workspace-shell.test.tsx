@@ -44,6 +44,21 @@ describe('Desktop workspace shell', () => {
     expect(markup).toContain('设置')
     expect(markup).toContain('aria-current="page"')
     expect(markup).toContain('本地 Runtime')
+    expect(markup).toContain('Beta 后续开放')
+    expect(markup).not.toContain('Fixture')
+  })
+
+  it('keeps a compact development marker available only when requested', () => {
+    const markup = renderToStaticMarkup(
+      <WorkspaceSidebar
+        active="runtime"
+        onNavigate={() => undefined}
+        runtimeConnected
+        showDevelopmentDetails
+      />,
+    )
+
+    expect(markup).toContain('DEV')
   })
 
   it('makes Runtime, DSH, plugins, and recent activity visible on first open', () => {

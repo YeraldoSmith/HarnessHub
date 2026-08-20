@@ -24,6 +24,7 @@ import {
 } from './workspace-shell.js'
 
 const apiUrl = 'http://127.0.0.1:3001'
+const showDevelopmentDetails = import.meta.env.DEV
 
 function wait(milliseconds: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds))
@@ -33,7 +34,8 @@ export function App() {
   const { t } = useI18n()
   const [plugins, setPlugins] = useState<Plugin[]>([])
   const [registryLoading, setRegistryLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [registryError, setRegistryError] = useState('')
+  const [authError, setAuthError] = useState('')
   const [auth, setAuth] = useState<AuthSessionResponse>({ authenticated: false })
   const [authState, setAuthState] = useState<'idle' | 'waiting' | 'error'>('idle')
   const [sessionToken, setSessionToken] = useState<string | null>(null)
@@ -54,7 +56,7 @@ export function App() {
         if (active) setPlugins(registry.items)
       })
       .catch(() => {
-        if (active) setError(t('status.registryRequestFailed'))
+        if (active) setRegistryError(t('status.registryRequestFailed'))
       })
       .finally(() => {
         if (active) setRegistryLoading(false)
@@ -111,14 +113,14 @@ export function App() {
 
   async function signIn(): Promise<void> {
     setAuthState('waiting')
-    setError('')
+    setAuthError('')
     try {
       const startResponse = await fetch(`${apiUrl}/auth/github/desktop/start`, {
         method: 'POST',
         headers: { Accept: 'application/json' },
       })
       if (!startResponse.ok) {
-        throw new Error(t('auth.loginStartFailed', { status: startResponse.status }))
+        throw new Error(t('auth.serviceUnavailableBody'))
       }
       const started = desktopOAuthStartResponseSchema.parse(await startResponse.json())
       await openUrl(started.authorization_url)
@@ -134,7 +136,7 @@ export function App() {
           }),
         })
         if (!exchangeResponse.ok) {
-          throw new Error(t('auth.loginFinishFailed', { status: exchangeResponse.status }))
+          throw new Error(t('auth.loginFailedTryAgain'))
         }
         const exchange = desktopSessionExchangeResponseSchema.parse(await exchangeResponse.json())
         if (exchange.status === 'COMPLETE') {
@@ -147,7 +149,7 @@ export function App() {
       throw new Error(t('auth.loginExpired'))
     } catch (reason) {
       setAuthState('error')
-      setError(reason instanceof Error ? reason.message : t('auth.loginFailed'))
+      setAuthError(reason instanceof Error ? reason.message : t('auth.loginFailedTryAgain'))
     }
   }
 
@@ -178,6 +180,7 @@ export function App() {
         active={activeSection}
         onNavigate={navigate}
         runtimeConnected={runtimeSnapshot?.connection === 'CONNECTED'}
+        showDevelopmentDetails={showDevelopmentDetails}
       />
 
       <main className="desktop-main" id="workspace-main" ref={mainRef}>
@@ -210,6 +213,18 @@ export function App() {
           </div>
         </header>
 
+        {authError ? (
+          <aside className="desktop-auth-notice" role="alert">
+            <span aria-hidden="true">!</span>
+            <div>
+              <strong>{t('auth.serviceUnavailableTitle')}</strong>
+              <p>{authError}</p>
+            </div>
+            <button onClick={() => void signIn()} type="button">{t('auth.retry')}</button>
+            <button aria-label={t('auth.dismiss')} onClick={() => { setAuthError(''); setAuthState('idle') }} type="button">×</button>
+          </aside>
+        ) : null}
+
         <section className="desktop-content">
           <WorkspaceDashboard
             environment={runtimeEnvironment}
@@ -219,11 +234,19 @@ export function App() {
             runtimeEvents={runtimeEvents}
           />
 
-          <AgentWorkspace environment={runtimeEnvironment} events={runtimeEvents} runtime={runtimeSnapshot} />
+          <AgentWorkspace
+            environment={runtimeEnvironment}
+            events={runtimeEvents}
+            runtime={runtimeSnapshot}
+            showDevelopmentDetails={showDevelopmentDetails}
+          />
 
-          <RuntimeBridgePanel onStateChange={handleRuntimeState} />
+          <RuntimeBridgePanel
+            onStateChange={handleRuntimeState}
+            showDevelopmentDetails={showDevelopmentDetails}
+          />
 
-          <DesktopMarketplace error={error} loading={registryLoading} plugins={plugins} />
+          <DesktopMarketplace error={registryError} loading={registryLoading} plugins={plugins} />
 
           <RuntimeIntegrationPanel onSnapshot={setRuntimeEnvironment} />
           <InstallationPrototypePanel auth={auth} runtimeEnvironment={runtimeEnvironment} />

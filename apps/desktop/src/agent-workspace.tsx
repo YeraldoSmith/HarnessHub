@@ -26,13 +26,23 @@ interface AgentWorkspaceProps {
   runtime: Readonly<RuntimeSnapshot> | null
   events: readonly Readonly<RuntimeEvent>[]
   environment: RuntimeEnvironmentSnapshot | null
+  showDevelopmentDetails?: boolean
 }
 
-export function AgentWorkspace({ runtime, events, environment }: AgentWorkspaceProps) {
+export function AgentWorkspace({
+  runtime,
+  events,
+  environment,
+  showDevelopmentDetails = false,
+}: AgentWorkspaceProps) {
   const { t } = useI18n()
   const [draft, setDraft] = useState('')
   const connected = runtime?.connection === 'CONNECTED'
   const ready = connected && runtime.status !== 'ERROR' && runtime.status !== 'NOT_RUNNING'
+  const runtimeVersion =
+    runtime?.implementation === 'CONTRACT_FIXTURE' && !showDevelopmentDetails
+      ? t('runtimeBridge.previewVersion')
+      : runtime?.version ?? environment?.dsh.version ?? t('runtime.versionUnknown')
 
   return (
     <section className="agent-workspace workspace-section" id="agent-workspace">
@@ -46,7 +56,11 @@ export function AgentWorkspace({ runtime, events, environment }: AgentWorkspaceP
           <span aria-hidden="true" />
           <div>
             <small>{t('agent.agentStatus')}</small>
-            <strong>{ready ? t('agent.ready') : t('agent.offline')}</strong>
+            <strong>
+              {ready
+                ? t(showDevelopmentDetails ? 'agent.readyDevelopment' : 'agent.ready')
+                : t('agent.offline')}
+            </strong>
           </div>
         </div>
       </header>
@@ -55,7 +69,7 @@ export function AgentWorkspace({ runtime, events, environment }: AgentWorkspaceP
         <div><span>{t('agent.runtime')}</span><strong>{runtime?.runtimeName ?? 'DSH'}</strong></div>
         <div><span>{t('runtimeBridge.status')}</span><strong>{runtime ? t(runtimeStatusKeys[runtime.status]) : t('runtimeBridge.statusNotRunning')}</strong></div>
         <div><span>{t('agent.connection')}</span><strong>{connected ? t('runtimeBridge.connected') : t('runtimeBridge.disconnected')}</strong></div>
-        <div><span>{t('agent.version')}</span><strong>{runtime?.version ?? environment?.dsh.version ?? t('runtime.versionUnknown')}</strong></div>
+        <div><span>{t('agent.version')}</span><strong>{runtimeVersion}</strong></div>
       </div>
 
       <div className="agent-workspace__grid">

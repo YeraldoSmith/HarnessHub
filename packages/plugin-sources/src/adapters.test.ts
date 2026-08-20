@@ -102,4 +102,25 @@ describe('source adapters', () => {
     expect(snapshot.plugin.source_commit).toBe(commit)
     expect(snapshot.plugin.source_evidence).toHaveLength(2)
   })
+
+  it('rejects a GitHub/npm package identity mismatch', async () => {
+    const baseFetch = createFetch()
+    const mismatchedFetch = (async (input: string | URL | Request, init?: RequestInit) => {
+      if (String(input).includes('/contents/package.json')) {
+        return text(JSON.stringify({ ...packageManifest, name: '@example/different-package' }))
+      }
+      return baseFetch(input, init)
+    }) as typeof fetch
+    const sync = new PluginSourceSync({ fetch: mismatchedFetch, clock: () => now })
+
+    await expect(
+      sync.createSnapshot({
+        id: 'dsh-example',
+        display_name: 'DSH Example',
+        category: 'Development',
+        github: { repository },
+        npm: { package_name: '@example/dsh-example' },
+      }),
+    ).rejects.toThrow('Source mismatch')
+  })
 })

@@ -39,6 +39,15 @@ Phase 1 当前实现先以一个明确标识的 Mock Plugin 打通 Schema、API 
 - Web/Desktop 从同一真实 Registry API 读取；
 - Mock Plugin 移至测试 fixture。
 
+### Phase 1-C：Registry Hardening（已完成）
+
+- 人工白名单扩展为 3 个真实 GitHub/npm 来源；
+- Snapshot 历史与版本比较只读 API；
+- 重复同步复用不可变 PluginVersion，同时追加新 Snapshot；
+- PostgreSQL 隔离 Schema 集成测试；
+- GitHub/npm 身份失配测试与逐来源同步失败报告；
+- Web 详情页展示 Snapshot 历史。
+
 ### 交付
 
 - Monorepo、CI、环境配置和共享类型；

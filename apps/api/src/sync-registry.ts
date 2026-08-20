@@ -16,12 +16,23 @@ async function main() {
 
   await prisma.$connect()
   try {
+    const failures: string[] = []
     for (const source of sources) {
-      const snapshot = await sourceSync.createSnapshot(source)
-      const plugin = await repository.saveSnapshot(snapshot)
-      console.log(
-        `Synced ${plugin.name} ${plugin.version} at ${plugin.source_commit ?? 'no GitHub commit'}.`,
-      )
+      try {
+        const snapshot = await sourceSync.createSnapshot(source)
+        const plugin = await repository.saveSnapshot(snapshot)
+        console.log(
+          `Synced ${plugin.name} ${plugin.version} at ${plugin.source_commit ?? 'no GitHub commit'}.`,
+        )
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        failures.push(`${source.id}: ${message}`)
+        console.error(`Failed ${source.id}: ${message}`)
+      }
+    }
+
+    if (failures.length > 0) {
+      throw new Error(`Registry sync completed with ${failures.length} failure(s).`)
     }
   } finally {
     await prisma.$disconnect()

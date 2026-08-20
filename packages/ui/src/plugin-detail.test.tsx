@@ -13,10 +13,24 @@ const fixture = pluginSchema.parse(
 
 describe('PluginDetail', () => {
   it('renders the test-only Mock Plugin snapshot without implying production trust', () => {
-    const markup = renderToStaticMarkup(<PluginDetail plugin={fixture} />)
+    const markup = renderToStaticMarkup(
+      <PluginDetail
+        plugin={fixture}
+        snapshots={[
+          {
+            id: 'snapshot-1',
+            plugin_id: fixture.id,
+            plugin_version_id: 'version-1',
+            plugin: fixture,
+            checked_at: fixture.checked_at,
+          },
+        ]}
+      />,
+    )
 
     expect(markup).toContain('Mock Plugin · not installable')
     expect(markup).toContain('Not available')
     expect(markup).toContain('Test fixture')
+    expect(markup).toContain('Snapshot history')
   })
 })

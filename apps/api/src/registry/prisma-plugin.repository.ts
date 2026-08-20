@@ -3,7 +3,12 @@ import { createHash } from 'node:crypto'
 import { Inject, Injectable } from '@nestjs/common'
 
 import { pluginSchema } from '@harnesshub/plugin-schema'
-import type { Plugin, PluginSnapshot, SourceEvidence } from '@harnesshub/types'
+import type {
+  Plugin,
+  PluginSnapshot,
+  PluginSnapshotRecord,
+  SourceEvidence,
+} from '@harnesshub/types'
 
 import { Prisma, SourceProvider, SourceType } from '../generated/prisma/client.js'
 import { PrismaService } from '../database/prisma.service.js'
@@ -41,6 +46,25 @@ export class PrismaPluginRepository implements PluginRepository {
     })
     const snapshot = record?.versions[0]?.snapshots[0]
     return snapshot ? pluginSchema.parse(snapshot.data) : null
+  }
+
+  async listSnapshots(pluginId: string): Promise<PluginSnapshotRecord[]> {
+    const snapshots = await this.prisma.pluginSnapshot.findMany({
+      where: { pluginVersion: { pluginId } },
+      orderBy: [{ checkedAt: 'desc' }, { createdAt: 'desc' }],
+      include: { pluginVersion: { select: { pluginId: true } } },
+    })
+
+    return snapshots.map((snapshot) => this.toSnapshotRecord(snapshot))
+  }
+
+  async getSnapshot(pluginId: string, snapshotId: string): Promise<PluginSnapshotRecord | null> {
+    const snapshot = await this.prisma.pluginSnapshot.findFirst({
+      where: { id: snapshotId, pluginVersion: { pluginId } },
+      include: { pluginVersion: { select: { pluginId: true } } },
+    })
+
+    return snapshot ? this.toSnapshotRecord(snapshot) : null
   }
 
   async saveSnapshot(snapshot: PluginSnapshot): Promise<Plugin> {
@@ -138,6 +162,22 @@ export class PrismaPluginRepository implements PluginRepository {
           },
         },
       },
+    }
+  }
+
+  private toSnapshotRecord(snapshot: {
+    id: string
+    pluginVersionId: string
+    checkedAt: Date
+    data: Prisma.JsonValue
+    pluginVersion: { pluginId: string }
+  }): PluginSnapshotRecord {
+    return {
+      id: snapshot.id,
+      plugin_id: snapshot.pluginVersion.pluginId,
+      plugin_version_id: snapshot.pluginVersionId,
+      plugin: pluginSchema.parse(snapshot.data),
+      checked_at: snapshot.checkedAt.toISOString(),
     }
   }
 

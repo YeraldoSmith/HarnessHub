@@ -1,12 +1,17 @@
-import type { Plugin, PluginSnapshot } from '@harnesshub/types'
+import type { Plugin, PluginSnapshot, PluginSnapshotRecord } from '@harnesshub/types'
 
 import type { PluginRepository } from './plugin.repository.js'
 
 export class MemoryPluginRepository implements PluginRepository {
   private readonly plugins = new Map<string, Plugin>()
+  private readonly snapshots = new Map<string, PluginSnapshotRecord[]>()
+  private sequence = 0
 
   constructor(initialPlugins: Plugin[] = []) {
-    for (const plugin of initialPlugins) this.plugins.set(plugin.id, structuredClone(plugin))
+    for (const plugin of initialPlugins) {
+      this.plugins.set(plugin.id, structuredClone(plugin))
+      this.appendSnapshot({ plugin, checked_at: plugin.checked_at })
+    }
   }
 
   async list(query?: string): Promise<Plugin[]> {
@@ -28,8 +33,31 @@ export class MemoryPluginRepository implements PluginRepository {
     return plugin ? structuredClone(plugin) : null
   }
 
+  async listSnapshots(pluginId: string): Promise<PluginSnapshotRecord[]> {
+    return structuredClone(this.snapshots.get(pluginId) ?? [])
+  }
+
+  async getSnapshot(pluginId: string, snapshotId: string): Promise<PluginSnapshotRecord | null> {
+    const snapshot = this.snapshots.get(pluginId)?.find((record) => record.id === snapshotId)
+    return snapshot ? structuredClone(snapshot) : null
+  }
+
   async saveSnapshot(snapshot: PluginSnapshot): Promise<Plugin> {
     this.plugins.set(snapshot.plugin.id, structuredClone(snapshot.plugin))
+    this.appendSnapshot(snapshot)
     return structuredClone(snapshot.plugin)
+  }
+
+  private appendSnapshot(snapshot: PluginSnapshot): void {
+    this.sequence += 1
+    const record: PluginSnapshotRecord = {
+      ...structuredClone(snapshot),
+      id: `memory-snapshot-${this.sequence}`,
+      plugin_id: snapshot.plugin.id,
+      plugin_version_id: `memory-version-${snapshot.plugin.id}-${snapshot.plugin.version}`,
+    }
+    const records = this.snapshots.get(snapshot.plugin.id) ?? []
+    records.unshift(record)
+    this.snapshots.set(snapshot.plugin.id, records)
   }
 }

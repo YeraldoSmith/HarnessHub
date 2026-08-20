@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 
-import { NotFoundException } from '@nestjs/common'
+import { BadRequestException, NotFoundException } from '@nestjs/common'
 import { describe, expect, it } from 'vitest'
 
 import { pluginSchema } from '@harnesshub/plugin-schema'
@@ -32,5 +32,37 @@ describe('PluginService with MemoryPluginRepository', () => {
 
   it('returns a not-found error for unknown plugins', async () => {
     await expect(service.getById('missing-plugin')).rejects.toThrow(NotFoundException)
+  })
+
+  it('lists and compares immutable snapshot records', async () => {
+    const historyRepository = new MemoryPluginRepository([mockPlugin])
+    const historyService = new PluginService(historyRepository)
+    await historyRepository.saveSnapshot({
+      checked_at: '2026-08-20T02:00:00.000Z',
+      plugin: {
+        ...mockPlugin,
+        version: '0.2.0-mock.1',
+        checked_at: '2026-08-20T02:00:00.000Z',
+      },
+    })
+    const history = await historyService.listSnapshots(mockPlugin.id)
+    const comparison = await historyService.compareSnapshots(
+      mockPlugin.id,
+      history[1]?.id,
+      history[0]?.id,
+    )
+
+    expect(history).toHaveLength(2)
+    expect(comparison.changes).toContainEqual({
+      field: 'version',
+      before: mockPlugin.version,
+      after: '0.2.0-mock.1',
+    })
+  })
+
+  it('requires both snapshot IDs for comparisons', async () => {
+    await expect(service.compareSnapshots(mockPlugin.id, 'snapshot-1')).rejects.toThrow(
+      BadRequestException,
+    )
   })
 })

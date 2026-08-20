@@ -10,5 +10,29 @@
     "npm": {
       "package_name": "@jiesou/dsh-cline-free-provider"
     }
+  },
+  {
+    "id": "dsh-agent-teams",
+    "display_name": "DSH Agent Teams",
+    "category": "Agent Orchestration",
+    "github": {
+      "repository": "NanmiCoder/dsh-agent-teams",
+      "ref": "main"
+    },
+    "npm": {
+      "package_name": "@nanmicoder/dsh-agent-teams"
+    }
+  },
+  {
+    "id": "dsh-tui",
+    "display_name": "dsh-TUI",
+    "category": "Interfaces",
+    "github": {
+      "repository": "ccch1mneyyy/dsh-TUI",
+      "ref": "main"
+    },
+    "npm": {
+      "package_name": "@deepseek-harness-tui/dsh-tui"
+    }
   }
 ]

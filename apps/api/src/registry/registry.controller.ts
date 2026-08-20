@@ -11,6 +11,20 @@ export class RegistryController {
     return this.pluginService.list(query)
   }
 
+  @Get(':id/snapshots/compare')
+  compareSnapshots(
+    @Param('id') id: string,
+    @Query('from') fromSnapshotId?: string,
+    @Query('to') toSnapshotId?: string,
+  ) {
+    return this.pluginService.compareSnapshots(id, fromSnapshotId, toSnapshotId)
+  }
+
+  @Get(':id/snapshots')
+  listSnapshots(@Param('id') id: string) {
+    return this.pluginService.listSnapshots(id)
+  }
+
   @Get(':id')
   getById(@Param('id') id: string) {
     return this.pluginService.getById(id)

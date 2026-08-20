@@ -1,12 +1,13 @@
-import type { Plugin } from '@harnesshub/types'
+import type { Plugin, PluginSnapshotRecord } from '@harnesshub/types'
 
 import { IdentityBadge } from './identity-badge.js'
 
 export interface PluginDetailProps {
   plugin: Plugin
+  snapshots?: PluginSnapshotRecord[]
 }
 
-export function PluginDetail({ plugin }: PluginDetailProps) {
+export function PluginDetail({ plugin, snapshots }: PluginDetailProps) {
   return (
     <article className="hh-plugin-detail">
       <div className="hh-plugin-detail__eyebrow">
@@ -77,7 +78,7 @@ export function PluginDetail({ plugin }: PluginDetailProps) {
             ))
           ) : (
             <div className="hh-empty-evidence">
-              Permission analysis is intentionally outside Phase 1-B. No safety conclusion is attached.
+              Permission analysis is intentionally outside the Registry phase. No safety conclusion is attached.
             </div>
           )}
         </div>
@@ -100,6 +101,30 @@ export function PluginDetail({ plugin }: PluginDetailProps) {
           ))}
         </div>
       </section>
+
+      {snapshots ? (
+        <section className="hh-plugin-detail__section hh-plugin-detail__history">
+          <div>
+            <span className="hh-section-kicker">Append-only observations</span>
+            <h2>Snapshot history</h2>
+          </div>
+          <ol className="hh-snapshot-list">
+            {snapshots.map((snapshot) => (
+              <li key={snapshot.id}>
+                <div>
+                  <strong>v{snapshot.plugin.version}</strong>
+                  <span>{snapshot.plugin.source_commit?.slice(0, 12) ?? 'No commit'}</span>
+                </div>
+                <time dateTime={snapshot.checked_at}>
+                  {new Date(snapshot.checked_at).toISOString()}
+                </time>
+                <small>{snapshot.plugin.source_evidence.length} evidence records</small>
+              </li>
+            ))}
+            {snapshots.length === 0 ? <li className="hh-snapshot-list__empty">No snapshots recorded.</li> : null}
+          </ol>
+        </section>
+      ) : null}
 
       <aside className="hh-trust-note">
         <strong>{plugin.is_mock ? 'Test fixture' : 'Source snapshot, not a safety review'}</strong>

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 
-import type { Plugin } from '@harnesshub/types'
+import type { Plugin, PluginSnapshotRecord } from '@harnesshub/types'
 import { IdentityBadge, PluginCard, PluginDetail } from '@harnesshub/ui'
 
-import { getPlugin, listPlugins } from './api.js'
+import { getPlugin, listPlugins, listPluginSnapshots } from './api.js'
 
 type LoadState = 'loading' | 'ready' | 'error'
 
@@ -16,6 +16,7 @@ export function App() {
   const pluginId = useMemo(pluginIdFromPath, [])
   const [plugins, setPlugins] = useState<Plugin[]>([])
   const [selectedPlugin, setSelectedPlugin] = useState<Plugin | null>(null)
+  const [snapshots, setSnapshots] = useState<PluginSnapshotRecord[]>([])
   const [query, setQuery] = useState('')
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [error, setError] = useState('')
@@ -24,25 +25,28 @@ export function App() {
     let active = true
     setLoadState('loading')
 
-    const load = pluginId ? getPlugin(pluginId) : listPlugins(query)
-    void load
-      .then((result) => {
-        if (!active) return
-
-        if (Array.isArray(result)) {
-          setPlugins(result)
-        } else if ('data' in result) {
-          setPlugins(result.data)
+    void (async () => {
+      try {
+        if (pluginId) {
+          const [plugin, history] = await Promise.all([
+            getPlugin(pluginId),
+            listPluginSnapshots(pluginId),
+          ])
+          if (!active) return
+          setSelectedPlugin(plugin)
+          setSnapshots(history)
         } else {
-          setSelectedPlugin(result)
+          const result = await listPlugins(query)
+          if (!active) return
+          setPlugins(result.data)
         }
         setLoadState('ready')
-      })
-      .catch((reason: unknown) => {
+      } catch (reason) {
         if (!active) return
         setError(reason instanceof Error ? reason.message : 'The registry could not be loaded.')
         setLoadState('error')
-      })
+      }
+    })()
 
     return () => {
       active = false
@@ -65,7 +69,7 @@ export function App() {
           <a href="/">Registry</a>
           <a href="#principles">Principles</a>
         </nav>
-        <span className="phase-pill">Phase 1-B · Real Registry</span>
+        <span className="phase-pill">Phase 1-C · Registry Hardening</span>
       </header>
 
       <main>
@@ -74,7 +78,9 @@ export function App() {
             <a className="back-link" href="/">
               ← Back to registry
             </a>
-            {loadState === 'ready' && selectedPlugin ? <PluginDetail plugin={selectedPlugin} /> : null}
+            {loadState === 'ready' && selectedPlugin ? (
+              <PluginDetail plugin={selectedPlugin} snapshots={snapshots} />
+            ) : null}
             <LoadMessage state={loadState} error={error} />
           </section>
         ) : (

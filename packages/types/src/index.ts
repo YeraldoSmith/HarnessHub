@@ -74,6 +74,25 @@ export interface PluginSnapshot {
   checked_at: string
 }
 
+export interface PluginSnapshotRecord extends PluginSnapshot {
+  id: string
+  plugin_id: string
+  plugin_version_id: string
+}
+
+export interface PluginSnapshotChange {
+  field: 'version' | 'source_commit' | 'npm_version' | 'compatibility' | 'license' | 'source'
+  before: string | null
+  after: string | null
+}
+
+export interface PluginSnapshotComparison {
+  plugin_id: string
+  from_snapshot_id: string
+  to_snapshot_id: string
+  changes: PluginSnapshotChange[]
+}
+
 export interface RegistryResponse {
   data: Plugin[]
   total: number

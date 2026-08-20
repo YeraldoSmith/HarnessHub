@@ -1,5 +1,5 @@
-import { registryResponseSchema } from '@harnesshub/plugin-schema'
-import type { Plugin, RegistryResponse } from '@harnesshub/types'
+import { pluginSnapshotListSchema, registryResponseSchema } from '@harnesshub/plugin-schema'
+import type { Plugin, PluginSnapshotRecord, RegistryResponse } from '@harnesshub/types'
 
 const apiUrl = (import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:3001').replace(/\/$/, '')
 
@@ -34,4 +34,10 @@ export async function getPlugin(id: string): Promise<Plugin> {
   }
 
   return plugin
+}
+
+export async function listPluginSnapshots(id: string): Promise<PluginSnapshotRecord[]> {
+  return pluginSnapshotListSchema.parse(
+    await request(`/plugins/${encodeURIComponent(id)}/snapshots`),
+  )
 }

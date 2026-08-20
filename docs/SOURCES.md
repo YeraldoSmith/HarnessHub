@@ -43,6 +43,13 @@
 
 每次同步以当次生成的数据库 Snapshot 为事实记录；本文档中的版本号只描述首个里程碑，可能随 Registry 后续同步而过时。
 
+Phase 1-C 新增人工白名单来源：
+
+- [`NanmiCoder/dsh-agent-teams`](https://github.com/NanmiCoder/dsh-agent-teams) / [`@nanmicoder/dsh-agent-teams`](https://www.npmjs.com/package/@nanmicoder/dsh-agent-teams)，首次同步 `0.1.8`，commit `801954dd7be67213cf4adc1aeb6f97bd3daa12cc`；
+- [`ccch1mneyyy/dsh-TUI`](https://github.com/ccch1mneyyy/dsh-TUI) / [`@deepseek-harness-tui/dsh-tui`](https://www.npmjs.com/package/@deepseek-harness-tui/dsh-tui)，首次同步 `0.8.5`，commit `1f93efe85360560e3da49726d7a55af659e771fe`。
+
+这些记录只证明同步时 GitHub/npm 身份、Bundle 声明、仓库与许可证能够交叉核对，不是安全审核、官方收录或推荐。
+
 ## 更新规则
 
 以下事件发生时必须重新核验并更新本页：

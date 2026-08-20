@@ -23,6 +23,8 @@
 | D-015 | YeraldoSmith 为唯一 Founder & Initial Maintainer | 建立初始归属、治理与身份基线 |
 | D-016 | Phase 1-B 只同步手工白名单来源 | 避免把自动发现结果误当作已验证 Registry 数据 |
 | D-017 | PluginVersion 与 PluginSnapshot 在数据库层不可变 | 让公开元数据能够追溯到历史来源证据 |
+| D-018 | Prisma PostgreSQL Driver Adapter 显式应用连接串 schema | 防止测试或多环境连接意外落入 public Schema |
+| D-019 | 重复同步追加 Snapshot，但复用相同版本身份 | 保留每次观察证据，同时避免制造重复 PluginVersion |
 
 ## P0：进入代码阶段前确认
 

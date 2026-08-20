@@ -36,6 +36,8 @@ Phase 1 首个骨架已建立用户指定的三个应用与三个共享包：`ap
 
 Phase 1-B 新增 `packages/plugin-sources`，集中处理 GitHub/npm 读取、来源交叉核对和 Snapshot 生成。Mock 数据已移至 `tests/fixtures`，不会进入生产 Registry。
 
+Phase 1-C 增加 Snapshot 历史/比较只读接口、隔离 PostgreSQL 集成测试，以及批量同步的逐来源失败报告。Prisma Driver Adapter 显式应用连接串中的 schema，避免测试 Schema 与生产 Registry 混用。
+
 当前只读 Registry 的依赖方向：
 
 ```text
@@ -186,6 +188,8 @@ resolved → consented → preflight_ok → installing → verifying → install
 ```text
 GET    /plugins
 GET    /plugins/:slug
+GET    /plugins/:slug/snapshots
+GET    /plugins/:slug/snapshots/compare?from=:snapshotId&to=:snapshotId
 GET    /plugins/:slug/versions/:version
 POST   /submissions
 POST   /claims

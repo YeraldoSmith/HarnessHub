@@ -42,7 +42,7 @@ export function PluginCard({ plugin, href }: PluginCardProps) {
           ))}
         </div>
       ) : (
-        <div className="hh-metadata-pending">Permissions not assessed in Phase 1-B</div>
+        <div className="hh-metadata-pending">Permissions not assessed in the Registry phase</div>
       )}
     </>
   )

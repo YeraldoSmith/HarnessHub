@@ -74,4 +74,32 @@ export const pluginSnapshotSchema = z.object({
   checked_at: z.string().datetime({ offset: true }),
 })
 
-export type { Plugin, PluginSnapshot, SourceEvidence } from '@harnesshub/types'
+export const pluginSnapshotRecordSchema = pluginSnapshotSchema.extend({
+  id: z.string().min(1).max(40),
+  plugin_id: pluginSchema.shape.id,
+  plugin_version_id: z.string().min(1).max(40),
+})
+
+export const pluginSnapshotListSchema = z.array(pluginSnapshotRecordSchema)
+
+export const pluginSnapshotChangeSchema = z.object({
+  field: z.enum(['version', 'source_commit', 'npm_version', 'compatibility', 'license', 'source']),
+  before: z.string().nullable(),
+  after: z.string().nullable(),
+})
+
+export const pluginSnapshotComparisonSchema = z.object({
+  plugin_id: pluginSchema.shape.id,
+  from_snapshot_id: z.string().min(1).max(40),
+  to_snapshot_id: z.string().min(1).max(40),
+  changes: z.array(pluginSnapshotChangeSchema),
+})
+
+export type {
+  Plugin,
+  PluginSnapshot,
+  PluginSnapshotChange,
+  PluginSnapshotComparison,
+  PluginSnapshotRecord,
+  SourceEvidence,
+} from '@harnesshub/types'

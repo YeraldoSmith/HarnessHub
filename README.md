@@ -8,7 +8,7 @@ HarnessHub 是面向 DeepSeek Harness（DSH）生态起步的第三方社区平�
 
 HarnessHub 由 **YeraldoSmith** 创建，初始身份为 **Founder & Initial Maintainer**。
 
-> 当前状态：Phase 1-B 已完成。只读 Plugin Registry 已接入 PostgreSQL，能够从手工白名单中的 GitHub/npm 来源生成可追溯 Snapshot；Mock Plugin 仅保留为测试 fixture。
+> 当前状态：Phase 1-C 已完成。只读 Plugin Registry 已接入 PostgreSQL，当前收录 3 个经人工指定、由 GitHub/npm 交叉核对的真实来源，并提供追加式 Snapshot 历史与版本比较 API；Mock Plugin 仅保留为测试 fixture。
 
 ## v0.1 的最小闭环
 
@@ -36,7 +36,7 @@ HarnessHub 由 **YeraldoSmith** 创建，初始身份为 **Founder & Initial Mai
 - 不自动批准 Git 依赖的安装构建脚本，也不静默安装或更新插件。
 - DSH 尚处于开发者预览阶段，所有 DSH 集成都经过独立适配层。
 
-## Phase 1-B 本地运行
+## Phase 1-C 本地运行
 
 要求：Node.js 22.19+、pnpm 11、PostgreSQL 17。macOS 可使用仓库内的项目级数据库启动脚本；它不会注册系统常驻服务。Desktop 原生壳检查还需要 Rust 工具链。
 
@@ -58,6 +58,7 @@ pnpm dev
 
 ```bash
 pnpm check
+pnpm test:integration
 ```
 
 真实 Registry 来源由 `config/registry-sources.json` 明确列出，不扫描整个 GitHub。同步会交叉核对 GitHub/npm 包身份、仓库地址和许可证，并保存 commit SHA、精确 npm 版本、抓取时间与完整性证据。详见 [Phase 1-B Registry](docs/PHASE_1B_REGISTRY.md)。
@@ -83,6 +84,7 @@ pnpm db:local:stop
 - [决策记录](docs/DECISIONS.md)
 - [事实来源与版本基线](docs/SOURCES.md)
 - [Phase 1-B Registry](docs/PHASE_1B_REGISTRY.md)
+- [Phase 1-C Registry Hardening](docs/PHASE_1C_REGISTRY_HARDENING.md)
 
 ## 后续门槛
 

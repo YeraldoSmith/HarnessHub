@@ -1,6 +1,6 @@
 # HarnessHub 数据库设计
 
-状态：Phase 1-B Registry 已实现；其余为后续概念模型
+状态：Phase 1-C Registry Hardening 已实现；其余为后续概念模型
 
 目标数据库：PostgreSQL + Prisma
 
@@ -30,6 +30,7 @@ plugin_snapshots
 - 同一版本再次同步只追加 Snapshot，不覆写历史证据；
 - `plugin_sources.evidence` 保存当前来源状态，Snapshot 同时保留当次不可变证据；
 - Mock Plugin 只存在于 `tests/fixtures`，Repository 拒绝写入 `is_mock: true` 的记录。
+- 集成测试固定使用 `harnesshub_test` Schema，测试后删除该隔离 Schema；Driver Adapter 同时显式设置 schema，不能只依赖连接串被底层驱动隐式理解。
 
 对应实现以 `apps/api/prisma/schema.prisma` 和已提交 migration 为准。
 

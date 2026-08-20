@@ -47,7 +47,7 @@ export function App() {
         </nav>
 
         <div className="desktop-scope-note">
-          <strong>Phase 1-B</strong>
+          <strong>Phase 1-C</strong>
           <p>Read-only Registry. Install and account actions are not enabled.</p>
         </div>
       </aside>

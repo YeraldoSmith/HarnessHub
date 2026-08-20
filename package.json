@@ -24,6 +24,7 @@
     "build": "pnpm -r --if-present build",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm build:packages && pnpm -r --if-present test",
+    "test:integration": "bash scripts/test-postgres-integration.sh",
     "check": "pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {

@@ -157,6 +157,7 @@ interface RuntimeBridgePanelProps {
 export function RuntimeBridgePanel({ bridge: injectedBridge, onStateChange }: RuntimeBridgePanelProps) {
   const { t } = useI18n()
   const translateRef = useRef(t)
+  const disconnectTimerRef = useRef<number | null>(null)
   translateRef.current = t
   const bridge = useMemo(() => injectedBridge ?? createPrototypeBridge(), [injectedBridge])
   const [snapshot, setSnapshot] = useState(bridge.snapshot())
@@ -167,6 +168,10 @@ export function RuntimeBridgePanel({ bridge: injectedBridge, onStateChange }: Ru
 
   useEffect(() => {
     let active = true
+    if (disconnectTimerRef.current !== null) {
+      window.clearTimeout(disconnectTimerRef.current)
+      disconnectTimerRef.current = null
+    }
     const unsubscribe = bridge.subscribe((next) => {
       if (!active) return
       setSnapshot(next)
@@ -185,7 +190,10 @@ export function RuntimeBridgePanel({ bridge: injectedBridge, onStateChange }: Ru
     return () => {
       active = false
       unsubscribe()
-      void bridge.disconnect().catch(() => undefined)
+      disconnectTimerRef.current = window.setTimeout(() => {
+        disconnectTimerRef.current = null
+        void bridge.disconnect().catch(() => undefined)
+      }, 0)
     }
   }, [bridge, onStateChange])
 

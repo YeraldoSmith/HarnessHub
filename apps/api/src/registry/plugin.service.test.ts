@@ -31,6 +31,26 @@ describe('PluginService with MemoryPluginRepository', () => {
     await expect(service.list({ q: 'testing' })).resolves.toMatchObject({ total: 1 })
   })
 
+  it('filters by category and supports stable recent ordering', async () => {
+    const repository = new MemoryPluginRepository([
+      mockPlugin,
+      {
+        ...mockPlugin,
+        id: 'recent-data-plugin',
+        name: 'Recent Data Plugin',
+        category: 'Data',
+        checked_at: '2026-08-20T12:00:00.000Z',
+      },
+    ])
+    const filteredService = new PluginService(repository)
+
+    const categoryResult = await filteredService.list({ category: 'Data' })
+    const recentResult = await filteredService.list({ sort: 'recent' })
+
+    expect(categoryResult.items.map((plugin) => plugin.id)).toEqual(['recent-data-plugin'])
+    expect(recentResult.items[0]?.id).toBe('recent-data-plugin')
+  })
+
   it('returns stable pagination metadata', async () => {
     const pagedRepository = new MemoryPluginRepository([
       mockPlugin,

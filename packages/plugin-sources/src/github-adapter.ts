@@ -15,14 +15,6 @@ interface GitHubCommitResponse {
   sha: string
 }
 
-interface GitHubReleaseResponse {
-  tag_name: string
-}
-
-interface GitHubTagResponse {
-  name: string
-}
-
 interface PackageManifest extends Record<string, unknown> {
   name?: unknown
   version?: unknown
@@ -59,11 +51,11 @@ export class GitHubSourceAdapter {
       throw new Error(`GitHub returned an invalid commit SHA for '${repository}'.`)
     }
 
-    const rawHeaders = this.headers('application/vnd.github.raw+json')
+    const rawBase = `https://raw.githubusercontent.com/${repository}/${commit.sha}`
     const [readme, manifestText, releaseTag] = await Promise.all([
-      fetchText(this.fetchImpl, `${apiBase}/readme?ref=${commit.sha}`, rawHeaders),
-      fetchText(this.fetchImpl, `${apiBase}/contents/package.json?ref=${commit.sha}`, rawHeaders),
-      this.fetchReleaseTag(apiBase),
+      this.fetchReadme(rawBase),
+      fetchText(this.fetchImpl, `${rawBase}/package.json`, { 'User-Agent': 'HarnessHub-Registry/0.1' }),
+      this.fetchReleaseTag(repository),
     ])
     const packageManifest = JSON.parse(manifestText) as PackageManifest
 
@@ -85,7 +77,7 @@ export class GitHubSourceAdapter {
       commit_sha: commit.sha,
       release_tag: releaseTag,
       license_spdx: licenseSpdx,
-      readme_excerpt: readme.replace(/\s+/g, ' ').trim().slice(0, 500),
+      readme_excerpt: readme.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 500),
       package_manifest: packageManifest,
       evidence: {
         provider: 'github',
@@ -97,7 +89,7 @@ export class GitHubSourceAdapter {
         release_tag: releaseTag,
         npm_version: null,
         integrity: null,
-        readme_sha256: createHash('sha256').update(readme).digest('hex'),
+        readme_sha256: readme ? createHash('sha256').update(readme).digest('hex') : null,
         license_spdx: licenseSpdx,
       },
     }
@@ -114,26 +106,31 @@ export class GitHubSourceAdapter {
     return headers
   }
 
-  private async fetchReleaseTag(apiBase: string): Promise<string | null> {
-    const headers = this.headers('application/vnd.github+json')
-    try {
-      const release = await fetchJson<GitHubReleaseResponse>(
-        this.fetchImpl,
-        `${apiBase}/releases/latest`,
-        headers,
-      )
-      return release.tag_name
-    } catch (error) {
-      if (!(error instanceof SourceFetchError) || error.status !== 404) throw error
+  private async fetchReadme(rawBase: string): Promise<string> {
+    for (const name of ['README.md', 'README.MD', 'README', 'README.rst']) {
+      try {
+        return await fetchText(this.fetchImpl, `${rawBase}/${name}`, {
+          'User-Agent': 'HarnessHub-Registry/0.1',
+        })
+      } catch (error) {
+        if (!(error instanceof SourceFetchError) || error.status !== 404) throw error
+      }
     }
+    return ''
+  }
 
-    const tags = await fetchJson<GitHubTagResponse[]>(
-      this.fetchImpl,
-      `${apiBase}/tags?per_page=20`,
-      headers,
-    )
-    const tagAtCommit = tags.find((tag) => tag.name.length > 0)
-    return tagAtCommit?.name ?? null
+  private async fetchReleaseTag(repository: string): Promise<string | null> {
+    try {
+      const feed = await fetchText(
+        this.fetchImpl,
+        `https://github.com/${repository}/tags.atom`,
+        { Accept: 'application/atom+xml', 'User-Agent': 'HarnessHub-Registry/0.1' },
+      )
+      const title = feed.match(/<entry>[\s\S]*?<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim()
+      return title || null
+    } catch {
+      return null
+    }
   }
 
   private assertBundle(manifest: PackageManifest, repository: string): void {

@@ -93,6 +93,7 @@ export class PluginSourceSync {
           error: null,
         },
       ],
+      readme_excerpt: github.readme_excerpt,
       is_mock: false,
     })
 

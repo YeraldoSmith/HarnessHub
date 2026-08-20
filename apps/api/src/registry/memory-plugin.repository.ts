@@ -20,11 +20,14 @@ export class MemoryPluginRepository implements PluginRepository {
     }
   }
 
-  async list({ query, page, limit }: RegistryListQuery): Promise<PluginPageSlice> {
+  async list({ query, category, sort = 'name', page, limit }: RegistryListQuery): Promise<PluginPageSlice> {
     const normalizedQuery = query?.trim().toLocaleLowerCase()
     const plugins = [...this.plugins.values()]
+    const categoryFiltered = category
+      ? plugins.filter((plugin) => plugin.category.toLocaleLowerCase() === category.toLocaleLowerCase())
+      : plugins
     const filtered = normalizedQuery
-      ? plugins.filter((plugin) =>
+      ? categoryFiltered.filter((plugin) =>
           [
             plugin.name,
             plugin.description,
@@ -36,9 +39,13 @@ export class MemoryPluginRepository implements PluginRepository {
             value.toLocaleLowerCase().includes(normalizedQuery),
           ),
         )
-      : plugins
+      : categoryFiltered
 
-    const sorted = filtered.sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id))
+    const sorted = filtered.sort((a, b) =>
+      sort === 'recent'
+        ? b.checked_at.localeCompare(a.checked_at) || a.id.localeCompare(b.id)
+        : a.name.localeCompare(b.name) || a.id.localeCompare(b.id),
+    )
     const start = (page - 1) * limit
     return {
       items: sorted.slice(start, start + limit).map((plugin) => structuredClone(plugin)),

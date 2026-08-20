@@ -26,10 +26,12 @@ import type { PluginRepository } from './plugin.repository.js'
 export class PrismaPluginRepository implements PluginRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  async list({ query, page, limit }: RegistryListQuery): Promise<PluginPageSlice> {
+  async list({ query, category, sort = 'name', page, limit }: RegistryListQuery): Promise<PluginPageSlice> {
     const normalizedQuery = query?.trim().toLocaleLowerCase()
-    const where: Prisma.PluginWhereInput | undefined = normalizedQuery
-      ? {
+    const where: Prisma.PluginWhereInput = {
+      AND: [
+        category ? { category: { equals: category, mode: 'insensitive' } } : {},
+        normalizedQuery ? {
           OR: [
             { name: { contains: normalizedQuery, mode: 'insensitive' } },
             { description: { contains: normalizedQuery, mode: 'insensitive' } },
@@ -38,13 +40,16 @@ export class PrismaPluginRepository implements PluginRepository {
             { authorHandle: { contains: normalizedQuery, mode: 'insensitive' } },
             { tags: { has: normalizedQuery } },
           ],
-        }
-      : undefined
+        } : {},
+      ],
+    }
     const [total, records] = await this.prisma.$transaction([
       this.prisma.plugin.count({ where }),
       this.prisma.plugin.findMany({
         where,
-        orderBy: [{ name: 'asc' }, { id: 'asc' }],
+        orderBy: sort === 'recent'
+          ? [{ updatedAt: 'desc' }, { id: 'asc' }]
+          : [{ name: 'asc' }, { id: 'asc' }],
         skip: (page - 1) * limit,
         take: limit,
         include: this.latestSnapshotInclude(),

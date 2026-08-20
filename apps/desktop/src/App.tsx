@@ -8,11 +8,13 @@ import {
   registryResponseSchema,
 } from '@harnesshub/plugin-schema'
 import type { AuthSessionResponse, Plugin } from '@harnesshub/types'
-import { IdentityBadge, PluginDetail } from '@harnesshub/ui'
+import { IdentityBadge } from '@harnesshub/ui'
 import type { RuntimeEvent, RuntimeSnapshot } from '@harnesshub/runtime-bridge'
 import type { RuntimeEnvironmentSnapshot } from '@harnesshub/runtime-integration'
 
 import { InstallationPrototypePanel } from './installation-prototype.js'
+import { AgentWorkspace } from './agent-workspace.js'
+import { DesktopMarketplace } from './marketplace.js'
 import { RuntimeBridgePanel } from './runtime-bridge.js'
 import { RuntimeIntegrationPanel } from './runtime-integration.js'
 import {
@@ -29,7 +31,8 @@ function wait(milliseconds: number): Promise<void> {
 
 export function App() {
   const { t } = useI18n()
-  const [plugin, setPlugin] = useState<Plugin | null>(null)
+  const [plugins, setPlugins] = useState<Plugin[]>([])
+  const [registryLoading, setRegistryLoading] = useState(true)
   const [error, setError] = useState('')
   const [auth, setAuth] = useState<AuthSessionResponse>({ authenticated: false })
   const [authState, setAuthState] = useState<'idle' | 'waiting' | 'error'>('idle')
@@ -42,16 +45,19 @@ export function App() {
 
   useEffect(() => {
     let active = true
-    void fetch(`${apiUrl}/plugins`, { headers: { Accept: 'application/json' } })
+    void fetch(`${apiUrl}/plugins?limit=100&sort=name`, { headers: { Accept: 'application/json' } })
       .then(async (response) => {
         if (!response.ok) throw new Error(`Registry request failed with status ${response.status}.`)
         return registryResponseSchema.parse(await response.json())
       })
       .then((registry) => {
-        if (active) setPlugin(registry.items[0] ?? null)
+        if (active) setPlugins(registry.items)
       })
       .catch(() => {
         if (active) setError(t('status.registryRequestFailed'))
+      })
+      .finally(() => {
+        if (active) setRegistryLoading(false)
       })
 
     return () => {
@@ -64,6 +70,7 @@ export function App() {
     if (!main) return
     const sections = [
       ['home', 'home'],
+      ['agent-workspace', 'agent'],
       ['runtime-bridge', 'runtime'],
       ['plugins', 'plugins'],
     ] as const
@@ -82,7 +89,14 @@ export function App() {
   }, [])
 
   const navigate = useCallback((section: WorkspaceSection) => {
-    const targetId = section === 'home' ? 'home' : section === 'plugins' ? 'plugins' : 'runtime-bridge'
+    const targetId =
+      section === 'home'
+        ? 'home'
+        : section === 'plugins'
+          ? 'plugins'
+          : section === 'agent'
+            ? 'agent-workspace'
+            : 'runtime-bridge'
     setActiveSection(section)
     document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [])
@@ -154,7 +168,9 @@ export function App() {
       ? t('nav.home')
       : activeSection === 'plugins'
         ? t('nav.plugins')
-        : t('nav.runtime')
+        : activeSection === 'agent'
+          ? t('nav.agent')
+          : t('nav.runtime')
 
   return (
     <div className="desktop-shell">
@@ -198,25 +214,16 @@ export function App() {
           <WorkspaceDashboard
             environment={runtimeEnvironment}
             onNavigate={navigate}
-            plugin={plugin}
+            plugin={plugins[0] ?? null}
             runtime={runtimeSnapshot}
             runtimeEvents={runtimeEvents}
           />
 
+          <AgentWorkspace environment={runtimeEnvironment} events={runtimeEvents} runtime={runtimeSnapshot} />
+
           <RuntimeBridgePanel onStateChange={handleRuntimeState} />
 
-          <section className="workspace-plugin-section workspace-section" id="plugins">
-            <div className="desktop-intro">
-              <div>
-                <span>{t('desktop.validatedRecord')}</span>
-                <h1>{t('desktop.title')}</h1>
-              </div>
-              <p>{t('desktop.description')}</p>
-            </div>
-            {plugin ? <PluginDetail plugin={plugin} /> : null}
-            {!plugin && !error ? <div className="desktop-message">{t('desktop.loading')}</div> : null}
-            {error ? <div className="desktop-message desktop-message--error">{error}</div> : null}
-          </section>
+          <DesktopMarketplace error={error} loading={registryLoading} plugins={plugins} />
 
           <RuntimeIntegrationPanel onSnapshot={setRuntimeEnvironment} />
           <InstallationPrototypePanel auth={auth} runtimeEnvironment={runtimeEnvironment} />

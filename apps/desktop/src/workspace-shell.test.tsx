@@ -69,4 +69,13 @@ describe('Desktop workspace shell', () => {
     expect(translate('en-US', 'dashboard.title')).toBe('Your AI Agent workspace')
     expect(translate('en-US', 'nav.settings')).toBe('Settings')
   })
+
+  it('makes Agent a real navigation destination instead of a Soon item', () => {
+    const markup = renderToStaticMarkup(
+      <WorkspaceSidebar active="agent" onNavigate={() => undefined} runtimeConnected={false} />,
+    )
+
+    expect(markup).toContain('aria-current="page"')
+    expect(markup).toContain('>Agent<')
+  })
 })

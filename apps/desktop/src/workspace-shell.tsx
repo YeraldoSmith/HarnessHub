@@ -3,7 +3,7 @@ import type { RuntimeEvent, RuntimeSnapshot } from '@harnesshub/runtime-bridge'
 import type { RuntimeEnvironmentSnapshot } from '@harnesshub/runtime-integration'
 import type { Plugin } from '@harnesshub/types'
 
-export type WorkspaceSection = 'home' | 'plugins' | 'runtime'
+export type WorkspaceSection = 'home' | 'plugins' | 'agent' | 'runtime'
 type WorkspaceIconName = 'home' | 'plugins' | 'agent' | 'runtime' | 'tasks' | 'account' | 'settings'
 
 const runtimeStatusKeys: Record<RuntimeSnapshot['status'], TranslationKey> = {
@@ -55,7 +55,7 @@ export function WorkspaceSidebar({ active, runtimeConnected, onNavigate }: Works
   const primary: readonly { icon: WorkspaceIconName; label: TranslationKey; section?: WorkspaceSection }[] = [
     { icon: 'home', label: 'nav.home', section: 'home' },
     { icon: 'plugins', label: 'nav.plugins', section: 'plugins' },
-    { icon: 'agent', label: 'nav.agent' },
+    { icon: 'agent', label: 'nav.agent', section: 'agent' },
     { icon: 'runtime', label: 'nav.runtime', section: 'runtime' },
     { icon: 'tasks', label: 'nav.tasks' },
   ]

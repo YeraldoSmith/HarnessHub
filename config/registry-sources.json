@@ -2,40 +2,161 @@
   {
     "id": "dsh-cline-free-provider",
     "display_name": "Cline Free Models Provider",
-    "category": "Models & Providers",
+    "category": "Developer Tools",
     "tags": ["models", "provider", "cline"],
-    "github": {
-      "repository": "jiesou/dsh-cline-free-provider",
-      "ref": "main"
-    },
-    "npm": {
-      "package_name": "@jiesou/dsh-cline-free-provider"
-    }
+    "github": { "repository": "jiesou/dsh-cline-free-provider", "ref": "main" },
+    "npm": { "package_name": "@jiesou/dsh-cline-free-provider" }
   },
   {
     "id": "dsh-agent-teams",
     "display_name": "DSH Agent Teams",
-    "category": "Agent Orchestration",
+    "category": "Automation",
     "tags": ["agents", "teams", "orchestration"],
-    "github": {
-      "repository": "NanmiCoder/dsh-agent-teams",
-      "ref": "main"
-    },
-    "npm": {
-      "package_name": "@nanmicoder/dsh-agent-teams"
-    }
+    "github": { "repository": "NanmiCoder/dsh-agent-teams", "ref": "main" },
+    "npm": { "package_name": "@nanmicoder/dsh-agent-teams" }
   },
   {
     "id": "dsh-tui",
     "display_name": "dsh-TUI",
-    "category": "Interfaces",
+    "category": "Developer Tools",
     "tags": ["tui", "terminal", "interface"],
-    "github": {
-      "repository": "ccch1mneyyy/dsh-TUI",
-      "ref": "main"
-    },
-    "npm": {
-      "package_name": "@deepseek-harness-tui/dsh-tui"
-    }
+    "github": { "repository": "ccch1mneyyy/dsh-TUI", "ref": "main" },
+    "npm": { "package_name": "@deepseek-harness-tui/dsh-tui" }
+  },
+  {
+    "id": "dsh-tool-vision",
+    "display_name": "DSH Tool Vision",
+    "category": "Research",
+    "tags": ["vision", "images", "openai-compatible"],
+    "github": { "repository": "AaLonG-2012/dsh-tool-vision", "ref": "main" },
+    "npm": { "package_name": "@aalongaa/dsh-tool-vision" }
+  },
+  {
+    "id": "dsh-side-chat",
+    "display_name": "DSH Side Chat",
+    "category": "Productivity",
+    "tags": ["conversation", "side-chat", "workspace"],
+    "github": { "repository": "AHGGG/dsh-side-chat", "ref": "master" },
+    "npm": { "package_name": "@ahggg/dsh-side-chat" }
+  },
+  {
+    "id": "dsh-turn-rewind",
+    "display_name": "DSH Turn Rewind",
+    "category": "Developer Tools",
+    "tags": ["rewind", "workspace", "history"],
+    "github": { "repository": "Anionex/dsh-turn-rewind", "ref": "main" },
+    "npm": { "package_name": "@anionex/dsh-turn-rewind" }
+  },
+  {
+    "id": "dsh-vision-toolkit",
+    "display_name": "DSH Vision Toolkit",
+    "category": "Research",
+    "tags": ["vision", "ocr", "grounding"],
+    "github": { "repository": "Anionex/dsh-vision-toolkit", "ref": "main" },
+    "npm": { "package_name": "@anionex/dsh-vision-toolkit" }
+  },
+  {
+    "id": "dsh-awiki",
+    "display_name": "AWiki for DSH",
+    "category": "Productivity",
+    "tags": ["identity", "messaging", "awiki"],
+    "github": { "repository": "AgentConnect/dsh-awiki", "ref": "main" },
+    "npm": { "package_name": "@awiki/dsh-plugin" }
+  },
+  {
+    "id": "dsh-skillhub",
+    "display_name": "SkillHub for DSH",
+    "category": "Productivity",
+    "tags": ["skills", "discovery", "management"],
+    "github": { "repository": "cocofhu/skillhub", "ref": "main" },
+    "npm": { "package_name": "@cocofhu/skillhub" }
+  },
+  {
+    "id": "dsh-unified-agent-memory",
+    "display_name": "Unified Agent Memory",
+    "category": "Research",
+    "tags": ["memory", "obsidian", "knowledge"],
+    "github": { "repository": "Noelune/unified-agent-memory", "ref": "main" },
+    "npm": { "package_name": "dsh-unified-agent-memory" }
+  },
+  {
+    "id": "dsh-univer-office",
+    "display_name": "DSH Univer Office",
+    "category": "Productivity",
+    "tags": ["office", "documents", "collaboration"],
+    "github": { "repository": "dream-num/dsh-univer-office", "ref": "main" },
+    "npm": { "package_name": "dsh-univer-office" }
+  },
+  {
+    "id": "dsh-update-checker",
+    "display_name": "DSH Update Checker",
+    "category": "Developer Tools",
+    "tags": ["updates", "rollback", "maintenance"],
+    "github": { "repository": "Airmetro/dsh-update-checker", "ref": "main" },
+    "npm": { "package_name": "dsh-update-checker" }
+  },
+  {
+    "id": "dsh-update-copilot",
+    "display_name": "DSH Update Copilot",
+    "category": "Developer Tools",
+    "tags": ["updates", "dependencies", "maintenance"],
+    "github": { "repository": "hezhongtang/dsh-update-copilot", "ref": "main" },
+    "npm": { "package_name": "dsh-update-copilot" }
+  },
+  {
+    "id": "dsh-usage-stats",
+    "display_name": "DSH Usage Stats",
+    "category": "Data",
+    "tags": ["analytics", "tokens", "telemetry"],
+    "github": { "repository": "lanlandeli/dsh-usage-stats", "ref": "main" },
+    "npm": { "package_name": "dsh-usage-stats" }
+  },
+  {
+    "id": "dsh-vault",
+    "display_name": "DSH Vault",
+    "category": "Developer Tools",
+    "tags": ["credentials", "security", "vault"],
+    "github": { "repository": "Ox0400/dsh-vault", "ref": "main" },
+    "npm": { "package_name": "dsh-vault" }
+  },
+  {
+    "id": "dsh-vision-router",
+    "display_name": "DSH Vision Router",
+    "category": "Research",
+    "tags": ["vision", "ocr", "routing"],
+    "github": { "repository": "ysr666/dsh-vision-router", "ref": "main" },
+    "npm": { "package_name": "dsh-vision-router" }
+  },
+  {
+    "id": "dsh-weixin-gateway",
+    "display_name": "DSH Weixin Gateway",
+    "category": "Automation",
+    "tags": ["weixin", "messaging", "gateway"],
+    "github": { "repository": "shaodushu/dsh-weixin-gateway", "ref": "main" },
+    "npm": { "package_name": "dsh-weixin-gateway" }
+  },
+  {
+    "id": "dsh-with-pencil",
+    "display_name": "DSH with Pencil",
+    "category": "Productivity",
+    "tags": ["pencil", "mcp", "canvas"],
+    "github": { "repository": "IWAIBAOLI/dsh-with-pencil", "ref": "main" },
+    "npm": { "package_name": "dsh-with-pencil" }
+  },
+  {
+    "id": "dsh-workbench",
+    "display_name": "DSH Workbench",
+    "category": "Coding",
+    "tags": ["files", "workspace", "editor"],
+    "github": { "repository": "lee259/dsh-workbench", "ref": "main" },
+    "npm": { "package_name": "dsh-workbench" }
+  },
+  {
+    "id": "pi2dsh",
+    "display_name": "Pi to DSH Bridge",
+    "category": "Developer Tools",
+    "tags": ["bridge", "pi", "mcp"],
+    "github": { "repository": "weijiafu14/pi2dsh", "ref": "main" },
+    "npm": { "package_name": "pi2dsh" }
   }
 ]

@@ -41,9 +41,16 @@ export async function logout(): Promise<void> {
   if (!response.ok) throw new Error(`Logout failed with status ${response.status}.`)
 }
 
-export async function listPlugins(query = '', page = 1, limit = 20): Promise<RegistryResponse> {
-  const search = new URLSearchParams({ page: String(page), limit: String(limit) })
+export async function listPlugins(
+  query = '',
+  page = 1,
+  limit = 20,
+  category = '',
+  sort: 'name' | 'recent' = 'name',
+): Promise<RegistryResponse> {
+  const search = new URLSearchParams({ page: String(page), limit: String(limit), sort })
   if (query.trim()) search.set('q', query.trim())
+  if (category.trim()) search.set('category', category.trim())
   return registryResponseSchema.parse(await request(`/plugins?${search.toString()}`))
 }
 

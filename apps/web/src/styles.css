@@ -16,7 +16,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -305,6 +306,49 @@ nav a:hover,
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
+}
+
+.registry-controls {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: -0.75rem 0 1.4rem;
+}
+
+.registry-controls label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--hh-muted);
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+
+.registry-controls select {
+  min-width: 170px;
+  padding: 0.68rem 2rem 0.68rem 0.75rem;
+  border: 1px solid #c8d4cd;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--hh-ink);
+}
+
+.registry-result-count {
+  margin: 0 auto 0.7rem 0;
+  color: var(--hh-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.registry-controls > button {
+  margin-bottom: 0.08rem;
+  padding: 0.68rem 0.8rem;
+  border: 1px solid #c8d4cd;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--hh-green-dark);
+  cursor: pointer;
+  font-weight: 750;
 }
 
 .registry-pagination {

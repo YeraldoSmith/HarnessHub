@@ -46,6 +46,21 @@ describe('DSH Runtime Bridge contract fixture', () => {
     expect(bridge.events().at(-1)?.kind).toBe('RUNTIME_STOPPED')
   })
 
+  it('deduplicates concurrent connection attempts and event subscriptions', async () => {
+    const { bridge } = harness()
+
+    const [first, second] = await Promise.all([bridge.connect(), bridge.connect()])
+    expect(first.connection).toBe('CONNECTED')
+    expect(second.connection).toBe('CONNECTED')
+
+    await bridge.start()
+    expect(bridge.snapshot().status).toBe('RUNNING')
+    expect(bridge.events().map((event) => event.kind)).toEqual([
+      'RUNTIME_STARTED',
+      'AGENT_READY',
+    ])
+  })
+
   it('synchronizes busy, waiting input, and error events', async () => {
     const { bridge, fixture } = harness()
     await bridge.connect()

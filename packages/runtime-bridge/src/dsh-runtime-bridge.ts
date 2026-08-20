@@ -57,6 +57,7 @@ export class DSHRuntimeBridge implements RuntimeBridge {
   private session: RuntimeFixtureSession | null = null
   private unsubscribeEvents: (() => void) | null = null
   private unsubscribeConnection: (() => void) | null = null
+  private connectPromise: Promise<RuntimeSnapshot> | null = null
   private lastSequenceByGeneration = new Map<number, number>()
   private current: RuntimeSnapshot = {
     runtimeId: 'dsh-fixture-pending',
@@ -79,6 +80,16 @@ export class DSHRuntimeBridge implements RuntimeBridge {
 
   async connect(): Promise<RuntimeSnapshot> {
     if (this.current.connection === 'CONNECTED') return this.snapshot()
+    if (this.connectPromise) return this.connectPromise
+    this.connectPromise = this.openConnection()
+    try {
+      return await this.connectPromise
+    } finally {
+      this.connectPromise = null
+    }
+  }
+
+  private async openConnection(): Promise<RuntimeSnapshot> {
     this.setConnection('CONNECTING')
     this.session = this.transport.createSession()
     try {
@@ -184,6 +195,7 @@ export class DSHRuntimeBridge implements RuntimeBridge {
   }
 
   private attachSubscriptions(session: RuntimeFixtureSession): void {
+    this.detachSubscriptions()
     this.unsubscribeEvents = this.transport.subscribeEvents(session, (event) => this.receiveEvent(event))
     this.unsubscribeConnection = this.transport.subscribeConnection(session, (connected) => {
       if (!connected) {

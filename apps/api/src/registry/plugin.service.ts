@@ -20,8 +20,8 @@ export class PluginService {
     if (!parsed.success) {
       throw new BadRequestException('Invalid pagination or search query.')
     }
-    const { q, page, limit } = parsed.data
-    const result = await this.repository.list({ query: q, page, limit })
+    const { q, category, sort, page, limit } = parsed.data
+    const result = await this.repository.list({ query: q, category, sort, page, limit })
     return {
       items: result.items,
       total: result.total,

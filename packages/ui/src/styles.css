@@ -57,6 +57,18 @@
   color: #8a5700;
 }
 
+.hh-status-pill--verified {
+  background: var(--hh-mint);
+  color: var(--hh-green-dark);
+}
+
+.hh-plugin-card__badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
 .hh-plugin-card {
   display: block;
   border: 1px solid var(--hh-line);
@@ -182,6 +194,29 @@
   color: var(--hh-muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.76rem;
+}
+
+.hh-risk-summary {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 0.8rem;
+  padding: 0.4rem 0.58rem;
+  border-radius: 999px;
+  background: #edf5f1;
+  color: #385c4b;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.hh-risk-summary--pending,
+.hh-risk-summary--medium {
+  background: var(--hh-amber-soft);
+  color: var(--hh-amber);
+}
+
+.hh-risk-summary--high {
+  background: #fff0ed;
+  color: var(--hh-red);
 }
 
 .hh-tag-list {
@@ -344,6 +379,37 @@
 
 .hh-plugin-detail__sources {
   margin-top: 2rem;
+}
+
+.hh-security-summary {
+  flex: 1;
+  max-width: 680px;
+  padding: 1.1rem;
+  border: 1px solid var(--hh-line);
+  border-radius: 16px;
+  background: #fafcfb;
+}
+
+.hh-security-summary .hh-risk-summary {
+  margin: 0 0 0.8rem;
+}
+
+.hh-security-summary strong {
+  display: block;
+}
+
+.hh-security-summary p,
+.hh-plugin-detail__readme > p {
+  margin: 0.55rem 0 0;
+  color: var(--hh-muted);
+  font-size: 0.88rem;
+  line-height: 1.7;
+}
+
+.hh-plugin-detail__readme > p {
+  flex: 1;
+  max-width: 680px;
+  white-space: pre-wrap;
 }
 
 .hh-evidence-list {

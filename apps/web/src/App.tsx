@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 
-import { LanguageSelect, useI18n } from '@harnesshub/i18n'
+import { LanguageSelect, useI18n, type TranslationKey } from '@harnesshub/i18n'
 import type { AuthSessionResponse, Plugin, PluginSnapshotRecord } from '@harnesshub/types'
 import { IdentityBadge, PluginCard, PluginDetail } from '@harnesshub/ui'
 
@@ -15,6 +15,17 @@ import {
 
 type LoadState = 'loading' | 'ready' | 'error'
 
+const categories: readonly { value: string; label: TranslationKey }[] = [
+  { value: 'Coding', label: 'category.coding' },
+  { value: 'Browser', label: 'category.browser' },
+  { value: 'Productivity', label: 'category.productivity' },
+  { value: 'Research', label: 'category.research' },
+  { value: 'Data', label: 'category.data' },
+  { value: 'Automation', label: 'category.automation' },
+  { value: 'Developer Tools', label: 'category.developerTools' },
+  { value: 'Other', label: 'category.other' },
+]
+
 function pluginIdFromPath(): string | null {
   const match = window.location.pathname.match(/^\/plugins\/([^/]+)\/?$/)
   return match?.[1] ? decodeURIComponent(match[1]) : null
@@ -27,6 +38,9 @@ export function App() {
   const [selectedPlugin, setSelectedPlugin] = useState<Plugin | null>(null)
   const [snapshots, setSnapshots] = useState<PluginSnapshotRecord[]>([])
   const [query, setQuery] = useState('')
+  const [appliedQuery, setAppliedQuery] = useState('')
+  const [category, setCategory] = useState('')
+  const [sort, setSort] = useState<'name' | 'recent'>('name')
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [hasNext, setHasNext] = useState(false)
@@ -34,6 +48,11 @@ export function App() {
   const [error, setError] = useState('')
   const [auth, setAuth] = useState<AuthSessionResponse>({ authenticated: false })
   const [authBusy, setAuthBusy] = useState(true)
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setAppliedQuery(query), 180)
+    return () => window.clearTimeout(timer)
+  }, [query])
 
   useEffect(() => {
     let active = true
@@ -55,6 +74,7 @@ export function App() {
   useEffect(() => {
     let active = true
     setLoadState('loading')
+    setError('')
 
     void (async () => {
       try {
@@ -67,7 +87,7 @@ export function App() {
           setSelectedPlugin(plugin)
           setSnapshots(history)
         } else {
-          const result = await listPlugins(query, page)
+          const result = await listPlugins(appliedQuery, page, 20, category, sort)
           if (!active) return
           setPlugins(result.items)
           setTotal(result.total)
@@ -84,7 +104,7 @@ export function App() {
     return () => {
       active = false
     }
-  }, [pluginId, query, page, t])
+  }, [pluginId, appliedQuery, category, sort, page, t])
 
   return (
     <div className="site-shell">
@@ -190,6 +210,52 @@ export function App() {
                     }}
                   />
                 </label>
+              </div>
+
+              <div className="registry-controls">
+                <label>
+                  <span>{t('web.categoryLabel')}</span>
+                  <select
+                    value={category}
+                    onChange={(event) => {
+                      setCategory(event.target.value)
+                      setPage(1)
+                    }}
+                  >
+                    <option value="">{t('web.allCategories')}</option>
+                    {categories.map((entry) => (
+                      <option key={entry.value} value={entry.value}>{t(entry.label)}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span>{t('web.sortLabel')}</span>
+                  <select
+                    value={sort}
+                    onChange={(event) => {
+                      setSort(event.target.value as 'name' | 'recent')
+                      setPage(1)
+                    }}
+                  >
+                    <option value="name">{t('web.sortName')}</option>
+                    <option value="recent">{t('web.sortRecent')}</option>
+                  </select>
+                </label>
+                <span className="registry-result-count">{t('web.resultSummary', { total })}</span>
+                {query || category || sort !== 'name' ? (
+                  <button
+                    onClick={() => {
+                      setQuery('')
+                      setAppliedQuery('')
+                      setCategory('')
+                      setSort('name')
+                      setPage(1)
+                    }}
+                    type="button"
+                  >
+                    {t('web.clearFilters')}
+                  </button>
+                ) : null}
               </div>
 
               <LoadMessage state={loadState} error={error} />

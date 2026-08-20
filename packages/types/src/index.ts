@@ -78,6 +78,7 @@ export interface Plugin {
   checked_at: string
   source_evidence: SourceEvidence[]
   source_status: PluginSourceStatus[]
+  readme_excerpt?: string | null
   is_mock: boolean
 }
 
@@ -114,6 +115,8 @@ export interface RegistryResponse {
 
 export interface RegistryListQuery {
   query?: string
+  category?: string
+  sort?: 'name' | 'recent'
   page: number
   limit: number
 }

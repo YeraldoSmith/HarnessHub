@@ -1,3 +1,5 @@
 export { IdentityBadge } from './identity-badge.js'
 export { PluginCard } from './plugin-card.js'
+export { isPluginSourceVerified, pluginRiskSummary } from './plugin-trust.js'
+export type { PluginRiskSummary } from './plugin-trust.js'
 export { PluginDetail } from './plugin-detail.js'

@@ -72,6 +72,7 @@ export const pluginSchema = z.object({
     )
     .max(2)
     .default([]),
+  readme_excerpt: z.string().max(4000).nullable().default(null),
   is_mock: z.boolean(),
 }) satisfies z.ZodType<Plugin>
 
@@ -89,6 +90,8 @@ export const registryResponseSchema = z.object({
 export const registryQuerySchema = z
   .object({
     q: z.string().trim().max(100).optional(),
+    category: z.string().trim().min(1).max(60).optional(),
+    sort: z.enum(['name', 'recent']).default('name'),
     page: z.coerce.number().int().min(1).max(100_000).default(1),
     limit: z.coerce.number().int().min(1).max(100).default(20),
   })

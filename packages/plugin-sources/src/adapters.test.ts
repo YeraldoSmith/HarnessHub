@@ -49,14 +49,14 @@ function createFetch(): typeof fetch {
     if (url === `https://api.github.com/repos/${repository}/commits/main`) {
       return json({ sha: commit })
     }
-    if (url === `https://api.github.com/repos/${repository}/readme?ref=${commit}`) {
+    if (url === `https://raw.githubusercontent.com/${repository}/${commit}/README.md`) {
       return text('# Example\nA DSH plugin.')
     }
-    if (url === `https://api.github.com/repos/${repository}/contents/package.json?ref=${commit}`) {
+    if (url === `https://raw.githubusercontent.com/${repository}/${commit}/package.json`) {
       return text(JSON.stringify(packageManifest))
     }
-    if (url === `https://api.github.com/repos/${repository}/releases/latest`) {
-      return json({ tag_name: 'v1.2.0' })
+    if (url === `https://github.com/${repository}/tags.atom`) {
+      return text('<feed><entry><title>v1.2.0</title></entry></feed>')
     }
     if (url === 'https://registry.npmjs.org/%40example%2Fdsh-example') {
       return json({
@@ -107,7 +107,7 @@ describe('source adapters', () => {
   it('rejects a GitHub/npm package identity mismatch', async () => {
     const baseFetch = createFetch()
     const mismatchedFetch = (async (input: string | URL | Request, init?: RequestInit) => {
-      if (String(input).includes('/contents/package.json')) {
+      if (String(input).endsWith('/package.json')) {
         return text(JSON.stringify({ ...packageManifest, name: '@example/different-package' }))
       }
       return baseFetch(input, init)

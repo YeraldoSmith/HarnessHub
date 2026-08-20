@@ -1,5 +1,6 @@
 import type { Plugin, PluginSnapshotRecord } from '@harnesshub/types'
 import { useI18n, type TranslationKey } from '@harnesshub/i18n'
+import { isPluginSourceVerified, pluginRiskSummary } from './plugin-trust.js'
 
 const statusKeys: Record<Plugin['source_status'][number]['status'], TranslationKey> = {
   AVAILABLE: 'plugin.available',
@@ -14,11 +15,28 @@ export interface PluginDetailProps {
 
 export function PluginDetail({ plugin, snapshots }: PluginDetailProps) {
   const { t } = useI18n()
+  const sourceVerified = isPluginSourceVerified(plugin)
+  const risk = pluginRiskSummary(plugin)
+  const readableReadme = plugin.readme_excerpt
+    ?.replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  const riskKey: TranslationKey =
+    risk === 'pending'
+      ? 'plugin.riskPending'
+      : risk === 'high'
+        ? 'plugin.riskHigh'
+        : risk === 'medium'
+          ? 'plugin.riskMedium'
+          : 'plugin.riskLow'
   return (
     <article className="hh-plugin-detail">
       <div className="hh-plugin-detail__eyebrow">
         <span>{plugin.category}</span>
-        {plugin.is_mock ? <span className="hh-status-pill">{t('plugin.mockNotInstallable')}</span> : null}
+        <span className="hh-plugin-card__badges">
+          {sourceVerified ? <span className="hh-status-pill hh-status-pill--verified">{t('plugin.sourceVerified')}</span> : null}
+          {plugin.is_mock ? <span className="hh-status-pill">{t('plugin.mockNotInstallable')}</span> : null}
+        </span>
       </div>
 
       <header className="hh-plugin-detail__header">
@@ -71,6 +89,18 @@ export function PluginDetail({ plugin, snapshots }: PluginDetailProps) {
           <dd>{plugin.license.name}</dd>
         </div>
       </dl>
+
+      <section className="hh-plugin-detail__section hh-plugin-detail__security">
+        <div>
+          <span className="hh-section-kicker">Beta Trust</span>
+          <h2>{t('plugin.securityInformation')}</h2>
+        </div>
+        <div className="hh-security-summary">
+          <div className={`hh-risk-summary hh-risk-summary--${risk}`}>{t(riskKey)}</div>
+          <strong>{sourceVerified ? t('plugin.sourceIdentityVerified') : t('plugin.riskPending')}</strong>
+          <p>{t('plugin.sourceIdentityNotice')}</p>
+        </div>
+      </section>
 
       <section className="hh-plugin-detail__section hh-plugin-detail__availability">
         <div>
@@ -146,6 +176,14 @@ export function PluginDetail({ plugin, snapshots }: PluginDetailProps) {
             </a>
           ))}
         </div>
+      </section>
+
+      <section className="hh-plugin-detail__section hh-plugin-detail__readme">
+        <div>
+          <span className="hh-section-kicker">Developer content</span>
+          <h2>{t('plugin.readme')}</h2>
+        </div>
+        <p>{readableReadme || t('plugin.readmeUnavailable')}</p>
       </section>
 
       {snapshots ? (

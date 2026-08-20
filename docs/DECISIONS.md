@@ -36,6 +36,8 @@
 | D-028 | Phase 2-B1 由 NestJS 后端直接持有 GitHub OAuth callback 与平台 Session；此项取代 D-009 的 Phase 2-B1 Auth 实现部分 | 精确执行 PKCE/state、稳定 GitHub ID 和禁止 email 自动合并；PostgreSQL + Prisma 部分保持不变 |
 | D-029 | Web 使用 HttpOnly Cookie；Desktop 通过单次 poll token 换取 opaque Session；数据库只保存 Session 摘要 | GitHub token 不进入客户端，桌面无需在 URL 或本地存储中传递长期凭据 |
 | D-030 | `packages/i18n` 是 Web/Desktop/共享 UI 的唯一平台界面语言层；默认 `zh-CN`，同时支持 `en-US` | 提前阻止硬编码文案扩散，同时保持第三方插件作者内容原样与产品边界清晰 |
+| D-031 | Phase 2-C 以 canonical public GitHub repository 默认分支的一次性文件挑战证明仓库控制权 | 不扩大登录 OAuth scope、不保存 GitHub token；随机挑战能证明实际写入/合并能力，并固定 repository/owner 数字 ID 与 commit evidence |
+| D-032 | PluginOwnership、Developer Role 与 Verified Developer Badge 在成功验证事务中同时建立，但三者语义分离 | Ownership 是插件管理授权，Role 是平台权限事实，Badge 只是公开信任展示且不构成安全保证 |
 
 ## P0：进入代码阶段前确认
 

@@ -1,12 +1,12 @@
 # HarnessHub 数据库设计
 
-状态：Phase 1-D Registry Foundation 与 Phase 2-B1 GitHub Identity Foundation 已实现
+状态：Phase 1-D Registry Foundation、Phase 2-B1 Identity 与 Phase 2-C Developer Trust 已实现
 
 目标数据库：PostgreSQL + Prisma
 
 ## 0. 已实现模型
 
-Phase 1 migrations 创建 Registry 表；Phase 2-B1 migration 只增加 GitHub identity 与 Session 所需表，不提前创建社区、支付、Developer Claim 或审核表。
+Phase 1 migrations 创建 Registry 表；Phase 2-B1 增加 GitHub identity 与 Session 表；Phase 2-C 只增加 Developer Trust 表，不创建社区、支付、上传或审核后台表。
 
 ```text
 plugins
@@ -54,6 +54,27 @@ auth_sessions
 
 audit_events
   id, actor_user_id, action, target_type, target_id, metadata, created_at
+
+developer_profiles
+  id, user_id, display_name, bio, website, verification_status,
+  verified_at, created_at, updated_at
+
+developer_claims
+  id, plugin_id, claimant_user_id, oauth_identity_id, provider,
+  source_external_id, source_owner_type, source_owner_external_id,
+  repository_url, source_ref, status, proof_type, challenge_hash,
+  challenge_path, challenge_expires_at, verified_at, resolved_at,
+  error_code, created_at, updated_at
+
+plugin_ownerships
+  id, plugin_id, user_id, developer_claim_id, ownership_type,
+  verification_method, source_external_id, source_owner_type,
+  source_owner_external_id, verified_at, created_at, revoked_at
+
+verification_evidence
+  id, developer_claim_id, provider, evidence_type, source_external_id,
+  source_owner_type, source_owner_external_id, repository_url,
+  commit_sha, payload, observed_at, created_at
 ```
 
 - `plugin_versions.identity_key` 是插件 ID、版本、commit SHA 与 npm 版本的 SHA-256 组合身份；
@@ -68,7 +89,10 @@ audit_events
 - `sync_jobs.status` 为 PENDING / RUNNING / SUCCESS / FAILED，任务错误限制在可展示的来源级信息，不保存 token 或调用栈。
 - `oauth_transactions.state_hash` 与 `auth_sessions.token_hash` 均唯一；数据库不保存 state 或 Session 明文；
 - Founder 的 GitHub ID `120692294`、Role 与 Badge 由 migration 预置，两个部分唯一索引各自保证全平台唯一；
-- 当前只有 GitHub provider。`auth_principals`、`identity_link_intents`、Profile 与 Developer Claim 仍是后续设计，不在 Phase 2-B1 migration 中。
+- 当前只有 GitHub provider。Developer Trust 已实现；`auth_principals`、`identity_link_intents`、Google linking、社区与审核模型仍未实现。
+- 同一插件最多一个未撤销 OWNER；同一用户对同一插件最多一个未撤销 Ownership；同一用户不能并行创建重复 active Claim。
+- `verification_evidence` 由数据库触发器禁止 `UPDATE` 与 `DELETE`；challenge 明文不入库，只保存 SHA-256。
+- 成功验证在串行化事务中同时创建 Evidence、Ownership、Developer Role、Verified Developer Badge 与 Audit Event。
 
 对应实现以 `apps/api/prisma/schema.prisma` 和已提交 migration 为准。
 

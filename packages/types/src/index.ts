@@ -174,3 +174,78 @@ export type DesktopSessionExchangeResponse =
       session_token: string
       session: Extract<AuthSessionResponse, { authenticated: true }>
     }
+
+export type DeveloperVerificationStatus = 'UNVERIFIED' | 'VERIFIED' | 'RESTRICTED'
+export type DeveloperClaimStatus =
+  | 'PENDING'
+  | 'VERIFYING'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'CONFLICT'
+  | 'EXPIRED'
+  | 'CANCELLED'
+export type OwnershipType = 'OWNER' | 'MAINTAINER' | 'TEAM_MEMBER' | 'ORGANIZATION_DELEGATE'
+export type VerificationMethod = 'GITHUB_REPOSITORY_CHALLENGE'
+export type SourceOwnerType = 'USER' | 'ORGANIZATION'
+
+export interface DeveloperProfile {
+  id: string
+  user_id: string
+  display_name: string
+  bio: string | null
+  website: string | null
+  verification_status: DeveloperVerificationStatus
+  verified_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface DeveloperClaim {
+  id: string
+  plugin_id: string
+  status: DeveloperClaimStatus
+  repository_url: string
+  source_ref: string
+  source_external_id: string
+  source_owner_type: SourceOwnerType
+  proof_type: VerificationMethod
+  challenge_path: string
+  challenge_expires_at: string
+  verified_at: string | null
+  error_code: string | null
+  created_at: string
+}
+
+export interface PluginOwnership {
+  id: string
+  plugin_id: string
+  user_id: string
+  ownership_type: OwnershipType
+  verification_method: VerificationMethod
+  repository_external_id: string
+  source_owner_type: SourceOwnerType
+  verified_at: string
+  revoked_at: string | null
+}
+
+export interface DeveloperTrustSummary {
+  profile: DeveloperProfile | null
+  claims: DeveloperClaim[]
+  ownerships: PluginOwnership[]
+}
+
+export interface DeveloperClaimStartResponse {
+  claim: DeveloperClaim
+  challenge: {
+    path: string
+    content: string
+    expires_at: string
+    instructions: string
+  }
+}
+
+export interface DeveloperClaimVerificationResponse {
+  claim: DeveloperClaim
+  ownership: PluginOwnership
+  badge: 'VERIFIED_DEVELOPER'
+}

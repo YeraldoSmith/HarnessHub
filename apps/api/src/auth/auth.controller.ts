@@ -12,26 +12,7 @@ import {
 import type { Response } from 'express'
 
 import { AuthService } from './auth.service.js'
-
-const sessionCookie = 'hh_session'
-
-function cookieValue(header: string | undefined, name: string): string | null {
-  if (!header) return null
-  for (const pair of header.split(';')) {
-    const [key, ...value] = pair.trim().split('=')
-    if (key === name) return decodeURIComponent(value.join('='))
-  }
-  return null
-}
-
-function sessionToken(authorization: string | undefined, cookie: string | undefined): string | null {
-  if (authorization?.startsWith('Bearer ')) {
-    const value = authorization.slice('Bearer '.length).trim()
-    if (/^[A-Za-z0-9_-]{32,128}$/.test(value)) return value
-  }
-  const value = cookieValue(cookie, sessionCookie)
-  return value && /^[A-Za-z0-9_-]{32,128}$/.test(value) ? value : null
-}
+import { extractSessionToken, sessionCookie } from './session-token.js'
 
 function callbackPage(success: boolean): string {
   const title = success ? 'HarnessHub login complete' : 'HarnessHub login failed'
@@ -92,7 +73,7 @@ export class AuthController {
     @Headers('authorization') authorization: string | undefined,
     @Headers('cookie') cookie: string | undefined,
   ) {
-    return this.auth.session(sessionToken(authorization, cookie))
+    return this.auth.session(extractSessionToken(authorization, cookie))
   }
 
   @Post('logout')
@@ -102,7 +83,7 @@ export class AuthController {
     @Headers('cookie') cookie: string | undefined,
     @Res() response: Response,
   ): Promise<void> {
-    await this.auth.logout(sessionToken(authorization, cookie))
+    await this.auth.logout(extractSessionToken(authorization, cookie))
     response.clearCookie(sessionCookie, { httpOnly: true, sameSite: 'lax', path: '/' })
     response.status(204).send()
   }

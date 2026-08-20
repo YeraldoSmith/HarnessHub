@@ -144,6 +144,87 @@ export const desktopSessionExchangeResponseSchema = z.discriminatedUnion('status
   }),
 ])
 
+const httpsUrlSchema = z
+  .string()
+  .url()
+  .refine((value) => new URL(value).protocol === 'https:', 'Website must use HTTPS.')
+
+export const developerProfileUpdateSchema = z
+  .object({
+    display_name: z.string().trim().min(1).max(80),
+    bio: z.string().trim().max(500).nullable().optional(),
+    website: httpsUrlSchema.nullable().optional(),
+  })
+  .strict()
+
+export const developerProfileSchema = z.object({
+  id: z.string().uuid(),
+  user_id: z.string().uuid(),
+  display_name: z.string().min(1).max(80),
+  bio: z.string().max(500).nullable(),
+  website: httpsUrlSchema.nullable(),
+  verification_status: z.enum(['UNVERIFIED', 'VERIFIED', 'RESTRICTED']),
+  verified_at: z.string().datetime({ offset: true }).nullable(),
+  created_at: z.string().datetime({ offset: true }),
+  updated_at: z.string().datetime({ offset: true }),
+})
+
+export const developerClaimStartSchema = z
+  .object({ plugin_id: pluginIdSchema })
+  .strict()
+
+export const developerClaimIdSchema = z.string().uuid()
+
+export const developerClaimSchema = z.object({
+  id: developerClaimIdSchema,
+  plugin_id: pluginIdSchema,
+  status: z.enum(['PENDING', 'VERIFYING', 'APPROVED', 'REJECTED', 'CONFLICT', 'EXPIRED', 'CANCELLED']),
+  repository_url: z.string().url(),
+  source_ref: z.string().min(1).max(255),
+  source_external_id: z.string().min(1).max(255),
+  source_owner_type: z.enum(['USER', 'ORGANIZATION']),
+  proof_type: z.literal('GITHUB_REPOSITORY_CHALLENGE'),
+  challenge_path: z.string().min(1).max(255),
+  challenge_expires_at: z.string().datetime({ offset: true }),
+  verified_at: z.string().datetime({ offset: true }).nullable(),
+  error_code: z.string().max(80).nullable(),
+  created_at: z.string().datetime({ offset: true }),
+})
+
+export const pluginOwnershipSchema = z.object({
+  id: z.string().uuid(),
+  plugin_id: pluginIdSchema,
+  user_id: z.string().uuid(),
+  ownership_type: z.enum(['OWNER', 'MAINTAINER', 'TEAM_MEMBER', 'ORGANIZATION_DELEGATE']),
+  verification_method: z.literal('GITHUB_REPOSITORY_CHALLENGE'),
+  repository_external_id: z.string().min(1).max(255),
+  source_owner_type: z.enum(['USER', 'ORGANIZATION']),
+  verified_at: z.string().datetime({ offset: true }),
+  revoked_at: z.string().datetime({ offset: true }).nullable(),
+})
+
+export const developerTrustSummarySchema = z.object({
+  profile: developerProfileSchema.nullable(),
+  claims: z.array(developerClaimSchema),
+  ownerships: z.array(pluginOwnershipSchema),
+})
+
+export const developerClaimStartResponseSchema = z.object({
+  claim: developerClaimSchema,
+  challenge: z.object({
+    path: z.string().min(1).max(255),
+    content: z.string().min(1).max(1000),
+    expires_at: z.string().datetime({ offset: true }),
+    instructions: z.string().min(1).max(500),
+  }),
+})
+
+export const developerClaimVerificationResponseSchema = z.object({
+  claim: developerClaimSchema,
+  ownership: pluginOwnershipSchema,
+  badge: z.literal('VERIFIED_DEVELOPER'),
+})
+
 export const pluginSnapshotSchema = z.object({
   plugin: pluginSchema,
   checked_at: z.string().datetime({ offset: true }),

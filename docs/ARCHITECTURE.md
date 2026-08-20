@@ -45,6 +45,8 @@ Phase 2-B1 已实现 GitHub-only 身份基础：内部 User 与 OAuthIdentity �
 
 Phase 2-B1.5 新增 `packages/i18n`：Web、Desktop 与共享 UI 使用同一强类型 translation key、React Provider 和 `zh-CN`/`en-US` JSON。默认中文，手动语言选择仅保存在本机；第三方插件内容不进入平台翻译资源。
 
+Phase 2-C 在 NestJS 模块化单体内新增 `DeveloperTrustModule`。它复用服务端 HarnessHub Session，但把登录身份、仓库控制权、插件 Ownership、平台 Role 和公开 Badge 分成独立事实。首版 GitHub verifier 只读取公开仓库，不扩大 OAuth scope。
+
 当前只读 Registry 的依赖方向：
 
 ```text
@@ -58,6 +60,17 @@ manual allowlist → GitHubAdapter ┐
 ```
 
 API 和 UI 只依赖 `PluginRepository` 契约，不读取静态数组，也不直接调用 GitHub/npm。
+
+Developer Trust 的依赖方向：
+
+```text
+DeveloperTrustController -> AuthService (server session)
+                         -> DeveloperTrustService
+                              |-> PrismaDeveloperTrustRepository -> PostgreSQL
+                              |-> GitHubRepositoryVerifier -> public GitHub REST
+
+challenge success -> immutable evidence + unique ownership + role + badge + audit
+```
 
 ## 3. 组件
 

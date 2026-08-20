@@ -7,6 +7,15 @@ import { AuthService } from '../auth/auth.service.js'
 import type { GitHubIdentity, GitHubOAuthGateway } from '../auth/github-oauth.client.js'
 import { PrismaAuthRepository } from '../auth/prisma-auth.repository.js'
 import { PrismaService } from '../database/prisma.service.js'
+import { DeveloperTrustConfig } from '../developer-trust/developer-trust.config.js'
+import { DeveloperTrustService } from '../developer-trust/developer-trust.service.js'
+import {
+  GitHubVerificationError,
+  type GitHubChallengeObservation,
+  type GitHubRepositoryIdentity,
+  type GitHubRepositoryVerifier,
+} from '../developer-trust/github-repository.verifier.js'
+import { PrismaDeveloperTrustRepository } from '../developer-trust/prisma-developer-trust.repository.js'
 import { PrismaSyncJobRepository } from '../sync/prisma-sync-job.repository.js'
 import { PrismaPluginRepository } from './prisma-plugin.repository.js'
 
@@ -23,11 +32,47 @@ process.env.GITHUB_CLIENT_ID = 'integration-client-id'
 process.env.GITHUB_CLIENT_SECRET = 'integration-client-secret'
 process.env.GITHUB_CALLBACK_URL = 'http://127.0.0.1:3001/auth/github/callback'
 process.env.SESSION_SECRET = 'integration-session-secret-that-is-longer-than-32-bytes'
+process.env.DEVELOPER_CLAIM_TTL_SECONDS = '86400'
 
 const prisma = new PrismaService()
 const repository = new PrismaPluginRepository(prisma)
 const syncJobs = new PrismaSyncJobRepository(prisma)
 const authRepository = new PrismaAuthRepository(prisma)
+const developerTrustRepository = new PrismaDeveloperTrustRepository(prisma)
+
+class FakeRepositoryVerifier implements GitHubRepositoryVerifier {
+  readonly observations = new Map<string, GitHubChallengeObservation>()
+
+  async describe(repositoryUrl: string): Promise<GitHubRepositoryIdentity> {
+    return {
+      externalId: '501001',
+      canonicalUrl: repositoryUrl,
+      fullName: 'example/integration-registry-plugin',
+      defaultBranch: 'main',
+      ownerType: 'ORGANIZATION',
+      ownerExternalId: '701001',
+      private: false,
+      archived: false,
+    }
+  }
+
+  async observe(
+    _repository: GitHubRepositoryIdentity,
+    challengePath: string,
+    _sourceRef: string,
+  ): Promise<GitHubChallengeObservation> {
+    const observation = this.observations.get(challengePath)
+    if (!observation) throw new GitHubVerificationError('CHALLENGE_NOT_FOUND')
+    return observation
+  }
+}
+
+const fakeRepositoryVerifier = new FakeRepositoryVerifier()
+const developerTrust = new DeveloperTrustService(
+  new DeveloperTrustConfig(),
+  developerTrustRepository,
+  fakeRepositoryVerifier,
+)
 
 const githubIdentities: Record<string, GitHubIdentity> = {
   'ordinary-code': {
@@ -318,5 +363,115 @@ describe.sequential('GitHub OAuth identity foundation', () => {
     await expect(
       auth.exchangeDesktop(started.transaction_id, started.poll_token),
     ).rejects.toThrow(/already delivered/i)
+  })
+})
+
+describe.sequential('Developer Trust foundation', () => {
+  it('verifies an exact public-repository challenge and grants ownership, role, and badge atomically', async () => {
+    const completed = await completeWeb('ordinary-code')
+    await developerTrust.updateProfile(completed.session.user.id, {
+      displayName: 'Ordinary Developer',
+      bio: 'Integration test developer.',
+      website: 'https://example.com/developer',
+    })
+    const started = await developerTrust.startClaim(completed.session.user.id, snapshot.plugin.id)
+    fakeRepositoryVerifier.observations.set(started.challenge.path, {
+      content: started.challenge.content,
+      blobSha: 'd'.repeat(40),
+      commitSha: 'e'.repeat(40),
+      observedAt: new Date('2026-08-20T06:00:00.000Z'),
+    })
+
+    const verified = await developerTrust.verifyClaim(completed.session.user.id, started.claim.id)
+
+    expect(verified.claim.status).toBe('APPROVED')
+    expect(verified.ownership).toMatchObject({
+      plugin_id: snapshot.plugin.id,
+      user_id: completed.session.user.id,
+      ownership_type: 'OWNER',
+      repository_external_id: '501001',
+    })
+    expect(verified.badge).toBe('VERIFIED_DEVELOPER')
+    const session = await auth.session(completed.sessionToken)
+    expect(session).toMatchObject({
+      authenticated: true,
+      user: {
+        roles: expect.arrayContaining(['DEVELOPER']),
+        badges: expect.arrayContaining(['VERIFIED_DEVELOPER']),
+      },
+    })
+    await expect(
+      prisma.verificationEvidence.updateMany({
+        where: { developerClaimId: started.claim.id },
+        data: { commitSha: 'f'.repeat(40) },
+      }),
+    ).rejects.toThrow('verification_evidence rows are immutable')
+    await expect(
+      prisma.auditEvent.count({
+        where: { targetId: started.claim.id, action: 'developer_claim.approved' },
+      }),
+    ).resolves.toBe(1)
+  })
+
+  it('rejects a non-owner proof and grants no ownership or badge to a similar username', async () => {
+    const completed = await completeWeb('similar-code')
+    await developerTrust.updateProfile(completed.session.user.id, {
+      displayName: 'Similar Login',
+      bio: null,
+      website: null,
+    })
+    const started = await developerTrust.startClaim(completed.session.user.id, 'alpha-pagination-plugin')
+    fakeRepositoryVerifier.observations.set(started.challenge.path, {
+      content: `${started.challenge.content}tampered`,
+      blobSha: '1'.repeat(40),
+      commitSha: '2'.repeat(40),
+      observedAt: new Date('2026-08-20T06:01:00.000Z'),
+    })
+
+    await expect(
+      developerTrust.verifyClaim(completed.session.user.id, started.claim.id),
+    ).rejects.toThrow(/does not match/i)
+    await expect(
+      prisma.pluginOwnership.count({ where: { userId: completed.session.user.id } }),
+    ).resolves.toBe(0)
+    await expect(
+      prisma.badgeGrant.count({
+        where: { userId: completed.session.user.id, badge: 'VERIFIED_DEVELOPER', revokedAt: null },
+      }),
+    ).resolves.toBe(0)
+    const claim = await prisma.developerClaim.findUniqueOrThrow({
+      where: { id: started.claim.id },
+      include: { oauthIdentity: true },
+    })
+    expect(claim.oauthIdentity.providerUserId).toBe('900003')
+    expect(claim.errorCode).toBe('CHALLENGE_MISMATCH')
+  })
+
+  it('prevents a different stable GitHub identity from verifying another user claim', async () => {
+    const similar = await completeWeb('similar-code')
+    const impostor = await completeWeb('impostor-code')
+    const claim = await prisma.developerClaim.findFirstOrThrow({
+      where: { claimantUserId: similar.session.user.id, pluginId: 'alpha-pagination-plugin' },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    await expect(
+      developerTrust.verifyClaim(impostor.session.user.id, claim.id),
+    ).rejects.toThrow(/not found/i)
+    await expect(
+      prisma.pluginOwnership.count({ where: { userId: impostor.session.user.id } }),
+    ).resolves.toBe(0)
+  })
+
+  it('rejects a second claimant after a plugin has a verified owner', async () => {
+    const impostor = await completeWeb('impostor-code')
+    await developerTrust.updateProfile(impostor.session.user.id, {
+      displayName: 'Different GitHub ID',
+      bio: null,
+      website: null,
+    })
+    await expect(
+      developerTrust.startClaim(impostor.session.user.id, snapshot.plugin.id),
+    ).rejects.toThrow(/already has a verified owner/i)
   })
 })

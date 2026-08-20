@@ -76,19 +76,54 @@ enum OAuthTransactionStatus {
   FAILED
 }
 
+enum DeveloperVerificationStatus {
+  UNVERIFIED
+  VERIFIED
+  RESTRICTED
+}
+
+enum DeveloperClaimStatus {
+  PENDING
+  VERIFYING
+  APPROVED
+  REJECTED
+  CONFLICT
+  EXPIRED
+  CANCELLED
+}
+
+enum OwnershipType {
+  OWNER
+  MAINTAINER
+  TEAM_MEMBER
+  ORGANIZATION_DELEGATE
+}
+
+enum VerificationMethod {
+  GITHUB_REPOSITORY_CHALLENGE
+}
+
+enum SourceOwnerType {
+  USER
+  ORGANIZATION
+}
+
 model User {
-  id              String           @id @default(uuid()) @db.Uuid
-  status          UserStatus       @default(ACTIVE)
-  securityVersion Int              @default(1) @map("security_version")
-  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
-  suspendedAt     DateTime?        @map("suspended_at") @db.Timestamptz(3)
-  deactivatedAt   DateTime?        @map("deactivated_at") @db.Timestamptz(3)
-  deletedAt       DateTime?        @map("deleted_at") @db.Timestamptz(3)
-  identities      OAuthIdentity[]
-  roleAssignments RoleAssignment[]
-  badgeGrants     BadgeGrant[]
-  sessions        AuthSession[]
+  id               String            @id @default(uuid()) @db.Uuid
+  status           UserStatus        @default(ACTIVE)
+  securityVersion  Int               @default(1) @map("security_version")
+  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+  suspendedAt      DateTime?         @map("suspended_at") @db.Timestamptz(3)
+  deactivatedAt    DateTime?         @map("deactivated_at") @db.Timestamptz(3)
+  deletedAt        DateTime?         @map("deleted_at") @db.Timestamptz(3)
+  identities       OAuthIdentity[]
+  roleAssignments  RoleAssignment[]
+  badgeGrants      BadgeGrant[]
+  sessions         AuthSession[]
+  developerProfile DeveloperProfile?
+  developerClaims  DeveloperClaim[]
+  pluginOwnerships PluginOwnership[]
 
   @@map("users")
 }
@@ -105,6 +140,7 @@ model OAuthIdentity {
   lastAuthenticatedAt DateTime?        @map("last_authenticated_at") @db.Timestamptz(3)
   disabledAt          DateTime?        @map("disabled_at") @db.Timestamptz(3)
   user                User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  developerClaims     DeveloperClaim[]
 
   @@unique([provider, issuer, providerUserId])
   @@index([userId])
@@ -194,21 +230,112 @@ model AuditEvent {
 }
 
 model Plugin {
-  id           String          @id @db.VarChar(120)
-  name         String          @db.VarChar(120)
-  description  String          @db.Text
-  category     String          @db.VarChar(80)
-  authorName   String          @map("author_name") @db.VarChar(120)
-  authorHandle String          @map("author_handle") @db.VarChar(120)
-  tags         String[]        @default([])
-  license      String          @db.VarChar(80)
-  sourceType   SourceType      @map("source_type")
-  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt    DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
-  sources      PluginSource[]
-  versions     PluginVersion[]
+  id              String            @id @db.VarChar(120)
+  name            String            @db.VarChar(120)
+  description     String            @db.Text
+  category        String            @db.VarChar(80)
+  authorName      String            @map("author_name") @db.VarChar(120)
+  authorHandle    String            @map("author_handle") @db.VarChar(120)
+  tags            String[]          @default([])
+  license         String            @db.VarChar(80)
+  sourceType      SourceType        @map("source_type")
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+  sources         PluginSource[]
+  versions        PluginVersion[]
+  developerClaims DeveloperClaim[]
+  ownerships      PluginOwnership[]
 
   @@map("plugins")
+}
+
+model DeveloperProfile {
+  id                 String                      @id @default(uuid()) @db.Uuid
+  userId             String                      @unique @map("user_id") @db.Uuid
+  displayName        String                      @map("display_name") @db.VarChar(80)
+  bio                String?                     @db.VarChar(500)
+  website            String?                     @db.VarChar(500)
+  verificationStatus DeveloperVerificationStatus @default(UNVERIFIED) @map("verification_status")
+  verifiedAt         DateTime?                   @map("verified_at") @db.Timestamptz(3)
+  createdAt          DateTime                    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime                    @updatedAt @map("updated_at") @db.Timestamptz(3)
+  user               User                        @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@map("developer_profiles")
+}
+
+model DeveloperClaim {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  pluginId              String                 @map("plugin_id") @db.VarChar(120)
+  claimantUserId        String                 @map("claimant_user_id") @db.Uuid
+  oauthIdentityId       String                 @map("oauth_identity_id") @db.Uuid
+  provider              IdentityProvider       @default(GITHUB)
+  sourceExternalId      String                 @map("source_external_id") @db.VarChar(255)
+  sourceOwnerType       SourceOwnerType        @map("source_owner_type")
+  sourceOwnerExternalId String                 @map("source_owner_external_id") @db.VarChar(255)
+  repositoryUrl         String                 @map("repository_url") @db.VarChar(500)
+  sourceRef             String                 @map("source_ref") @db.VarChar(255)
+  status                DeveloperClaimStatus   @default(PENDING)
+  proofType             VerificationMethod     @map("proof_type")
+  challengeHash         String                 @map("challenge_hash") @db.Char(64)
+  challengePath         String                 @map("challenge_path") @db.VarChar(255)
+  challengeExpiresAt    DateTime               @map("challenge_expires_at") @db.Timestamptz(3)
+  verifiedAt            DateTime?              @map("verified_at") @db.Timestamptz(3)
+  resolvedAt            DateTime?              @map("resolved_at") @db.Timestamptz(3)
+  errorCode             String?                @map("error_code") @db.VarChar(80)
+  createdAt             DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
+  plugin                Plugin                 @relation(fields: [pluginId], references: [id], onDelete: Restrict)
+  claimant              User                   @relation(fields: [claimantUserId], references: [id], onDelete: Restrict)
+  oauthIdentity         OAuthIdentity          @relation(fields: [oauthIdentityId], references: [id], onDelete: Restrict)
+  evidence              VerificationEvidence[]
+  ownership             PluginOwnership?
+
+  @@index([pluginId, status])
+  @@index([claimantUserId, createdAt(sort: Desc)])
+  @@map("developer_claims")
+}
+
+model PluginOwnership {
+  id                    String             @id @default(uuid()) @db.Uuid
+  pluginId              String             @map("plugin_id") @db.VarChar(120)
+  userId                String             @map("user_id") @db.Uuid
+  developerClaimId      String             @unique @map("developer_claim_id") @db.Uuid
+  ownershipType         OwnershipType      @default(OWNER) @map("ownership_type")
+  verificationMethod    VerificationMethod @map("verification_method")
+  sourceExternalId      String             @map("source_external_id") @db.VarChar(255)
+  sourceOwnerType       SourceOwnerType    @map("source_owner_type")
+  sourceOwnerExternalId String             @map("source_owner_external_id") @db.VarChar(255)
+  verifiedAt            DateTime           @map("verified_at") @db.Timestamptz(3)
+  createdAt             DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  revokedAt             DateTime?          @map("revoked_at") @db.Timestamptz(3)
+  plugin                Plugin             @relation(fields: [pluginId], references: [id], onDelete: Restrict)
+  user                  User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  developerClaim        DeveloperClaim     @relation(fields: [developerClaimId], references: [id], onDelete: Restrict)
+
+  @@index([userId, verifiedAt(sort: Desc)])
+  @@index([pluginId, ownershipType])
+  @@map("plugin_ownerships")
+}
+
+model VerificationEvidence {
+  id                    String             @id @default(uuid()) @db.Uuid
+  developerClaimId      String             @map("developer_claim_id") @db.Uuid
+  provider              IdentityProvider
+  evidenceType          VerificationMethod @map("evidence_type")
+  sourceExternalId      String             @map("source_external_id") @db.VarChar(255)
+  sourceOwnerType       SourceOwnerType    @map("source_owner_type")
+  sourceOwnerExternalId String             @map("source_owner_external_id") @db.VarChar(255)
+  repositoryUrl         String             @map("repository_url") @db.VarChar(500)
+  commitSha             String             @map("commit_sha") @db.VarChar(40)
+  payload               Json
+  observedAt            DateTime           @map("observed_at") @db.Timestamptz(3)
+  createdAt             DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  developerClaim        DeveloperClaim     @relation(fields: [developerClaimId], references: [id], onDelete: Restrict)
+
+  @@index([developerClaimId, observedAt(sort: Desc)])
+  @@index([sourceExternalId])
+  @@map("verification_evidence")
 }
 
 model PluginSource {

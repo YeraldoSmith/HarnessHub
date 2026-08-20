@@ -10,6 +10,8 @@ import {
   authSessionResponseSchema,
   desktopOAuthStartResponseSchema,
   desktopSessionExchangeResponseSchema,
+  developerProfileUpdateSchema,
+  developerClaimStartResponseSchema,
 } from './index.js'
 
 const mockPlugin = pluginSchema.parse(
@@ -93,5 +95,47 @@ describe('plugin schema', () => {
 
     expect(started.transaction_id).toMatch(/^[0-9a-f-]{36}$/)
     expect(delivered.status).toBe('COMPLETE')
+  })
+
+  it('keeps developer trust state server-controlled', () => {
+    expect(
+      developerProfileUpdateSchema.safeParse({
+        display_name: 'Developer',
+        verification_status: 'VERIFIED',
+      }).success,
+    ).toBe(false)
+    expect(
+      developerProfileUpdateSchema.safeParse({
+        display_name: 'Developer',
+        website: 'http://example.com',
+      }).success,
+    ).toBe(false)
+  })
+
+  it('validates a repository challenge response', () => {
+    const response = developerClaimStartResponseSchema.parse({
+      claim: {
+        id: 'b65ef191-4bf0-47f4-815b-269f00752aa4',
+        plugin_id: 'example-plugin',
+        status: 'PENDING',
+        repository_url: 'https://github.com/example/plugin',
+        source_ref: 'main',
+        source_external_id: '1234',
+        source_owner_type: 'ORGANIZATION',
+        proof_type: 'GITHUB_REPOSITORY_CHALLENGE',
+        challenge_path: '.harnesshub/claims/b65ef191-4bf0-47f4-815b-269f00752aa4.txt',
+        challenge_expires_at: '2026-08-21T00:00:00.000Z',
+        verified_at: null,
+        error_code: null,
+        created_at: '2026-08-20T00:00:00.000Z',
+      },
+      challenge: {
+        path: '.harnesshub/claims/b65ef191-4bf0-47f4-815b-269f00752aa4.txt',
+        content: 'harnesshub-developer-claim-v1\nclaim_id=test\nnonce=test',
+        expires_at: '2026-08-21T00:00:00.000Z',
+        instructions: 'Commit this exact file to the default branch.',
+      },
+    })
+    expect(response.claim.status).toBe('PENDING')
   })
 })

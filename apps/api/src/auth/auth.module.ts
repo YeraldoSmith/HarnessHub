@@ -15,5 +15,6 @@ import { PrismaAuthRepository } from './prisma-auth.repository.js'
     { provide: GITHUB_OAUTH_GATEWAY, useExisting: GitHubOAuthClient },
     AuthService,
   ],
+  exports: [AuthService],
 })
 export class AuthModule {}

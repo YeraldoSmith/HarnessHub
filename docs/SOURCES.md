@@ -67,6 +67,13 @@ Phase 1-C 新增人工白名单来源：
 - [Supabase Identity Linking](https://supabase.com/docs/guides/auth/auth-identity-linking)：当前文档说明 OAuth identity 可能按相同 email 自动 linking，同时提供已登录用户发起的 manual linking。HarnessHub 禁止前者作为权限继承路径，第二 provider 上线前必须验证目标部署的隔离能力。
 - [Supabase Identity object](https://supabase.com/docs/guides/auth/identities)：`provider_id` 是 OAuth provider 返回的账号 ID；`identity_data` 只作为外部 metadata，不作为 HarnessHub 授权事实。
 
+## Phase 2-C Developer Trust 来源
+
+- [GitHub REST Repository API](https://docs.github.com/en/rest/repos/repos)：读取 canonical repository URL、数字 repository ID、default branch、visibility、archived 状态与 owner 资料。
+- [GitHub REST Repository Contents API](https://docs.github.com/en/rest/repos/contents)：从公开仓库指定 ref 读取一次性证明文件、blob SHA 和内容；公开资源允许无需身份验证读取。
+- [GitHub REST Commits API](https://docs.github.com/en/rest/commits/commits)：按 path 和 branch 读取最后修改证明文件的 commit SHA。
+- [GitHub REST authentication](https://docs.github.com/en/rest/authentication/authenticating-to-the-rest-api)：未认证请求只用于公开资源；私有仓库和直接权限检查留给后续 fine-grained GitHub App。
+
 ## 更新规则
 
 以下事件发生时必须重新核验并更新本页：

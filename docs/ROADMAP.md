@@ -123,6 +123,18 @@ Phase 1 至此结束。Phase 2 Identity Foundation 不在本阶段实现。
 - 插件名称、描述、README 与开发者内容保持作者原文；
 - 不修改 Registry 数据模型或 OAuth 逻辑。
 
+### Phase 2-C：Developer Trust Foundation（已完成）
+
+- DeveloperProfile 与服务端控制的 verification status；
+- 已有 Registry Plugin 的 DeveloperClaim；
+- 公开 GitHub canonical repository 默认分支一次性挑战；
+- 稳定 repository/owner 数字 ID、commit SHA 与不可变 VerificationEvidence；
+- 唯一 OWNER、Developer Role 和 Verified Developer Badge 原子授予；
+- Profile/Claim/Ownership Audit Event 与异常路径回归测试；
+- 登录 OAuth scope 不扩大，GitHub token 不保存。
+
+本阶段没有插件上传、自动发布、安装或审核后台。
+
 ### Phase 2-B2：Google OAuth 与 Account Linking（安全门槛后）
 
 - 目标 Auth broker 必须禁用或隔离按 email 自动合并；

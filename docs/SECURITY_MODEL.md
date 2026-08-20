@@ -156,7 +156,10 @@
 - 账号绑定必须由已登录用户在 recent authentication 后显式发起，并使用短时 state/PKCE/nonce；禁止根据相同 email 自动合并；
 - Founder 通过数据库 bootstrap 绑定 GitHub 数字 user ID，全平台唯一，普通 API 不可转移或解绑；
 - GitHub 登录不自动等同仓库所有权；
-- 认领使用仓库协作者权限、可验证文件/issue 挑战或 npm provenance 等证据；
+- Phase 2-C 认领只接受 canonical public GitHub repository 默认分支的一次性文件挑战；服务端固定数字 repository ID、owner 数字 ID/type、commit SHA 与观察时间；
+- challenge nonce 明文只在创建响应返回，数据库保存 SHA-256；验证使用 constant-time 摘要比较；
+- VerificationEvidence 在数据库层禁止更新和删除；成功授予 Ownership、Role 与 Badge 必须处于同一串行化事务；
+- 私有仓库、直接 collaborator/team 权限和组织成员验证必须等待 fine-grained GitHub App，不扩大登录 OAuth scope；
 - 作者移交必须通知现有关注者并重新验证；
 - 版权投诉分离“紧急临时限制”和“最终判断”；
 - 处罚、申诉和管理员覆盖均保留理由与证据；

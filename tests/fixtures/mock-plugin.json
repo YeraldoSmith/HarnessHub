@@ -1,0 +1,42 @@
+{
+  "id": "harnesshub-registry-demo",
+  "name": "Registry Demo Plugin",
+  "description": "HarnessHub 测试专用 Mock Plugin，用于验证 Schema、Repository、API 和 UI。它不是可安装的真实插件。",
+  "source": "mock",
+  "github_url": null,
+  "npm_url": null,
+  "author": {
+    "name": "YeraldoSmith",
+    "handle": "YeraldoSmith"
+  },
+  "version": "0.1.0-mock.1",
+  "category": "Development & Testing",
+  "permissions": [
+    {
+      "id": "filesystem-read",
+      "label": "Read workspace files",
+      "description": "Mock declaration used to verify permission disclosure in tests.",
+      "risk": "medium"
+    },
+    {
+      "id": "network",
+      "label": "Network access",
+      "description": "Mock declaration only; this fixture executes no network capability.",
+      "risk": "medium"
+    }
+  ],
+  "compatibility": {
+    "dsh": "0.1.0-rc.8",
+    "status": "mock"
+  },
+  "license": {
+    "spdx": "UNLICENSED",
+    "name": "Mock data — not distributed as a plugin",
+    "url": null
+  },
+  "source_commit": null,
+  "npm_version": null,
+  "checked_at": "2026-08-20T00:00:00.000Z",
+  "source_evidence": [],
+  "is_mock": true
+}

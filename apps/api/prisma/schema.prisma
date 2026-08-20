@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum SourceType {
+  GITHUB
+  NPM
+  GITHUB_NPM
+}
+
+enum SourceProvider {
+  GITHUB
+  NPM
+}
+
+model Plugin {
+  id          String          @id @db.VarChar(120)
+  name        String          @db.VarChar(120)
+  description String          @db.Text
+  category    String          @db.VarChar(80)
+  license     String          @db.VarChar(80)
+  sourceType  SourceType      @map("source_type")
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+  sources     PluginSource[]
+  versions    PluginVersion[]
+
+  @@map("plugins")
+}
+
+model PluginSource {
+  id            String         @id @default(cuid()) @db.VarChar(40)
+  pluginId      String         @map("plugin_id") @db.VarChar(120)
+  provider      SourceProvider
+  repositoryUrl String?        @map("repository_url") @db.Text
+  packageName   String?        @map("package_name") @db.VarChar(214)
+  evidence      Json
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  plugin        Plugin         @relation(fields: [pluginId], references: [id], onDelete: Restrict)
+
+  @@unique([pluginId, provider])
+  @@index([provider])
+  @@map("plugin_sources")
+}
+
+model PluginVersion {
+  id            String           @id @default(cuid()) @db.VarChar(40)
+  pluginId      String           @map("plugin_id") @db.VarChar(120)
+  version       String           @db.VarChar(80)
+  sourceCommit  String?          @map("source_commit") @db.VarChar(40)
+  npmVersion    String?          @map("npm_version") @db.VarChar(80)
+  compatibility Json
+  identityKey   String           @unique @map("identity_key") @db.VarChar(64)
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  plugin        Plugin           @relation(fields: [pluginId], references: [id], onDelete: Restrict)
+  snapshots     PluginSnapshot[]
+
+  @@index([pluginId, createdAt(sort: Desc)])
+  @@map("plugin_versions")
+}
+
+model PluginSnapshot {
+  id              String        @id @default(cuid()) @db.VarChar(40)
+  pluginVersionId String        @map("plugin_version_id") @db.VarChar(40)
+  checkedAt       DateTime      @map("checked_at") @db.Timestamptz(3)
+  source          String        @db.VarChar(40)
+  data            Json
+  evidence        Json
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  pluginVersion   PluginVersion @relation(fields: [pluginVersionId], references: [id], onDelete: Restrict)
+
+  @@index([pluginVersionId, checkedAt(sort: Desc)])
+  @@map("plugin_snapshots")
+}

@@ -1,0 +1,23 @@
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies and builds
+node_modules/
+dist/
+coverage/
+target/
+.turbo/
+*.tsbuildinfo
+apps/desktop/src-tauri/gen/
+apps/api/src/generated/prisma/
+
+# Local tools and scratch material
+work/
+*.log
+.DS_Store
+
+# IDE state
+.idea/
+.vscode/

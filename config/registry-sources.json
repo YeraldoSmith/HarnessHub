@@ -1,0 +1,14 @@
+[
+  {
+    "id": "dsh-cline-free-provider",
+    "display_name": "Cline Free Models Provider",
+    "category": "Models & Providers",
+    "github": {
+      "repository": "jiesou/dsh-cline-free-provider",
+      "ref": "main"
+    },
+    "npm": {
+      "package_name": "@jiesou/dsh-cline-free-provider"
+    }
+  }
+]

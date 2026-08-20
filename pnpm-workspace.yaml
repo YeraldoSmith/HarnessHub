@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Approved builds for the repository's pinned frontend and Prisma toolchains only.
+# This does not authorize build scripts for Registry plugins.
+allowBuilds:
+  '@prisma/engines': true
+  esbuild: true
+  prisma: true

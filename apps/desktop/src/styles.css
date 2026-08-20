@@ -608,6 +608,428 @@ body {
   font-size: 0.75rem;
 }
 
+.runtime-integration {
+  margin-top: 2.5rem;
+  padding: 1.6rem;
+  border: 1px solid #cbd9d0;
+  border-radius: 22px;
+  background: #10241c;
+  color: #f2f7f3;
+  box-shadow: 0 20px 48px rgba(17, 45, 32, 0.14);
+}
+
+.runtime-heading {
+  display: grid;
+  grid-template-columns: 1fr minmax(240px, 0.8fr);
+  align-items: end;
+  gap: 2rem;
+}
+
+.runtime-heading span {
+  color: #a9d8b9;
+  font-size: 0.67rem;
+  font-weight: 850;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.runtime-heading h2 {
+  margin: 0.35rem 0 0;
+  font-family: Georgia, serif;
+  font-size: clamp(1.7rem, 3vw, 2.45rem);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+}
+
+.runtime-heading > p {
+  margin: 0;
+  color: #bdcac2;
+  font-size: 0.82rem;
+  line-height: 1.65;
+}
+
+.runtime-readonly-notice {
+  display: flex;
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid #395b4a;
+  border-radius: 13px;
+  background: #193529;
+}
+
+.runtime-readonly-notice > span {
+  color: #b8e1c5;
+  font-size: 1.2rem;
+}
+
+.runtime-readonly-notice strong,
+.runtime-readonly-notice p {
+  display: block;
+  margin: 0;
+}
+
+.runtime-readonly-notice strong {
+  font-size: 0.78rem;
+}
+
+.runtime-readonly-notice p {
+  margin-top: 0.25rem;
+  color: #b7c6bd;
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.runtime-message {
+  padding: 1rem;
+  border-radius: 12px;
+  background: #193529;
+  color: #c9d7cf;
+  font-size: 0.76rem;
+}
+
+.runtime-message--error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid #744a44;
+  background: #3b2824;
+}
+
+.runtime-message--error p {
+  margin: 0;
+}
+
+.runtime-message button,
+.runtime-platform-summary button,
+.runtime-dsh-status button {
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.runtime-message button,
+.runtime-platform-summary button {
+  padding: 0.55rem 0.7rem;
+  background: #eaf5ed;
+  color: #173428;
+}
+
+.runtime-platform-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem;
+  border: 1px solid #365345;
+  border-radius: 14px;
+  background: #152e24;
+}
+
+.runtime-platform-summary span,
+.runtime-platform-summary strong {
+  display: block;
+}
+
+.runtime-platform-summary span {
+  color: #91aa9c;
+  font-size: 0.59rem;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.runtime-platform-summary strong {
+  margin-top: 0.2rem;
+  font-size: 0.75rem;
+}
+
+.runtime-tools {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.runtime-tool {
+  padding: 0.9rem;
+  border: 1px solid #365345;
+  border-radius: 13px;
+  background: #173126;
+}
+
+.runtime-tool > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.runtime-tool strong {
+  font-size: 0.8rem;
+}
+
+.runtime-tool span {
+  padding: 0.2rem 0.4rem;
+  border-radius: 99px;
+  background: #295540;
+  color: #c8ecd4;
+  font-size: 0.56rem;
+  font-weight: 850;
+}
+
+.runtime-tool--missing span,
+.runtime-tool--error span {
+  background: #5b4424;
+  color: #ffe4ad;
+}
+
+.runtime-tool p {
+  margin: 0.7rem 0 0.3rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.73rem;
+}
+
+.runtime-tool small {
+  color: #8ea398;
+  font-size: 0.58rem;
+}
+
+.runtime-dsh-status {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  padding: 0.9rem;
+  border-left: 4px solid #74ba8c;
+  border-radius: 11px;
+  background: #193529;
+}
+
+.runtime-dsh-status--missing,
+.runtime-dsh-status--incompatible,
+.runtime-dsh-status--unknown {
+  border-left-color: #d5a24a;
+  background: #352f20;
+}
+
+.runtime-dsh-status span,
+.runtime-dsh-status strong {
+  display: block;
+}
+
+.runtime-dsh-status span {
+  color: #9fb2a7;
+  font-size: 0.6rem;
+}
+
+.runtime-dsh-status strong {
+  margin-top: 0.2rem;
+  font-size: 0.82rem;
+}
+
+.runtime-dsh-status small {
+  color: #bdc9c1;
+  font-size: 0.66rem;
+}
+
+.runtime-dsh-status button {
+  padding: 0.65rem 0.8rem;
+  background: #f3e9cc;
+  color: #4a3611;
+}
+
+.runtime-plan {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 15px;
+  background: #f5f8f5;
+  color: var(--hh-ink);
+}
+
+.runtime-plan-notice {
+  padding: 0.85rem;
+  border: 1px solid #e3cf94;
+  border-radius: 10px;
+  background: #fff8e5;
+}
+
+.runtime-plan-notice strong,
+.runtime-plan-notice p {
+  margin: 0;
+}
+
+.runtime-plan-notice strong {
+  color: #76551a;
+  font-size: 0.77rem;
+}
+
+.runtime-plan-notice p {
+  margin-top: 0.25rem;
+  color: #75684c;
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+
+.runtime-plan h3 {
+  margin: 1rem 0 0.65rem;
+  font-size: 0.77rem;
+}
+
+.runtime-plan ol {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.runtime-plan li {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid #d9e1db;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.runtime-plan li > span {
+  display: grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  background: #dceee3;
+  color: #26563a;
+  font-size: 0.64rem;
+  font-weight: 900;
+}
+
+.runtime-plan li strong,
+.runtime-plan li small {
+  display: block;
+}
+
+.runtime-plan li strong {
+  font-size: 0.72rem;
+}
+
+.runtime-plan li p {
+  margin: 0.22rem 0;
+  color: var(--hh-muted);
+  font-size: 0.64rem;
+  line-height: 1.45;
+}
+
+.runtime-plan li small {
+  color: #9a6421;
+  font-size: 0.58rem;
+  font-weight: 800;
+}
+
+.runtime-plan-permissions {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.runtime-plan-permissions article {
+  display: grid;
+  grid-template-columns: 1.45rem 1fr;
+  gap: 0.55rem;
+  padding: 0.65rem;
+  border: 1px solid #e2d3aa;
+  border-radius: 9px;
+  background: #fffaf0;
+}
+
+.runtime-plan-permissions article > span {
+  display: grid;
+  place-items: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  border-radius: 50%;
+  background: #f6e5b8;
+  color: #805b12;
+  font-size: 0.65rem;
+  font-weight: 900;
+}
+
+.runtime-plan-permissions strong {
+  font-size: 0.7rem;
+}
+
+.runtime-plan-permissions p {
+  margin: 0.18rem 0 0;
+  color: var(--hh-muted);
+  font-size: 0.63rem;
+  line-height: 1.45;
+}
+
+.runtime-plan-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.runtime-confirmed {
+  margin-top: 0.75rem;
+  padding: 0.85rem;
+  border: 1px solid #4e8764;
+  border-radius: 11px;
+  background: #193c2b;
+}
+
+.runtime-confirmed strong {
+  font-size: 0.78rem;
+}
+
+.runtime-confirmed p {
+  margin: 0.25rem 0 0;
+  color: #bcd0c3;
+  font-size: 0.68rem;
+}
+
+.runtime-trust-boundary {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #365345;
+}
+
+.runtime-trust-boundary strong {
+  color: #bce1c7;
+  font-size: 0.72rem;
+}
+
+.runtime-trust-boundary p {
+  margin: 0.3rem 0;
+  color: #aebdb5;
+  font-size: 0.67rem;
+  line-height: 1.5;
+}
+
+.runtime-trust-boundary small {
+  color: #e4c985;
+  font-size: 0.61rem;
+}
+
+.installation-runtime-connection {
+  margin: -0.5rem 0 1.1rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 9px;
+  background: #e8f3eb;
+  color: #356247;
+  font-size: 0.67rem;
+  font-weight: 750;
+}
+
 @media (max-width: 760px) {
   .desktop-shell {
     grid-template-columns: 1fr;
@@ -623,8 +1045,16 @@ body {
   }
 
   .installation-prototype-heading,
-  .installation-prototype-grid {
+  .installation-prototype-grid,
+  .runtime-heading,
+  .runtime-tools,
+  .runtime-plan ol {
     grid-template-columns: 1fr;
     gap: 1rem;
+  }
+
+  .runtime-platform-summary,
+  .runtime-dsh-status {
+    grid-template-columns: 1fr;
   }
 }

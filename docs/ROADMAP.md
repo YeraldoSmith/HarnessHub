@@ -211,7 +211,22 @@ Phase 1 至此结束。Phase 2 Identity Foundation 不在本阶段实现。
 
 真实 Installation Engine 与 DSH Setup Assistant 仍是独立评估阶段，不属于 Phase 3-C。
 
-## Phase 4：社区与需求市场
+## Phase 4：受控 Runtime 集成
+
+### Phase 4-A：Controlled Runtime Integration Prototype（已完成）
+
+- 打包 Desktop 真实只读检测 OS、CPU architecture、Node.js、Git 与 DSH；
+- 原生探测无输入、固定 `--version`、无 Shell、带超时与输出上限；
+- `packages/runtime-integration` 提供 Environment Manager、DSH Adapter 和三平台能力接口；
+- DSH 缺失、兼容、不兼容和未知状态分离；
+- Setup Assistant 展示步骤与未来权限，但只生成不可执行计划；
+- Runtime Snapshot 接入 Phase 3-C 模拟事务，真实执行标志仍为 false；
+- Trusted Install 预留官方测试插件 + LOW + 完整 Manifest + Verified Developer 边界；
+- 无自动安装、无插件代码、无 Profile/PATH/系统修改。
+
+下一阶段只能从隔离 Profile、受信固定制品和单平台最小真实切片开始，并需先通过恢复、签名、路径与原生命令安全门槛。
+
+## Phase 5：社区与需求市场
 
 ### 目标
 
@@ -232,7 +247,7 @@ Phase 1 至此结束。Phase 2 Identity Foundation 不在本阶段实现。
 - Plugin Requests 没有内部资金、余额、托管或提现概念；
 - 收藏和本机安装历史保持默认私密。
 
-## Phase 5：生态质量
+## Phase 6：生态质量
 
 ### 候选能力
 

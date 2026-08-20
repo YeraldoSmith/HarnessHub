@@ -9,8 +9,10 @@ import {
 } from '@harnesshub/plugin-schema'
 import type { AuthSessionResponse, Plugin } from '@harnesshub/types'
 import { IdentityBadge, PluginDetail } from '@harnesshub/ui'
+import type { RuntimeEnvironmentSnapshot } from '@harnesshub/runtime-integration'
 
 import { InstallationPrototypePanel } from './installation-prototype.js'
+import { RuntimeIntegrationPanel } from './runtime-integration.js'
 
 const apiUrl = 'http://127.0.0.1:3001'
 
@@ -25,6 +27,7 @@ export function App() {
   const [auth, setAuth] = useState<AuthSessionResponse>({ authenticated: false })
   const [authState, setAuthState] = useState<'idle' | 'waiting' | 'error'>('idle')
   const [sessionToken, setSessionToken] = useState<string | null>(null)
+  const [runtimeEnvironment, setRuntimeEnvironment] = useState<RuntimeEnvironmentSnapshot | null>(null)
 
   useEffect(() => {
     let active = true
@@ -114,6 +117,7 @@ export function App() {
           <a className="active" href="#registry">
             {t('nav.registry')}
           </a>
+          <a href="#runtime-integration">{t('runtime.title')}</a>
           <a href="#installation-prototype">{t('installation.title')}</a>
           <span>{t('nav.developers')}</span>
           <span>{t('nav.requests')}</span>
@@ -160,7 +164,8 @@ export function App() {
           {plugin ? <PluginDetail plugin={plugin} /> : null}
           {!plugin && !error ? <div className="desktop-message">{t('desktop.loading')}</div> : null}
           {error ? <div className="desktop-message desktop-message--error">{error}</div> : null}
-          <InstallationPrototypePanel auth={auth} />
+          <RuntimeIntegrationPanel onSnapshot={setRuntimeEnvironment} />
+          <InstallationPrototypePanel auth={auth} runtimeEnvironment={runtimeEnvironment} />
         </section>
       </main>
     </div>

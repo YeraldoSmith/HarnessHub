@@ -27,6 +27,7 @@ HarnessHub/
 │   ├── plugin-schema/       # HarnessHub 元数据与 DSH 解析模型
 │   ├── i18n/                # Web/Desktop/UI 共用语言资源与运行时
 │   ├── installation-prototype/ # 无系统副作用的安装状态机与 Fixture
+│   ├── runtime-integration/  # 只读环境模型、DSH Adapter 与 Setup Plan
 │   ├── dsh-adapter/         # CLI/清单/版本兼容适配
 │   ├── api-client/          # 类型安全 API 客户端
 │   └── config/              # lint、TypeScript、Tailwind 等共享配置
@@ -53,6 +54,8 @@ Phase 3-A 只定义 Plugin Submission 候选域，不创建模块或数据表。
 Phase 3-B 只定义 Installation Security 边界。Desktop 将服务端不可变版本事实转换为本机生成的 InstallationPlan；用户确认绑定 plan/version/Profile/permissions/environment digest。Environment Manager 通过 DSH Adapter 和 Platform Adapter 探测与执行，服务端、深链和 UI 都不能下发任意命令。事务使用 Profile 锁、持久 Recovery Journal 和明确的 FULL/PARTIAL/NONE 回滚覆盖度。
 
 Phase 3-C 新增 `packages/installation-prototype` 纯内存状态机和 Desktop 权限确认面板。该包只接受 `SIMULATION_ONLY` Manifest；Mock Environment Manager 固定拒绝 DSH 执行与系统修改。成功、取消、失败回滚和 Recovery Required 都只追加模拟步骤与审计，不调用文件系统、网络、子进程、Tauri command 或包管理器。
+
+Phase 4-A 新增 `packages/runtime-integration` 和一个无参数 Tauri command。原生层只运行硬编码的 Node.js、Git、DSH `--version` 探测，带 2 秒超时与 8 KiB 输出上限，不经过 Shell，也不接受程序、路径或参数输入。共享 DSH Adapter 只消费 Snapshot、判断兼容性并生成全部 `executable: false` 的 Setup Plan。真实 Snapshot 可进入模拟安装分析，但执行与系统修改标志继续固定为 `false`。
 
 当前只读 Registry 的依赖方向：
 

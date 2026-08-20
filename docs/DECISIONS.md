@@ -52,6 +52,10 @@
 | D-044 | Phase 3-C 使用独立纯 TypeScript 内存 Mock Engine，不复用 API、Registry 或 Tauri 原生命令作为执行入口 | 验证状态机和体验，同时以结构隔离证明原型不会下载、执行或修改用户环境 |
 | D-045 | Prototype Manifest 必须同时声明 `simulationOnly: true` 与 `executionPolicy: SIMULATION_ONLY`，Mock Environment 固定禁止 DSH 执行和系统修改 | 防止测试 Fixture 或未来 Adapter 被误接成真实执行能力；违反约束立即失败 |
 | D-046 | Prototype Audit Event 只追加并返回冻结快照，但不持久化 | 足够验证可追踪交互，又不把进程内日志误称为生产审计或恢复 Journal；真实安装前必须另行实现崩溃一致存储 |
+| D-047 | Phase 4-A 原生环境检测只提供无参数 `detect_runtime_environment`，内部仅允许硬编码 `node/git/dsh --version` | 支持真实只读状态，同时阻止 UI、API、深链或插件把它变成任意命令执行入口 |
+| D-048 | 原生版本探测关闭 stdin、限制输出为 8 KiB、超时 2 秒并且不经过 Shell | 控制异常 Runtime 的阻塞与输出风险，避免 Shell 解析；失败只返回 MISSING/ERROR |
+| D-049 | Setup Assistant 只生成 `PLAN_ONLY`、`simulationOnly: true` 且所有步骤 `executable: false` 的计划 | 加快真实产品体验开发，但确认按钮不能提前获得下载、Profile 写入或执行能力 |
+| D-050 | 未来 Trusted Install 首个切片同时要求官方测试插件、LOW、完整 Manifest、Verified Developer，且自动安装仍为 false | 缩小首个真实执行面的来源和风险，保留用户确认与原生层二次校验 |
 
 ## P0：进入代码阶段前确认
 

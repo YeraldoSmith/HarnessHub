@@ -8,7 +8,7 @@ HarnessHub 是面向 DeepSeek Harness（DSH）生态起步的第三方社区平�
 
 HarnessHub 由 **YeraldoSmith** 创建，初始身份为 **Founder & Initial Maintainer**。
 
-> 当前状态：Phase 3-C Installation Prototype 已完成。Desktop 已具备权限确认、用户取消、模拟成功、模拟失败回滚与 Recovery Required 闭环；实现只使用内存状态机和 Mock Environment Manager，不会下载或安装插件、执行第三方代码、探测或修改用户环境。
+> 当前状态：Phase 4-A Controlled Runtime Integration Prototype 已完成。打包后的 Desktop 能只读检测 OS、CPU、Node.js、Git 与 DSH，并生成不可执行的 Setup Plan；安装事务仍保持模拟，不会下载或安装软件、执行插件代码、运行 Shell 或修改用户环境。
 
 ## v0.1 的最小闭环
 
@@ -95,10 +95,11 @@ pnpm db:local:stop
 - [Plugin Submission Architecture](docs/PLUGIN_SUBMISSION_ARCHITECTURE.md)
 - [Installation Security Architecture](docs/INSTALLATION_SECURITY_ARCHITECTURE.md)
 - [Installation Prototype](docs/INSTALLATION_PROTOTYPE.md)
+- [Controlled Runtime Integration Prototype](docs/RUNTIME_INTEGRATION_PROTOTYPE.md)
 
 ## 后续门槛
 
-Phase 3-C 已证明 Analyze、Permission Review、Confirmation、Simulated Transaction 和 Recovery 状态能形成闭环，但没有触碰用户环境。进入真实 DSH 安装执行前，必须先完成 Manifest 真实性、原生命令 allowlist、持久 Recovery Journal、隔离测试环境、跨平台支持矩阵和外部桌面安全评审；仍不得直接开放 Google 或自动账号绑定。
+Phase 4-A 已连接真实只读 Runtime Snapshot，但 Setup Assistant 仍是 `PLAN_ONLY`。进入真实 DSH 安装执行前，必须先完成受信制品与签名、原生 operation allowlist、持久 Recovery Journal、隔离 Profile、单平台安全测试和外部桌面安全评审；仍不得直接开放任意命令、插件构建脚本、Google 或自动账号绑定。
 
 ## Copyright
 

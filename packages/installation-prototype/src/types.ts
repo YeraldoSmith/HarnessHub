@@ -103,6 +103,11 @@ export interface PrototypeEnvironmentSnapshot {
   id: string
   platform: 'PROTOTYPE'
   supportedPlatforms: readonly ['macOS', 'Windows', 'Linux']
+  runtimeSnapshotId?: string
+  detectedPlatform?: 'macOS' | 'Windows' | 'Linux' | 'Unknown'
+  detectedArchitecture?: string
+  dshDetected?: boolean
+  dshVersion?: string | null
   dshExecutionAvailable: false
   systemMutationAllowed: false
   capturedAt: string

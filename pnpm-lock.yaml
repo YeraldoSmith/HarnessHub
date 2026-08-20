@@ -87,6 +87,9 @@ importers:
       '@harnesshub/plugin-schema':
         specifier: workspace:*
         version: link:../../packages/plugin-schema
+      '@harnesshub/runtime-integration':
+        specifier: workspace:*
+        version: link:../../packages/runtime-integration
       '@harnesshub/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -204,6 +207,16 @@ importers:
       zod:
         specifier: ^4.4.3
         version: 4.4.3
+    devDependencies:
+      vitest:
+        specifier: ^4.1.11
+        version: 4.1.11(@types/node@24.13.3)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12))
+
+  packages/runtime-integration:
+    dependencies:
+      '@harnesshub/installation-prototype':
+        specifier: workspace:*
+        version: link:../installation-prototype
     devDependencies:
       vitest:
         specifier: ^4.1.11

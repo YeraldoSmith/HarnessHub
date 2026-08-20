@@ -15,6 +15,7 @@
     "@harnesshub/i18n": "workspace:*",
     "@harnesshub/installation-prototype": "workspace:*",
     "@harnesshub/plugin-schema": "workspace:*",
+    "@harnesshub/runtime-integration": "workspace:*",
     "@harnesshub/types": "workspace:*",
     "@harnesshub/ui": "workspace:*",
     "@tauri-apps/api": "^2.11.1",

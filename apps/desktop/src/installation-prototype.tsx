@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { type TranslationKey, useI18n } from '@harnesshub/i18n'
 import {
@@ -16,6 +16,10 @@ import {
   type SimulationScenario,
 } from '@harnesshub/installation-prototype'
 import type { AuthSessionResponse } from '@harnesshub/types'
+import {
+  ControlledRuntimeInstallationEnvironment,
+  type RuntimeEnvironmentSnapshot,
+} from '@harnesshub/runtime-integration'
 
 const permissionLabelKeys: Record<PrototypePermissionId, TranslationKey> = {
   'network-access': 'installation.permissionNetworkAccess',
@@ -143,15 +147,34 @@ function AuditTimeline({ events }: { events: readonly Readonly<InstallationAudit
   )
 }
 
-export function InstallationPrototypePanel({ auth }: { auth: AuthSessionResponse }) {
+export function InstallationPrototypePanel({
+  auth,
+  runtimeEnvironment,
+}: {
+  auth: AuthSessionResponse
+  runtimeEnvironment?: RuntimeEnvironmentSnapshot | null
+}) {
   const { t } = useI18n()
-  const [engine] = useState(
-    () => new MockInstallationEngine(permissionReviewAgentManifest, new MockEnvironmentManager()),
+  const engine = useMemo(
+    () =>
+      new MockInstallationEngine(
+        permissionReviewAgentManifest,
+        runtimeEnvironment
+          ? new ControlledRuntimeInstallationEnvironment(runtimeEnvironment)
+          : new MockEnvironmentManager(),
+      ),
+    [runtimeEnvironment],
   )
   const [transaction, setTransaction] = useState<Readonly<InstallationTransaction> | null>(null)
   const [audit, setAudit] = useState<readonly Readonly<InstallationAuditEvent>[]>([])
   const [scenario, setScenario] = useState<SimulationScenario>('SUCCESS')
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    setTransaction(null)
+    setAudit([])
+    setError('')
+  }, [engine])
 
   const actor: InstallationActor | null = auth.authenticated ? { userId: auth.user.id } : null
 
@@ -220,6 +243,16 @@ export function InstallationPrototypePanel({ auth }: { auth: AuthSessionResponse
         <span aria-hidden="true">◇</span>
         <strong>{t('installation.simulationOnly')}</strong>
       </div>
+
+      {runtimeEnvironment ? (
+        <p className="installation-runtime-connection">
+          {t('runtime.connectedEnvironment', {
+            platform: runtimeEnvironment.platform,
+            arch: runtimeEnvironment.architecture,
+            dsh: runtimeEnvironment.dsh.version ?? t('runtime.statusMissing'),
+          })}
+        </p>
+      ) : null}
 
       {!auth.authenticated ? (
         <div className="installation-auth-gate">

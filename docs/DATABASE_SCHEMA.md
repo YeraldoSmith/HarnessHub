@@ -128,6 +128,8 @@ verification_evidence
 
 Phase 3-C 没有新增 Prisma model 或 migration。`packages/installation-prototype` 中的 `InstallationTransaction`、`InstallationStep` 与 `InstallationAuditEvent` 只是进程内测试模型：不写 PostgreSQL、不写本机文件，Desktop 退出后消失。它们验证状态机和 UI，不能替代 Phase 3-B 设计的持久 Recovery Journal、ConsentRecord 或 LocalInstallation。
 
+Phase 4-A 同样没有新增 Prisma model 或 migration。Runtime Snapshot 和 Setup Plan 仅存在于当前 Desktop 内存；不上传 OS、architecture、工具版本或本机探测详情。未来若需要诊断上传，必须先增加用户预览、脱敏、明确同意和保留期限。
+
 ## 1. 设计规则
 
 - 公共 ID 使用 UUID/ULID，不暴露递增主键；

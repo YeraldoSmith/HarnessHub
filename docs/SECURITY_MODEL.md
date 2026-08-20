@@ -228,3 +228,15 @@
 - 回滚失败必须进入 `RECOVERY_REQUIRED`，不得显示为成功；
 - 状态变化只追加 Audit Event；当前仅在内存中存在，不冒充持久审计或 Recovery Journal；
 - Desktop 持续显示“仅模拟”，`INSTALLED` 只表示模拟终态，不代表本机已安装插件。
+
+## 16. Controlled Runtime Integration 安全边界（Phase 4-A 实现）
+
+- 真实检测只存在于打包后的 Tauri Desktop；普通浏览器预览不探测本机；
+- 唯一原生命令无输入，只运行硬编码的 `node --version`、`git --version`、`dsh --version`，不经过 Shell；
+- stdin 关闭，stdout/stderr 保留上限各 8 KiB，单探测 2 秒超时；
+- Native Snapshot 必须声明 `readOnly: true` 与 `systemMutationAllowed: false`，否则共享 Manager 拒绝接收；
+- DSH Adapter 不执行探测或安装，只消费 Snapshot、解析版本、判断范围并生成计划；
+- Setup Plan 必须是 `PLAN_ONLY`、`simulationOnly: true`、`confirmationRequired: true`，每一步 `executable: false`；
+- Runtime Snapshot 接入 Mock Installation Engine 后，`dshExecutionAvailable` 和 `systemMutationAllowed` 继续固定为 false；
+- Runtime/Setup 数据只在 Desktop 内存存在，不上传平台、架构或版本；
+- HIGH/CRITICAL、非官方测试插件、不完整 Manifest 或未验证开发者都不能进入未来受控真实安装候选；满足条件也不允许自动安装。

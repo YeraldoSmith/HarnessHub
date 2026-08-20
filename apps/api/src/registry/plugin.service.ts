@@ -7,6 +7,7 @@ import type {
   PluginSnapshotRecord,
   RegistryResponse,
 } from '@harnesshub/types'
+import { pluginIdSchema, registryQuerySchema, snapshotIdSchema } from '@harnesshub/plugin-schema'
 
 import { PLUGIN_REPOSITORY, type PluginRepository } from './plugin.repository.js'
 
@@ -14,12 +15,23 @@ import { PLUGIN_REPOSITORY, type PluginRepository } from './plugin.repository.js
 export class PluginService {
   constructor(@Inject(PLUGIN_REPOSITORY) private readonly repository: PluginRepository) {}
 
-  async list(query?: string): Promise<RegistryResponse> {
-    const data = await this.repository.list(query)
-    return { data, total: data.length }
+  async list(rawQuery: unknown = {}): Promise<RegistryResponse> {
+    const parsed = registryQuerySchema.safeParse(rawQuery)
+    if (!parsed.success) {
+      throw new BadRequestException('Invalid pagination or search query.')
+    }
+    const { q, page, limit } = parsed.data
+    const result = await this.repository.list({ query: q, page, limit })
+    return {
+      items: result.items,
+      total: result.total,
+      page,
+      hasNext: page * limit < result.total,
+    }
   }
 
   async getById(id: string): Promise<Plugin> {
+    this.assertPluginId(id)
     const plugin = await this.repository.getById(id)
     if (!plugin) {
       throw new NotFoundException(`Plugin '${id}' was not found in the registry.`)
@@ -28,6 +40,7 @@ export class PluginService {
   }
 
   async listSnapshots(pluginId: string): Promise<PluginSnapshotRecord[]> {
+    this.assertPluginId(pluginId)
     await this.assertPluginExists(pluginId)
     return this.repository.listSnapshots(pluginId)
   }
@@ -39,6 +52,10 @@ export class PluginService {
   ): Promise<PluginSnapshotComparison> {
     if (!fromSnapshotId || !toSnapshotId) {
       throw new BadRequestException("Both 'from' and 'to' snapshot IDs are required.")
+    }
+    this.assertPluginId(pluginId)
+    if (!snapshotIdSchema.safeParse(fromSnapshotId).success || !snapshotIdSchema.safeParse(toSnapshotId).success) {
+      throw new BadRequestException('Invalid snapshot ID.')
     }
 
     const [from, to] = await Promise.all([
@@ -76,5 +93,11 @@ export class PluginService {
 
   private compatibilityValue(plugin: Plugin): string {
     return `${plugin.compatibility.status}:${plugin.compatibility.dsh}`
+  }
+
+  private assertPluginId(id: string): void {
+    if (!pluginIdSchema.safeParse(id).success) {
+      throw new BadRequestException('Invalid plugin ID.')
+    }
   }
 }

@@ -249,6 +249,35 @@ nav a:hover,
   gap: 1rem;
 }
 
+.registry-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.registry-pagination button {
+  padding: 0.65rem 0.9rem;
+  border: 1px solid #b8c9c0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--hh-ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.registry-pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.registry-pagination span {
+  color: var(--hh-muted);
+  font-size: 0.85rem;
+}
+
 .load-message,
 .empty-state {
   display: grid;
@@ -362,7 +391,7 @@ footer strong {
     grid-template-columns: 1fr auto;
   }
 
-  nav {
+  .site-header nav {
     display: none;
   }
 

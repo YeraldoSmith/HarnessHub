@@ -50,6 +50,11 @@ Phase 1-C 新增人工白名单来源：
 
 这些记录只证明同步时 GitHub/npm 身份、Bundle 声明、仓库与许可证能够交叉核对，不是安全审核、官方收录或推荐。
 
+## Phase 1-D 基础设施来源
+
+- [NestJS Rate Limiting](https://docs.nestjs.com/security/rate-limiting)：基础 API 限流采用官方 `@nestjs/throttler` 模块和全局 Guard；当前使用进程内存储，不引入 Redis 等额外基础设施。
+- [PostgreSQL pg_trgm](https://www.postgresql.org/docs/current/pgtrgm.html)：名称、描述、分类和作者字段使用 trigram GIN 索引支撑模糊搜索；标签使用原生数组 GIN 索引。
+
 ## 更新规则
 
 以下事件发生时必须重新核验并更新本页：

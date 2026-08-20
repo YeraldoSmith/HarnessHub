@@ -20,7 +20,7 @@
     "db:migrate": "pnpm --filter @harnesshub/api db:migrate",
     "db:local:start": "bash scripts/postgres-local.sh start",
     "db:local:stop": "bash scripts/postgres-local.sh stop",
-    "registry:sync": "pnpm --filter @harnesshub/api registry:sync",
+    "registry:sync": "pnpm build:packages && pnpm --filter @harnesshub/api registry:sync",
     "build": "pnpm -r --if-present build",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm build:packages && pnpm -r --if-present test",

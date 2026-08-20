@@ -1,6 +1,7 @@
 export { GitHubSourceAdapter } from './github-adapter.js'
 export { NpmSourceAdapter } from './npm-adapter.js'
 export { PluginSourceSync } from './plugin-source-sync.js'
+export { SourceFetchError } from './http.js'
 export {
   manualPluginSourceListSchema,
   manualPluginSourceSchema,

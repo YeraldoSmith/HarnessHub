@@ -30,6 +30,14 @@ export function PluginDetail({ plugin, snapshots }: PluginDetailProps) {
 
       <p className="hh-plugin-detail__description">{plugin.description}</p>
 
+      {plugin.tags.length > 0 ? (
+        <div className="hh-tag-list" aria-label="Plugin tags">
+          {plugin.tags.map((tag) => (
+            <span key={tag}>#{tag}</span>
+          ))}
+        </div>
+      ) : null}
+
       <dl className="hh-fact-grid">
         <div>
           <dt>Version</dt>
@@ -58,6 +66,36 @@ export function PluginDetail({ plugin, snapshots }: PluginDetailProps) {
           <dd>{plugin.license.name}</dd>
         </div>
       </dl>
+
+      <section className="hh-plugin-detail__section hh-plugin-detail__availability">
+        <div>
+          <span className="hh-section-kicker">Current upstream state</span>
+          <h2>Source status</h2>
+        </div>
+        <div className="hh-source-status-list">
+          {plugin.source_status.map((source) => (
+            <div
+              className={`hh-source-status hh-source-status--${source.status.toLowerCase()}`}
+              key={source.provider}
+            >
+              <div>
+                <strong>{source.provider}</strong>
+                <span>{source.status}</span>
+              </div>
+              <small>
+                Last verified:{' '}
+                {source.last_verified_at ? new Date(source.last_verified_at).toISOString() : 'Never'}
+              </small>
+              {source.status === 'UNAVAILABLE' ? (
+                <p>Upstream unavailable. Historical snapshots remain available.</p>
+              ) : null}
+            </div>
+          ))}
+          {plugin.source_status.length === 0 ? (
+            <div className="hh-empty-evidence">No production source status exists for this fixture.</div>
+          ) : null}
+        </div>
+      </section>
 
       <section className="hh-plugin-detail__section">
         <div>

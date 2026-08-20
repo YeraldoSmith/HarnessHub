@@ -49,6 +49,16 @@ export interface SourceEvidence {
   license_spdx: string | null
 }
 
+export type SourceAvailabilityStatus = 'UNKNOWN' | 'AVAILABLE' | 'UNAVAILABLE'
+
+export interface PluginSourceStatus {
+  provider: 'github' | 'npm'
+  status: SourceAvailabilityStatus
+  last_verified_at: string | null
+  unavailable_since: string | null
+  error: string | null
+}
+
 export interface Plugin {
   id: string
   name: string
@@ -59,6 +69,7 @@ export interface Plugin {
   author: PluginAuthor
   version: string
   category: string
+  tags: string[]
   permissions: PluginPermission[]
   compatibility: PluginCompatibility
   license: PluginLicense
@@ -66,6 +77,7 @@ export interface Plugin {
   npm_version: string | null
   checked_at: string
   source_evidence: SourceEvidence[]
+  source_status: PluginSourceStatus[]
   is_mock: boolean
 }
 
@@ -94,6 +106,32 @@ export interface PluginSnapshotComparison {
 }
 
 export interface RegistryResponse {
-  data: Plugin[]
+  items: Plugin[]
   total: number
+  page: number
+  hasNext: boolean
+}
+
+export interface RegistryListQuery {
+  query?: string
+  page: number
+  limit: number
+}
+
+export interface PluginPageSlice {
+  items: Plugin[]
+  total: number
+}
+
+export type SyncJobStatus = 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED'
+
+export interface SyncJobRecord {
+  id: string
+  plugin_id: string
+  source: string
+  status: SyncJobStatus
+  started_at: string | null
+  finished_at: string | null
+  error: string | null
+  created_at: string
 }

@@ -1,4 +1,8 @@
-import { pluginSnapshotListSchema, registryResponseSchema } from '@harnesshub/plugin-schema'
+import {
+  pluginSchema,
+  pluginSnapshotListSchema,
+  registryResponseSchema,
+} from '@harnesshub/plugin-schema'
 import type { Plugin, PluginSnapshotRecord, RegistryResponse } from '@harnesshub/types'
 
 const apiUrl = (import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:3001').replace(/\/$/, '')
@@ -15,25 +19,14 @@ async function request(path: string): Promise<unknown> {
   return response.json()
 }
 
-export async function listPlugins(query = ''): Promise<RegistryResponse> {
-  const search = query.trim() ? `?q=${encodeURIComponent(query.trim())}` : ''
-  return registryResponseSchema.parse(await request(`/plugins${search}`))
+export async function listPlugins(query = '', page = 1, limit = 20): Promise<RegistryResponse> {
+  const search = new URLSearchParams({ page: String(page), limit: String(limit) })
+  if (query.trim()) search.set('q', query.trim())
+  return registryResponseSchema.parse(await request(`/plugins?${search.toString()}`))
 }
 
 export async function getPlugin(id: string): Promise<Plugin> {
-  const result = await request(`/plugins/${encodeURIComponent(id)}`)
-  const envelope = registryResponseSchema.safeParse({ data: [result], total: 1 })
-
-  if (!envelope.success) {
-    throw new Error('The registry returned an invalid plugin record.')
-  }
-
-  const plugin = envelope.data.data[0]
-  if (!plugin) {
-    throw new Error('The registry did not return a plugin record.')
-  }
-
-  return plugin
+  return pluginSchema.parse(await request(`/plugins/${encodeURIComponent(id)}`))
 }
 
 export async function listPluginSnapshots(id: string): Promise<PluginSnapshotRecord[]> {

@@ -38,6 +38,8 @@ Phase 1-B 新增 `packages/plugin-sources`，集中处理 GitHub/npm 读取、�
 
 Phase 1-C 增加 Snapshot 历史/比较只读接口、隔离 PostgreSQL 集成测试，以及批量同步的逐来源失败报告。Prisma Driver Adapter 显式应用连接串中的 schema，避免测试 Schema 与生产 Registry 混用。
 
+Phase 1-D 将列表查询下推 PostgreSQL：稳定排序、分页、trigram 文本索引和 GIN 标签索引。同步流程写入 SyncJob，并独立维护 GitHub/npm 当前可用状态；上游失效只改变当前状态，不删除版本或 Snapshot。
+
 当前只读 Registry 的依赖方向：
 
 ```text
@@ -191,6 +193,7 @@ GET    /plugins/:slug
 GET    /plugins/:slug/snapshots
 GET    /plugins/:slug/snapshots/compare?from=:snapshotId&to=:snapshotId
 GET    /plugins/:slug/versions/:version
+GET    /sync-jobs?pluginId=:pluginId
 POST   /submissions
 POST   /claims
 POST   /plugins/:id/favorites
@@ -202,7 +205,9 @@ POST   /plugin-requests
 POST   /plugin-requests/:id/claims
 ```
 
-- 公共读接口使用游标分页和缓存；
+- Phase 1-D 公开列表使用稳定排序和有上限的页码分页（`page`/`limit`，最大 100）；未来数据量和写入频率需要游标时再增加新契约；
+- API 使用单进程内存限流作为基础保护，默认每个来源 IP 每分钟 120 次；多实例部署前需要共享限流存储；
+- 查询参数由共享 Zod Schema 校验，未知参数、越界页码和非法 ID 返回统一 400；未知服务端错误不向客户端泄露内部信息；
 - 写接口要求认证、CSRF/Origin 防护、速率限制和幂等键；
 - 审核接口位于独立权限域，不与普通用户角色复用；
 - 桌面安装不经过服务端远程命令接口。

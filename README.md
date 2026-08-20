@@ -8,7 +8,7 @@ HarnessHub 是面向 DeepSeek Harness（DSH）生态起步的第三方社区平�
 
 HarnessHub 由 **YeraldoSmith** 创建，初始身份为 **Founder & Initial Maintainer**。
 
-> 当前状态：Phase 1-C 已完成。只读 Plugin Registry 已接入 PostgreSQL，当前收录 3 个经人工指定、由 GitHub/npm 交叉核对的真实来源，并提供追加式 Snapshot 历史与版本比较 API；Mock Plugin 仅保留为测试 fixture。
+> 当前状态：Phase 1-D 已完成，Phase 1 Registry Foundation 正式收口。Registry 支持稳定分页、PostgreSQL 搜索、SyncJob、来源可用状态、追加式 Snapshot、基础限流与统一错误响应；Mock Plugin 仅保留为测试 fixture。
 
 ## v0.1 的最小闭环
 
@@ -36,7 +36,7 @@ HarnessHub 由 **YeraldoSmith** 创建，初始身份为 **Founder & Initial Mai
 - 不自动批准 Git 依赖的安装构建脚本，也不静默安装或更新插件。
 - DSH 尚处于开发者预览阶段，所有 DSH 集成都经过独立适配层。
 
-## Phase 1-C 本地运行
+## Registry Foundation 本地运行
 
 要求：Node.js 22.19+、pnpm 11、PostgreSQL 17。macOS 可使用仓库内的项目级数据库启动脚本；它不会注册系统常驻服务。Desktop 原生壳检查还需要 Rust 工具链。
 
@@ -85,10 +85,11 @@ pnpm db:local:stop
 - [事实来源与版本基线](docs/SOURCES.md)
 - [Phase 1-B Registry](docs/PHASE_1B_REGISTRY.md)
 - [Phase 1-C Registry Hardening](docs/PHASE_1C_REGISTRY_HARDENING.md)
+- [Phase 1-D Production Hardening](docs/PHASE_1D_PRODUCTION_HARDENING.md)
 
 ## 后续门槛
 
-Phase 1 采用只读 Plugin Registry 范围。首发平台、托管地区和插件审核负责人仍需在进入相关上线阶段前确认。
+Phase 1 已结束。下一阶段是 Phase 2 Identity Foundation；账号与开发者体系必须作为独立阶段重新确认后再实现。
 
 ## Copyright
 

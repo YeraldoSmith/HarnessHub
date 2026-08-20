@@ -94,6 +94,7 @@ describe('source adapters', () => {
       id: 'dsh-example',
       display_name: 'DSH Example',
       category: 'Development',
+      tags: ['example'],
       github: { repository },
       npm: { package_name: '@example/dsh-example' },
     })
@@ -118,6 +119,7 @@ describe('source adapters', () => {
         id: 'dsh-example',
         display_name: 'DSH Example',
         category: 'Development',
+        tags: ['example'],
         github: { repository },
         npm: { package_name: '@example/dsh-example' },
       }),

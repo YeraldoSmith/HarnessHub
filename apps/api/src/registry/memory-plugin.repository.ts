@@ -1,4 +1,10 @@
-import type { Plugin, PluginSnapshot, PluginSnapshotRecord } from '@harnesshub/types'
+import type {
+  Plugin,
+  PluginPageSlice,
+  PluginSnapshot,
+  PluginSnapshotRecord,
+  RegistryListQuery,
+} from '@harnesshub/types'
 
 import type { PluginRepository } from './plugin.repository.js'
 
@@ -14,18 +20,30 @@ export class MemoryPluginRepository implements PluginRepository {
     }
   }
 
-  async list(query?: string): Promise<Plugin[]> {
+  async list({ query, page, limit }: RegistryListQuery): Promise<PluginPageSlice> {
     const normalizedQuery = query?.trim().toLocaleLowerCase()
     const plugins = [...this.plugins.values()]
     const filtered = normalizedQuery
       ? plugins.filter((plugin) =>
-          [plugin.name, plugin.description, plugin.author.name, plugin.category].some((value) =>
+          [
+            plugin.name,
+            plugin.description,
+            plugin.author.name,
+            plugin.author.handle,
+            plugin.category,
+            ...plugin.tags,
+          ].some((value) =>
             value.toLocaleLowerCase().includes(normalizedQuery),
           ),
         )
       : plugins
 
-    return filtered.sort((a, b) => a.name.localeCompare(b.name)).map((plugin) => structuredClone(plugin))
+    const sorted = filtered.sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id))
+    const start = (page - 1) * limit
+    return {
+      items: sorted.slice(start, start + limit).map((plugin) => structuredClone(plugin)),
+      total: sorted.length,
+    }
   }
 
   async getById(id: string): Promise<Plugin | null> {

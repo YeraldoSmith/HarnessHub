@@ -23,6 +23,8 @@
 
 ## Phase 1：只读 Registry
 
+状态：Completed（Phase 1-D）
+
 ### 目标
 
 先证明平台能准确识别和解释真实 DSH Bundle。
@@ -47,6 +49,18 @@ Phase 1 当前实现先以一个明确标识的 Mock Plugin 打通 Schema、API 
 - PostgreSQL 隔离 Schema 集成测试；
 - GitHub/npm 身份失配测试与逐来源同步失败报告；
 - Web 详情页展示 Snapshot 历史。
+
+### Phase 1-D：Registry Production Hardening（已完成）
+
+- `page` / `limit` 稳定分页与 Web 导航；
+- PostgreSQL 名称、描述、分类、作者、标签搜索；
+- SyncJob 生命周期与只读状态 API；
+- GitHub/npm 当前可用状态和最后验证时间；
+- 上游失效保留历史版本、证据与 Snapshot；
+- 单进程基础限流、严格输入校验与统一错误响应；
+- 分页、搜索、SyncJob、来源失效和 PostgreSQL 集成测试。
+
+Phase 1 至此结束。Phase 2 Identity Foundation 不在本阶段实现。
 
 ### 交付
 

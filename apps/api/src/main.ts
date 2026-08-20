@@ -1,11 +1,14 @@
 import 'reflect-metadata'
 
 import { NestFactory } from '@nestjs/core'
+import type { NestExpressApplication } from '@nestjs/platform-express'
 
 import { AppModule } from './app.module.js'
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule)
+  const app = await NestFactory.create<NestExpressApplication>(AppModule)
+  app.set('trust proxy', 'loopback')
+  app.getHttpAdapter().getInstance().disable('x-powered-by')
   const origins = (process.env.WEB_ORIGINS ??
     'http://localhost:5173,http://127.0.0.1:5173,http://localhost:1420,http://127.0.0.1:1420')
     .split(',')

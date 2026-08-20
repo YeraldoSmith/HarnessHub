@@ -21,13 +21,35 @@ describe('PluginService with MemoryPluginRepository', () => {
   it('reads the test fixture through the repository abstraction', async () => {
     const result = await service.list()
     expect(result.total).toBe(1)
-    expect(result.data[0]?.id).toBe('harnesshub-registry-demo')
+    expect(result.items[0]?.id).toBe('harnesshub-registry-demo')
   })
 
   it('supports basic read-only search', async () => {
-    await expect(service.list('registry')).resolves.toMatchObject({ total: 1 })
-    await expect(service.list('YeraldoSmith')).resolves.toMatchObject({ total: 1 })
-    await expect(service.list('not-present')).resolves.toMatchObject({ total: 0 })
+    await expect(service.list({ q: 'registry' })).resolves.toMatchObject({ total: 1 })
+    await expect(service.list({ q: 'YeraldoSmith' })).resolves.toMatchObject({ total: 1 })
+    await expect(service.list({ q: 'not-present' })).resolves.toMatchObject({ total: 0 })
+    await expect(service.list({ q: 'testing' })).resolves.toMatchObject({ total: 1 })
+  })
+
+  it('returns stable pagination metadata', async () => {
+    const pagedRepository = new MemoryPluginRepository([
+      mockPlugin,
+      { ...mockPlugin, id: 'second-registry-plugin', name: 'Second Registry Plugin' },
+    ])
+    const pagedService = new PluginService(pagedRepository)
+    const firstPage = await pagedService.list({ page: '1', limit: '1' })
+    const secondPage = await pagedService.list({ page: '2', limit: '1' })
+
+    expect(firstPage).toMatchObject({ total: 2, page: 1, hasNext: true })
+    expect(firstPage.items).toHaveLength(1)
+    expect(secondPage).toMatchObject({ total: 2, page: 2, hasNext: false })
+    expect(secondPage.items).toHaveLength(1)
+    expect(secondPage.items[0]?.id).not.toBe(firstPage.items[0]?.id)
+  })
+
+  it('rejects invalid pagination input', async () => {
+    await expect(service.list({ page: '0', limit: '20' })).rejects.toThrow(BadRequestException)
+    await expect(service.list({ page: '1', limit: '101' })).rejects.toThrow(BadRequestException)
   })
 
   it('returns a not-found error for unknown plugins', async () => {

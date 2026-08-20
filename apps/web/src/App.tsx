@@ -18,6 +18,9 @@ export function App() {
   const [selectedPlugin, setSelectedPlugin] = useState<Plugin | null>(null)
   const [snapshots, setSnapshots] = useState<PluginSnapshotRecord[]>([])
   const [query, setQuery] = useState('')
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
+  const [hasNext, setHasNext] = useState(false)
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [error, setError] = useState('')
 
@@ -36,9 +39,11 @@ export function App() {
           setSelectedPlugin(plugin)
           setSnapshots(history)
         } else {
-          const result = await listPlugins(query)
+          const result = await listPlugins(query, page)
           if (!active) return
-          setPlugins(result.data)
+          setPlugins(result.items)
+          setTotal(result.total)
+          setHasNext(result.hasNext)
         }
         setLoadState('ready')
       } catch (reason) {
@@ -51,7 +56,7 @@ export function App() {
     return () => {
       active = false
     }
-  }, [pluginId, query])
+  }, [pluginId, query, page])
 
   return (
     <div className="site-shell">
@@ -69,7 +74,7 @@ export function App() {
           <a href="/">Registry</a>
           <a href="#principles">Principles</a>
         </nav>
-        <span className="phase-pill">Phase 1-C · Registry Hardening</span>
+        <span className="phase-pill">Phase 1-D · Production Hardening</span>
       </header>
 
       <main>
@@ -129,7 +134,10 @@ export function App() {
                     type="search"
                     placeholder="Search by name, author, or category"
                     value={query}
-                    onChange={(event) => setQuery(event.target.value)}
+                    onChange={(event) => {
+                      setQuery(event.target.value)
+                      setPage(1)
+                    }}
                   />
                 </label>
               </div>
@@ -147,6 +155,19 @@ export function App() {
                     </div>
                   ) : null}
                 </div>
+              ) : null}
+              {loadState === 'ready' && total > 0 ? (
+                <nav className="registry-pagination" aria-label="Registry pages">
+                  <button disabled={page === 1} onClick={() => setPage((value) => value - 1)} type="button">
+                    Previous
+                  </button>
+                  <span>
+                    Page {page} · {total} plugins
+                  </span>
+                  <button disabled={!hasNext} onClick={() => setPage((value) => value + 1)} type="button">
+                    Next
+                  </button>
+                </nav>
               ) : null}
             </section>
 

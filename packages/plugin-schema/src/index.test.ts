@@ -37,7 +37,12 @@ describe('plugin schema', () => {
   })
 
   it('validates registry envelopes', () => {
-    const result = registryResponseSchema.parse({ data: [mockPlugin], total: 1 })
+    const result = registryResponseSchema.parse({
+      items: [mockPlugin],
+      total: 1,
+      page: 1,
+      hasNext: false,
+    })
     expect(result.total).toBe(1)
   })
 

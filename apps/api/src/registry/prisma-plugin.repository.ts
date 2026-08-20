@@ -5,12 +5,20 @@ import { Inject, Injectable } from '@nestjs/common'
 import { pluginSchema } from '@harnesshub/plugin-schema'
 import type {
   Plugin,
+  PluginPageSlice,
   PluginSnapshot,
   PluginSnapshotRecord,
+  PluginSourceStatus,
+  RegistryListQuery,
   SourceEvidence,
 } from '@harnesshub/types'
 
-import { Prisma, SourceProvider, SourceType } from '../generated/prisma/client.js'
+import {
+  Prisma,
+  SourceAvailability,
+  SourceProvider,
+  SourceType,
+} from '../generated/prisma/client.js'
 import { PrismaService } from '../database/prisma.service.js'
 import type { PluginRepository } from './plugin.repository.js'
 
@@ -18,25 +26,40 @@ import type { PluginRepository } from './plugin.repository.js'
 export class PrismaPluginRepository implements PluginRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  async list(query?: string): Promise<Plugin[]> {
+  async list({ query, page, limit }: RegistryListQuery): Promise<PluginPageSlice> {
     const normalizedQuery = query?.trim().toLocaleLowerCase()
-    const records = await this.prisma.plugin.findMany({
-      orderBy: { name: 'asc' },
-      include: this.latestSnapshotInclude(),
-    })
+    const where: Prisma.PluginWhereInput | undefined = normalizedQuery
+      ? {
+          OR: [
+            { name: { contains: normalizedQuery, mode: 'insensitive' } },
+            { description: { contains: normalizedQuery, mode: 'insensitive' } },
+            { category: { contains: normalizedQuery, mode: 'insensitive' } },
+            { authorName: { contains: normalizedQuery, mode: 'insensitive' } },
+            { authorHandle: { contains: normalizedQuery, mode: 'insensitive' } },
+            { tags: { has: normalizedQuery } },
+          ],
+        }
+      : undefined
+    const [total, records] = await this.prisma.$transaction([
+      this.prisma.plugin.count({ where }),
+      this.prisma.plugin.findMany({
+        where,
+        orderBy: [{ name: 'asc' }, { id: 'asc' }],
+        skip: (page - 1) * limit,
+        take: limit,
+        include: this.latestSnapshotInclude(),
+      }),
+    ])
 
-    const plugins = records.flatMap((record) => {
-      const snapshot = record.versions[0]?.snapshots[0]
-      return snapshot ? [pluginSchema.parse(snapshot.data)] : []
-    })
-
-    return normalizedQuery
-      ? plugins.filter((plugin) =>
-          [plugin.name, plugin.description, plugin.author.name, plugin.category].some((value) =>
-            value.toLocaleLowerCase().includes(normalizedQuery),
-          ),
-        )
-      : plugins
+    return {
+      items: records.flatMap((record) => {
+        const snapshot = record.versions[0]?.snapshots[0]
+        return snapshot
+          ? [this.withCurrentSourceStatus(snapshot.data, record.tags, record.sources)]
+          : []
+      }),
+      total,
+    }
   }
 
   async getById(id: string): Promise<Plugin | null> {
@@ -45,7 +68,9 @@ export class PrismaPluginRepository implements PluginRepository {
       include: this.latestSnapshotInclude(),
     })
     const snapshot = record?.versions[0]?.snapshots[0]
-    return snapshot ? pluginSchema.parse(snapshot.data) : null
+    return snapshot
+      ? this.withCurrentSourceStatus(snapshot.data, record.tags, record.sources)
+      : null
   }
 
   async listSnapshots(pluginId: string): Promise<PluginSnapshotRecord[]> {
@@ -85,6 +110,9 @@ export class PrismaPluginRepository implements PluginRepository {
           name: plugin.name,
           description: plugin.description,
           category: plugin.category,
+          authorName: plugin.author.name,
+          authorHandle: plugin.author.handle,
+          tags: plugin.tags,
           license: plugin.license.spdx,
           sourceType: this.toSourceType(plugin.source),
         },
@@ -92,6 +120,9 @@ export class PrismaPluginRepository implements PluginRepository {
           name: plugin.name,
           description: plugin.description,
           category: plugin.category,
+          authorName: plugin.author.name,
+          authorHandle: plugin.author.handle,
+          tags: plugin.tags,
           license: plugin.license.spdx,
           sourceType: this.toSourceType(plugin.source),
         },
@@ -111,11 +142,19 @@ export class PrismaPluginRepository implements PluginRepository {
             repositoryUrl: evidence.repository_url,
             packageName: evidence.package_name,
             evidence: this.toJson(evidence),
+            status: SourceAvailability.AVAILABLE,
+            lastVerifiedAt: new Date(evidence.fetched_at),
+            unavailableSince: null,
+            lastError: null,
           },
           update: {
             repositoryUrl: evidence.repository_url,
             packageName: evidence.package_name,
             evidence: this.toJson(evidence),
+            status: SourceAvailability.AVAILABLE,
+            lastVerifiedAt: new Date(evidence.fetched_at),
+            unavailableSince: null,
+            lastError: null,
           },
         })
       }
@@ -150,8 +189,28 @@ export class PrismaPluginRepository implements PluginRepository {
     return plugin
   }
 
+  async markSourceUnavailable(
+    pluginId: string,
+    provider: SourceEvidence['provider'],
+    error: string,
+    checkedAt = new Date(),
+  ): Promise<number> {
+    const result = await this.prisma.pluginSource.updateMany({
+      where: { pluginId, provider: provider === 'github' ? SourceProvider.GITHUB : SourceProvider.NPM },
+      data: {
+        status: SourceAvailability.UNAVAILABLE,
+        unavailableSince: checkedAt,
+        lastError: error.slice(0, 500),
+      },
+    })
+    return result.count
+  }
+
   private latestSnapshotInclude() {
     return {
+      sources: {
+        orderBy: { provider: 'asc' as const },
+      },
       versions: {
         orderBy: { createdAt: 'desc' as const },
         take: 1,
@@ -163,6 +222,31 @@ export class PrismaPluginRepository implements PluginRepository {
         },
       },
     }
+  }
+
+  private withCurrentSourceStatus(
+    data: Prisma.JsonValue,
+    tags: string[],
+    sources: Array<{
+      provider: SourceProvider
+      status: SourceAvailability
+      lastVerifiedAt: Date | null
+      unavailableSince: Date | null
+      lastError: string | null
+    }>,
+  ): Plugin {
+    const plugin = pluginSchema.parse(data)
+    return pluginSchema.parse({
+      ...plugin,
+      tags,
+      source_status: sources.map((source): PluginSourceStatus => ({
+        provider: source.provider === SourceProvider.GITHUB ? 'github' : 'npm',
+        status: source.status,
+        last_verified_at: source.lastVerifiedAt?.toISOString() ?? null,
+        unavailable_since: source.unavailableSince?.toISOString() ?? null,
+        error: source.lastError,
+      })),
+    })
   }
 
   private toSnapshotRecord(snapshot: {

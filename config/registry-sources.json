@@ -3,6 +3,7 @@
     "id": "dsh-cline-free-provider",
     "display_name": "Cline Free Models Provider",
     "category": "Models & Providers",
+    "tags": ["models", "provider", "cline"],
     "github": {
       "repository": "jiesou/dsh-cline-free-provider",
       "ref": "main"
@@ -15,6 +16,7 @@
     "id": "dsh-agent-teams",
     "display_name": "DSH Agent Teams",
     "category": "Agent Orchestration",
+    "tags": ["agents", "teams", "orchestration"],
     "github": {
       "repository": "NanmiCoder/dsh-agent-teams",
       "ref": "main"
@@ -27,6 +29,7 @@
     "id": "dsh-tui",
     "display_name": "dsh-TUI",
     "category": "Interfaces",
+    "tags": ["tui", "terminal", "interface"],
     "github": {
       "repository": "ccch1mneyyy/dsh-TUI",
       "ref": "main"

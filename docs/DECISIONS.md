@@ -25,6 +25,9 @@
 | D-017 | PluginVersion 与 PluginSnapshot 在数据库层不可变 | 让公开元数据能够追溯到历史来源证据 |
 | D-018 | Prisma PostgreSQL Driver Adapter 显式应用连接串 schema | 防止测试或多环境连接意外落入 public Schema |
 | D-019 | 重复同步追加 Snapshot，但复用相同版本身份 | 保留每次观察证据，同时避免制造重复 PluginVersion |
+| D-020 | Phase 1-D 使用 PostgreSQL trigram/GIN 搜索，不引入外部搜索服务 | 满足早期数千插件规模并保持架构简单 |
+| D-021 | 来源当前状态与不可变历史分离 | 上游失效时保留版本、证据和 Snapshot |
+| D-022 | 基础限流使用单进程内存存储 | 当前无需 Redis；多实例部署前必须升级共享存储 |
 
 ## P0：进入代码阶段前确认
 

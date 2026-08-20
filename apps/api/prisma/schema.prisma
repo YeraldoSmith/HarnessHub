@@ -18,11 +18,27 @@ enum SourceProvider {
   NPM
 }
 
+enum SourceAvailability {
+  UNKNOWN
+  AVAILABLE
+  UNAVAILABLE
+}
+
+enum SyncJobStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
 model Plugin {
   id          String          @id @db.VarChar(120)
   name        String          @db.VarChar(120)
   description String          @db.Text
   category    String          @db.VarChar(80)
+  authorName  String          @map("author_name") @db.VarChar(120)
+  authorHandle String         @map("author_handle") @db.VarChar(120)
+  tags        String[]        @default([])
   license     String          @db.VarChar(80)
   sourceType  SourceType      @map("source_type")
   createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -40,6 +56,10 @@ model PluginSource {
   repositoryUrl String?        @map("repository_url") @db.Text
   packageName   String?        @map("package_name") @db.VarChar(214)
   evidence      Json
+  status        SourceAvailability @default(UNKNOWN)
+  lastVerifiedAt DateTime?      @map("last_verified_at") @db.Timestamptz(3)
+  unavailableSince DateTime?    @map("unavailable_since") @db.Timestamptz(3)
+  lastError       String?       @map("last_error") @db.VarChar(500)
   createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
   plugin        Plugin         @relation(fields: [pluginId], references: [id], onDelete: Restrict)
@@ -47,6 +67,21 @@ model PluginSource {
   @@unique([pluginId, provider])
   @@index([provider])
   @@map("plugin_sources")
+}
+
+model SyncJob {
+  id         String        @id @default(cuid()) @db.VarChar(40)
+  pluginId   String        @map("plugin_id") @db.VarChar(120)
+  source     String        @db.VarChar(40)
+  status     SyncJobStatus @default(PENDING)
+  startedAt  DateTime?     @map("started_at") @db.Timestamptz(3)
+  finishedAt DateTime?     @map("finished_at") @db.Timestamptz(3)
+  error      String?       @db.Text
+  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([pluginId, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@map("sync_jobs")
 }
 
 model PluginVersion {

@@ -16,7 +16,7 @@ export function App() {
         return registryResponseSchema.parse(await response.json())
       })
       .then((registry) => {
-        if (active) setPlugin(registry.data[0] ?? null)
+        if (active) setPlugin(registry.items[0] ?? null)
       })
       .catch((reason: unknown) => {
         if (active) setError(reason instanceof Error ? reason.message : 'Registry unavailable.')
@@ -47,7 +47,7 @@ export function App() {
         </nav>
 
         <div className="desktop-scope-note">
-          <strong>Phase 1-C</strong>
+          <strong>Phase 1-D</strong>
           <p>Read-only Registry. Install and account actions are not enabled.</p>
         </div>
       </aside>

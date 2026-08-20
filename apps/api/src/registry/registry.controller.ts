@@ -7,7 +7,7 @@ export class RegistryController {
   constructor(@Inject(PluginService) private readonly pluginService: PluginService) {}
 
   @Get()
-  list(@Query('q') query?: string) {
+  list(@Query() query: Record<string, unknown>) {
     return this.pluginService.list(query)
   }
 

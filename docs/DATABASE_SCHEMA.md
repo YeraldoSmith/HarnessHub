@@ -1,6 +1,6 @@
 # HarnessHub 数据库设计
 
-状态：Phase 1-C Registry Hardening 已实现；其余为后续概念模型
+状态：Phase 1-D Registry Foundation 已实现；其余为后续概念模型
 
 目标数据库：PostgreSQL + Prisma
 
@@ -23,6 +23,9 @@ plugin_sources
 
 plugin_snapshots
   id, plugin_version_id, checked_at, source, data, evidence, created_at
+
+sync_jobs
+  id, plugin_id, source, status, started_at, finished_at, error, created_at
 ```
 
 - `plugin_versions.identity_key` 是插件 ID、版本、commit SHA 与 npm 版本的 SHA-256 组合身份；
@@ -31,6 +34,10 @@ plugin_snapshots
 - `plugin_sources.evidence` 保存当前来源状态，Snapshot 同时保留当次不可变证据；
 - Mock Plugin 只存在于 `tests/fixtures`，Repository 拒绝写入 `is_mock: true` 的记录。
 - 集成测试固定使用 `harnesshub_test` Schema，测试后删除该隔离 Schema；Driver Adapter 同时显式设置 schema，不能只依赖连接串被底层驱动隐式理解。
+- `plugins` 增加 `author_name`、`author_handle` 与 `tags`，避免分页搜索时扫描并解析全部 Snapshot JSON；
+- 名称、描述、分类和作者使用 PostgreSQL `pg_trgm` GIN 索引，标签使用数组 GIN 索引；
+- `plugin_sources` 增加 `status`、`last_verified_at`、`unavailable_since` 和 `last_error`；来源失效不级联删除历史数据；
+- `sync_jobs.status` 为 PENDING / RUNNING / SUCCESS / FAILED，任务错误限制在可展示的来源级信息，不保存 token 或调用栈。
 
 对应实现以 `apps/api/prisma/schema.prisma` 和已提交 migration 为准。
 
@@ -287,7 +294,7 @@ plugin_requests 1──* request_updates
 - `scan_runs(plugin_version_id, target_digest, ruleset_version)` 索引；
 - `comments(plugin_id, status, created_at desc)`；
 - `moderation_cases(status, priority, created_at)`；
-- 公开列表使用 `(status, published_at, id)` 游标，避免 offset 深分页；
+- Phase 1-D 公开列表按 `(name, id)` 稳定排序并限制 `limit <= 100`；规模或写入频率超过页码分页边界时再增加游标契约；
 - 数据库约束保护评分范围、自关注、有效状态和必要外键，不能只依赖前端。
 
 ## 10. 保留与删除

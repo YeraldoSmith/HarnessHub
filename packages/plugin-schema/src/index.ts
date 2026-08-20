@@ -31,6 +31,7 @@ export const pluginSchema = z.object({
   }),
   version: z.string().min(1).max(40),
   category: z.string().min(1).max(60),
+  tags: z.array(z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)).max(20).default([]),
   permissions: z.array(permissionSchema).max(20),
   compatibility: z.object({
     dsh: z.string().min(1).max(80),
@@ -59,14 +60,49 @@ export const pluginSchema = z.object({
       license_spdx: z.string().max(80).nullable(),
     }),
   ),
+  source_status: z
+    .array(
+      z.object({
+        provider: z.enum(['github', 'npm']),
+        status: z.enum(['UNKNOWN', 'AVAILABLE', 'UNAVAILABLE']),
+        last_verified_at: z.string().datetime({ offset: true }).nullable(),
+        unavailable_since: z.string().datetime({ offset: true }).nullable(),
+        error: z.string().max(500).nullable(),
+      }),
+    )
+    .max(2)
+    .default([]),
   is_mock: z.boolean(),
 }) satisfies z.ZodType<Plugin>
 
 export const pluginListSchema = z.array(pluginSchema)
+export const pluginIdSchema = pluginSchema.shape.id
+export const snapshotIdSchema = z.string().regex(/^[a-z0-9-]+$/).min(1).max(40)
 
 export const registryResponseSchema = z.object({
-  data: pluginListSchema,
+  items: pluginListSchema,
   total: z.number().int().nonnegative(),
+  page: z.number().int().positive(),
+  hasNext: z.boolean(),
+})
+
+export const registryQuerySchema = z
+  .object({
+    q: z.string().trim().max(100).optional(),
+    page: z.coerce.number().int().min(1).max(100_000).default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+  })
+  .strict()
+
+export const syncJobSchema = z.object({
+  id: z.string().min(1).max(40),
+  plugin_id: pluginSchema.shape.id,
+  source: z.string().min(1).max(40),
+  status: z.enum(['PENDING', 'RUNNING', 'SUCCESS', 'FAILED']),
+  started_at: z.string().datetime({ offset: true }).nullable(),
+  finished_at: z.string().datetime({ offset: true }).nullable(),
+  error: z.string().max(2000).nullable(),
+  created_at: z.string().datetime({ offset: true }),
 })
 
 export const pluginSnapshotSchema = z.object({

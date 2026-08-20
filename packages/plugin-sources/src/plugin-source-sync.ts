@@ -59,6 +59,7 @@ export class PluginSourceSync {
       },
       version: npm.version,
       category: source.category,
+      tags: source.tags,
       permissions: [],
       compatibility: {
         dsh: compatibility,
@@ -76,6 +77,22 @@ export class PluginSourceSync {
       npm_version: npm.version,
       checked_at: checkedAt,
       source_evidence: [github.evidence, npm.evidence],
+      source_status: [
+        {
+          provider: 'github',
+          status: 'AVAILABLE',
+          last_verified_at: github.evidence.fetched_at,
+          unavailable_since: null,
+          error: null,
+        },
+        {
+          provider: 'npm',
+          status: 'AVAILABLE',
+          last_verified_at: npm.evidence.fetched_at,
+          unavailable_since: null,
+          error: null,
+        },
+      ],
       is_mock: false,
     })
 

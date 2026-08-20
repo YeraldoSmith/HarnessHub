@@ -8,11 +8,15 @@ export interface PluginCardProps {
 }
 
 export function PluginCard({ plugin, href }: PluginCardProps) {
+  const unavailableSources = plugin.source_status.filter((source) => source.status === 'UNAVAILABLE')
   const content = (
     <>
       <div className="hh-plugin-card__topline">
         <span className="hh-plugin-card__category">{plugin.category}</span>
         {plugin.is_mock ? <span className="hh-status-pill">Mock data</span> : null}
+        {unavailableSources.length > 0 ? (
+          <span className="hh-status-pill hh-status-pill--warning">Source unavailable</span>
+        ) : null}
       </div>
       <div className="hh-plugin-card__heading">
         <div className="hh-plugin-card__icon" aria-hidden="true">
@@ -33,6 +37,13 @@ export function PluginCard({ plugin, href }: PluginCardProps) {
         <span>{plugin.license.spdx}</span>
         {plugin.source_commit ? <span>{plugin.source_commit.slice(0, 8)}</span> : null}
       </div>
+      {plugin.tags.length > 0 ? (
+        <div className="hh-tag-list" aria-label="Plugin tags">
+          {plugin.tags.map((tag) => (
+            <span key={tag}>#{tag}</span>
+          ))}
+        </div>
+      ) : null}
       {plugin.permissions.length > 0 ? (
         <div className="hh-permission-list" aria-label="Declared permissions">
           {plugin.permissions.map((permission) => (

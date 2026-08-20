@@ -6,6 +6,7 @@ export const manualPluginSourceSchema = z.object({
   id: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   display_name: z.string().min(1).max(80),
   category: z.string().min(1).max(60),
+  tags: z.array(z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)).max(20).default([]),
   github: z.object({
     repository: z.string().regex(/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/),
     ref: z.string().min(1).max(200).optional(),

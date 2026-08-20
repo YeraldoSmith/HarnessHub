@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { openUrl } from '@tauri-apps/plugin-opener'
 
 import { LanguageSelect, useI18n } from '@harnesshub/i18n'
@@ -9,10 +9,17 @@ import {
 } from '@harnesshub/plugin-schema'
 import type { AuthSessionResponse, Plugin } from '@harnesshub/types'
 import { IdentityBadge, PluginDetail } from '@harnesshub/ui'
+import type { RuntimeEvent, RuntimeSnapshot } from '@harnesshub/runtime-bridge'
 import type { RuntimeEnvironmentSnapshot } from '@harnesshub/runtime-integration'
 
 import { InstallationPrototypePanel } from './installation-prototype.js'
+import { RuntimeBridgePanel } from './runtime-bridge.js'
 import { RuntimeIntegrationPanel } from './runtime-integration.js'
+import {
+  WorkspaceDashboard,
+  WorkspaceSidebar,
+  type WorkspaceSection,
+} from './workspace-shell.js'
 
 const apiUrl = 'http://127.0.0.1:3001'
 
@@ -28,6 +35,10 @@ export function App() {
   const [authState, setAuthState] = useState<'idle' | 'waiting' | 'error'>('idle')
   const [sessionToken, setSessionToken] = useState<string | null>(null)
   const [runtimeEnvironment, setRuntimeEnvironment] = useState<RuntimeEnvironmentSnapshot | null>(null)
+  const [runtimeSnapshot, setRuntimeSnapshot] = useState<Readonly<RuntimeSnapshot> | null>(null)
+  const [runtimeEvents, setRuntimeEvents] = useState<readonly Readonly<RuntimeEvent>[]>([])
+  const [activeSection, setActiveSection] = useState<WorkspaceSection>('home')
+  const mainRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     let active = true
@@ -47,6 +58,42 @@ export function App() {
       active = false
     }
   }, [t])
+
+  useEffect(() => {
+    const main = mainRef.current
+    if (!main) return
+    const sections = [
+      ['home', 'home'],
+      ['runtime-bridge', 'runtime'],
+      ['plugins', 'plugins'],
+    ] as const
+    const updateActiveSection = () => {
+      const marker = main.scrollTop + 150
+      let next: WorkspaceSection = 'home'
+      for (const [id, section] of sections) {
+        const element = document.getElementById(id)
+        if (element && element.offsetTop <= marker) next = section
+      }
+      setActiveSection(next)
+    }
+    main.addEventListener('scroll', updateActiveSection, { passive: true })
+    updateActiveSection()
+    return () => main.removeEventListener('scroll', updateActiveSection)
+  }, [])
+
+  const navigate = useCallback((section: WorkspaceSection) => {
+    const targetId = section === 'home' ? 'home' : section === 'plugins' ? 'plugins' : 'runtime-bridge'
+    setActiveSection(section)
+    document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [])
+
+  const handleRuntimeState = useCallback(
+    (snapshot: Readonly<RuntimeSnapshot>, events: readonly Readonly<RuntimeEvent>[]) => {
+      setRuntimeSnapshot(snapshot)
+      setRuntimeEvents(events)
+    },
+    [],
+  )
 
   async function signIn(): Promise<void> {
     setAuthState('waiting')
@@ -102,38 +149,32 @@ export function App() {
     setAuthState('idle')
   }
 
+  const activeTitle =
+    activeSection === 'home'
+      ? t('nav.home')
+      : activeSection === 'plugins'
+        ? t('nav.plugins')
+        : t('nav.runtime')
+
   return (
     <div className="desktop-shell">
-      <aside className="desktop-sidebar">
-        <div className="desktop-brand">
-          <span aria-hidden="true">H</span>
-          <div>
-            <strong>HarnessHub</strong>
-            <small>{t('desktop.preview')}</small>
-          </div>
-        </div>
+      <WorkspaceSidebar
+        active={activeSection}
+        onNavigate={navigate}
+        runtimeConnected={runtimeSnapshot?.connection === 'CONNECTED'}
+      />
 
-        <nav aria-label={t('desktop.navigation')}>
-          <a className="active" href="#registry">
-            {t('nav.registry')}
-          </a>
-          <a href="#runtime-integration">{t('runtime.title')}</a>
-          <a href="#installation-prototype">{t('installation.title')}</a>
-          <span>{t('nav.developers')}</span>
-          <span>{t('nav.requests')}</span>
-        </nav>
-
-        <div className="desktop-scope-note">
-          <strong>{t('desktop.phase')}</strong>
-          <p>{t('desktop.scope')}</p>
-        </div>
-      </aside>
-
-      <main className="desktop-main" id="registry">
+      <main className="desktop-main" id="workspace-main" ref={mainRef}>
         <header className="desktop-toolbar">
           <div>
             <span>{t('desktop.toolbarLabel')}</span>
-            <strong>{t('desktop.foundationPreview')}</strong>
+            <strong>{activeTitle}</strong>
+          </div>
+          <div className="desktop-toolbar-runtime">
+            <span className={runtimeSnapshot?.connection === 'CONNECTED' ? 'connected' : undefined} aria-hidden="true" />
+            {runtimeSnapshot?.connection === 'CONNECTED'
+              ? t('desktop.runtimeOnline')
+              : t('desktop.runtimeOffline')}
           </div>
           <div className="desktop-auth">
             {auth.authenticated ? (
@@ -154,16 +195,29 @@ export function App() {
         </header>
 
         <section className="desktop-content">
-          <div className="desktop-intro">
-            <div>
-              <span>{t('desktop.validatedRecord')}</span>
-              <h1>{t('desktop.title')}</h1>
+          <WorkspaceDashboard
+            environment={runtimeEnvironment}
+            onNavigate={navigate}
+            plugin={plugin}
+            runtime={runtimeSnapshot}
+            runtimeEvents={runtimeEvents}
+          />
+
+          <RuntimeBridgePanel onStateChange={handleRuntimeState} />
+
+          <section className="workspace-plugin-section workspace-section" id="plugins">
+            <div className="desktop-intro">
+              <div>
+                <span>{t('desktop.validatedRecord')}</span>
+                <h1>{t('desktop.title')}</h1>
+              </div>
+              <p>{t('desktop.description')}</p>
             </div>
-            <p>{t('desktop.description')}</p>
-          </div>
-          {plugin ? <PluginDetail plugin={plugin} /> : null}
-          {!plugin && !error ? <div className="desktop-message">{t('desktop.loading')}</div> : null}
-          {error ? <div className="desktop-message desktop-message--error">{error}</div> : null}
+            {plugin ? <PluginDetail plugin={plugin} /> : null}
+            {!plugin && !error ? <div className="desktop-message">{t('desktop.loading')}</div> : null}
+            {error ? <div className="desktop-message desktop-message--error">{error}</div> : null}
+          </section>
+
           <RuntimeIntegrationPanel onSnapshot={setRuntimeEnvironment} />
           <InstallationPrototypePanel auth={auth} runtimeEnvironment={runtimeEnvironment} />
         </section>

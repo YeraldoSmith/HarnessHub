@@ -226,6 +226,33 @@ Phase 1 至此结束。Phase 2 Identity Foundation 不在本阶段实现。
 
 下一阶段只能从隔离 Profile、受信固定制品和单平台最小真实切片开始，并需先通过恢复、签名、路径与原生命令安全门槛。
 
+### Phase 4-B：DSH Runtime Bridge Architecture Design（已完成）
+
+- 采用 HarnessHub Agent Workspace + Runtime Bridge + DSH Adapter，不嵌入 DSH UI；
+- Native Supervisor 管生命周期，Runtime Bridge 管 typed operation 和状态投影；
+- Phase 4-C 推荐 localhost HTTP unary + WebSocket event carrier，未来保留 IPC；
+- installation/lifecycle/activity/connection 正交状态与 generation/sequence 一致性；
+- Runtime token、endpoint、PID、绝对路径和原始错误不进入 Renderer；
+- Agent Workspace 预留 Conversation、Runtime Status、Plugin List、Tool Activity、Permission View；
+- RuntimeAdapter 支持未来 DSH、MCP、OpenAI Agent Runtime 和其他 Runtime；
+- 云端命令防火墙、最小权限、本机确认和关键操作 Audit。
+
+本阶段没有实现 Bridge、启动 DSH、执行 Agent、发送模型请求或开发聊天界面。Phase 4-C 先从 fixture contract 与 keyless read-only attach 开始。
+
+### Phase 4-C：DSH Runtime Bridge Prototype（已完成）
+
+- 新增独立 `@harnesshub/runtime-bridge` 包；
+- 实现 Contract DSH Fixture 与 `DSHRuntimeBridge`；
+- 支持连接、启动、停止、状态、健康检查和事件；
+- 支持断线检测和显式重连；
+- 使用临时会话、事件序列校验和不可变本地审计；
+- Desktop 新增 Agent Runtime 控制卡片和事件流；
+- Beta UI 改为固定 Sidebar + 独立滚动 Main Content，并新增 Runtime/DSH/插件/最近活动 Dashboard；
+- Sidebar 预留 Home、Plugins、Agent、Runtime、Tasks、Account、Settings，未开放入口保持禁用；
+- Fixture 明确标注，不伪装成真实 DSH。
+
+本阶段不绑定真实端口、不启动真实进程、不连接 DSH、不执行 Agent、不调用模型，也不安装插件。下一阶段 Phase 4-D 先接入锁定版本、无模型凭据的 DSH 测试实例，并保持只读状态与事件范围。
+
 ## Phase 5：社区与需求市场
 
 ### 目标

@@ -80,6 +80,17 @@ Phase 3-B 没有探测本机环境或执行 DSH。设计继续使用本页顶部
 
 进入任何真实 Installation Prototype 前必须重新核验 DSH 版本、CLI、Bundle/Profile 契约、Node/pnpm 要求和 `allowBuilds` 行为；文档中的 Adapter 接口不能被当作当前 DSH 永久契约。
 
+## Phase 4-B Runtime Bridge 基线
+
+以下资料来自锁定 DSH commit，描述当前实现而非永久公共 API：
+
+- [GUI layering and RPC protocol](https://github.com/deepseek-ai/deepseek-harness/blob/141eb6fef83422698aef7a981029e843e8161534/.agents/notes/implemented/architecture/2026-07-19-gui-layering-and-rpc-protocol.md)：Host/Client 分层、channel-independent four-quadrant RPC、HTTP unary carriage、事件回放、稳定 rpcId 与未来 Electron IPC carrier 示例。
+- [WebSocket downlink carrier](https://github.com/deepseek-ai/deepseek-harness/blob/141eb6fef83422698aef7a981029e843e8161534/.agents/notes/implemented/architecture/2026-08-04-websocket-downlink-carrier.md)：浏览器使用 HTTP uplink + 两个 WebSocket downlink、Host/Origin trust fence、连接重建和 frame validation。
+- [Web transport layering](https://github.com/deepseek-ai/deepseek-harness/blob/141eb6fef83422698aef7a981029e843e8161534/.agents/notes/implemented/architecture/2026-07-24-web-config-tree-boot-and-transport-layering.md)：gateway、carrier、binding、graph 的职责分离，headless 不依赖 Web/HTTP。
+- [DSH README](https://github.com/deepseek-ai/deepseek-harness/blob/141eb6fef83422698aef7a981029e843e8161534/README.md)：Developer Preview 与破坏性变化警告。
+
+HarnessHub 由此推荐 Phase 4-C 使用 HTTP unary + WebSocket event 原型，但不会直接把 DSH 内部 ApiProxy 视为稳定公共契约。必须由 `DshRuntimeAdapter` 固定 commit/version、完成握手和兼容测试；未来切换 IPC 时保持 RuntimeBridge 领域模型不变。
+
 ## 更新规则
 
 以下事件发生时必须重新核验并更新本页：

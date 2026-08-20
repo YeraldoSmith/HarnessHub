@@ -57,6 +57,10 @@ Phase 3-C 新增 `packages/installation-prototype` 纯内存状态机和 Desktop
 
 Phase 4-A 新增 `packages/runtime-integration` 和一个无参数 Tauri command。原生层只运行硬编码的 Node.js、Git、DSH `--version` 探测，带 2 秒超时与 8 KiB 输出上限，不经过 Shell，也不接受程序、路径或参数输入。共享 DSH Adapter 只消费 Snapshot、判断兼容性并生成全部 `executable: false` 的 Setup Plan。真实 Snapshot 可进入模拟安装分析，但执行与系统修改标志继续固定为 `false`。
 
+Phase 4-B 采用方案 B：HarnessHub 不嵌入 DSH UI，而以 Agent Workspace + Runtime Bridge 管理 Runtime。未来 Native Supervisor 独占进程生命周期；版本化 Runtime Adapter 隔离 DSH 私有协议；Phase 4-C 推荐 HTTP unary uplink + WebSocket event downlink，未来可替换为 IPC carrier。安装、生命周期、活动和连接使用正交状态，云端 API 无权生成本机 Runtime operation。完整设计见 `docs/DSH_RUNTIME_BRIDGE_ARCHITECTURE.md`。
+
+Phase 4-C 实现了 `@harnesshub/runtime-bridge` Contract Fixture、`DSHRuntimeBridge` 和 Desktop Agent Runtime 页面。Fixture 通过临时会话验证 start/stop/status/health/events、断线重连、事件序列与不可变审计；它只改变内存状态，不绑定真实端口、不启动进程，也不连接 DSH。Phase 4-D 用版本化真实 Adapter 替换 Fixture Transport，但保持 Bridge 与 UI 契约不变。完整实现边界见 `docs/RUNTIME_BRIDGE_PROTOTYPE.md`。
+
 当前只读 Registry 的依赖方向：
 
 ```text

@@ -240,3 +240,29 @@
 - Runtime Snapshot 接入 Mock Installation Engine 后，`dshExecutionAvailable` 和 `systemMutationAllowed` 继续固定为 false；
 - Runtime/Setup 数据只在 Desktop 内存存在，不上传平台、架构或版本；
 - HIGH/CRITICAL、非官方测试插件、不完整 Manifest 或未验证开发者都不能进入未来受控真实安装候选；满足条件也不允许自动安装。
+
+## 17. DSH Runtime Bridge 安全边界（Phase 4-B 设计）
+
+- Agent Workspace 只消费 HarnessHub 标准领域对象，不嵌入 DSH UI、不接触 raw RPC、PID、token、endpoint、环境变量或绝对路径；
+- Native Supervisor 是未来唯一子进程 owner，UI 只能提交 stable installation/workspace/profile/consent ID，不能提交 executable/args/env/cwd；
+- `sendRequest` 由编译期 RuntimeRequestMap 限定，不允许任意 method/payload passthrough；
+- Phase 4-C localhost 只能绑定 loopback 随机端口，并要求 per-launch token、Origin/Host、nonce handshake、generation、schema、size、deadline 与并发限制；
+- token 不进入 URL、DOM、localStorage、日志或云端，Renderer 通过收窄 Tauri surface 间接访问；
+- start/stop/restart 由本机用户 intent + fresh consent 生成，云端 API、Registry、深链和插件不能触发；
+- Runtime installation/lifecycle/activity/connection 分离，ERROR/DEGRADED 不得显示为 RUNNING；
+- restart 生成新 generation，旧 event/health/response 丢弃；sequence gap 触发 resync；
+- Tool/permission request 必须由 Runtime 权威状态和 receipt 对账，HarnessHub 不能静默批准或伪造结果；
+- Session、Tool、workspace、路径、模型凭据和 raw stderr 默认不上传；诊断导出需用户预览与脱敏；
+- 多 Runtime Adapter 单独版本化和契约测试，DSH 特有 Profile/Bundle/RPC 不进入通用 Bridge。
+
+## 18. Runtime Bridge Contract Fixture（Phase 4-C）
+
+- Fixture 只改变内存状态，不启动进程、不绑定端口、不读取文件、不修改环境；
+- 每次连接生成独立 loopback ephemeral origin、临时高熵凭据和有效期；
+- Bridge 私有保存会话，Snapshot、Event、Audit 和 UI 均不含凭据、endpoint 或端口；
+- start/stop/status/health 是固定方法，不存在 Shell、任意参数或通用 `sendRequest`；
+- Runtime Event 校验 schemaVersion、runtimeId、generation、sequence、timestamp、kind、status 和 message 长度；
+- 断线立即展示 `DISCONNECTED`，重连失败不会保留 `CONNECTED`；
+- Audit 以只追加方式保存在内存，调用方获得深度冻结副本；
+- Desktop 明确展示 `Contract Fixture`，不得将模拟状态解释为真实 DSH、Agent 或模型运行；
+- Phase 4-D 的真实 carrier 必须重新完成 peer authentication、端口/IPC、进程归属、崩溃清理和协议兼容安全评审。

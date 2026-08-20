@@ -8,7 +8,7 @@ HarnessHub 是面向 DeepSeek Harness（DSH）生态起步的第三方社区平�
 
 HarnessHub 由 **YeraldoSmith** 创建，初始身份为 **Founder & Initial Maintainer**。
 
-> 当前状态：Phase 4-A Controlled Runtime Integration Prototype 已完成。打包后的 Desktop 能只读检测 OS、CPU、Node.js、Git 与 DSH，并生成不可执行的 Setup Plan；安装事务仍保持模拟，不会下载或安装软件、执行插件代码、运行 Shell 或修改用户环境。
+> 当前状态：Phase 4-C DSH Runtime Bridge Prototype 与 Beta Desktop UI Refinement 已完成。Desktop 采用固定 Sidebar + 独立滚动工作区，首页集中展示 Runtime、DSH、插件入口与最近活动；可以连接本地 Contract Fixture、启动/停止模拟 Runtime、同步状态和验证断线重连。没有连接真实 DSH、执行 Agent、调用模型或安装插件。
 
 ## v0.1 的最小闭环
 
@@ -96,10 +96,12 @@ pnpm db:local:stop
 - [Installation Security Architecture](docs/INSTALLATION_SECURITY_ARCHITECTURE.md)
 - [Installation Prototype](docs/INSTALLATION_PROTOTYPE.md)
 - [Controlled Runtime Integration Prototype](docs/RUNTIME_INTEGRATION_PROTOTYPE.md)
+- [DSH Runtime Bridge Architecture](docs/DSH_RUNTIME_BRIDGE_ARCHITECTURE.md)
+- [Runtime Bridge Prototype](docs/RUNTIME_BRIDGE_PROTOTYPE.md)
 
 ## 后续门槛
 
-Phase 4-A 已连接真实只读 Runtime Snapshot，但 Setup Assistant 仍是 `PLAN_ONLY`。进入真实 DSH 安装执行前，必须先完成受信制品与签名、原生 operation allowlist、持久 Recovery Journal、隔离 Profile、单平台安全测试和外部桌面安全评审；仍不得直接开放任意命令、插件构建脚本、Google 或自动账号绑定。
+Phase 4-C 已跑通 Contract Fixture 闭环。Phase 4-D 应先接入锁定版本的无模型凭据 DSH 测试实例，只开放 handshake、health、status、plugin inventory 和 event observation；不得直接开放 prompt、Tool approval、模型凭据、插件安装、任意命令、Google 或自动账号绑定。
 
 ## Copyright
 

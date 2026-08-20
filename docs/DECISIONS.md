@@ -56,6 +56,16 @@
 | D-048 | 原生版本探测关闭 stdin、限制输出为 8 KiB、超时 2 秒并且不经过 Shell | 控制异常 Runtime 的阻塞与输出风险，避免 Shell 解析；失败只返回 MISSING/ERROR |
 | D-049 | Setup Assistant 只生成 `PLAN_ONLY`、`simulationOnly: true` 且所有步骤 `executable: false` 的计划 | 加快真实产品体验开发，但确认按钮不能提前获得下载、Profile 写入或执行能力 |
 | D-050 | 未来 Trusted Install 首个切片同时要求官方测试插件、LOW、完整 Manifest、Verified Developer，且自动安装仍为 false | 缩小首个真实执行面的来源和风险，保留用户确认与原生层二次校验 |
+| D-051 | HarnessHub 采用 Agent Workspace + Runtime Bridge 管理 DSH，不嵌入 DSH UI | 保持产品体验所有权与 Runtime 执行权分离，避免跟随 DSH Web UI 内部结构变化 |
+| D-052 | Phase 4-C 推荐 Native Supervisor 管生命周期、HTTP 处理 typed unary、WebSocket 处理只读事件下行 | 与锁定 DSH carrier 方向一致，兼顾原型速度、流式状态和未来替换 IPC 的能力 |
+| D-053 | Installation、Lifecycle、Activity、Connection 使用正交状态，并用 instance generation/sequence 丢弃旧事件 | 避免 NOT_INSTALLED/BUSY/ERROR 混在一个枚举导致非法状态，防止 restart 后晚到事件污染新 Runtime |
+| D-054 | `sendRequest` 只允许编译期注册的 RuntimeRequestMap，不提供 method/payload passthrough | 防止 Runtime Bridge 退化为绕过权限的任意 DSH RPC 或命令代理 |
+| D-055 | 云端 HarnessHub 数据不得直接生成本机 start/stop/prompt/approval/plugin execution | Registry policy 可以阻止或警告，但本机关键行为必须来自本机 UI 与 fresh consent |
+| D-056 | 通用 RuntimeAdapter 使用 capability negotiation，DSH Profile/Bundle/RPC 不进入 Workspace domain | 支持 MCP/OpenAI/其他 Runtime，同时避免最低公分母模型和 DSH 特有概念外泄 |
+| D-057 | Phase 4-C 使用进程内 Contract Fixture，不提前启动或修改真实 DSH | 最快验证用户体验、状态和安全合同，同时保持可逆和零系统副作用 |
+| D-058 | Fixture 生成 loopback ephemeral origin 与临时凭据，但不真实绑定端口 | 验证未来 transport 的鉴权语义；真实 socket/IPC 留给具备 Native Supervisor 的 Phase 4-D |
+| D-059 | Runtime Event 必须校验 schema、runtime、generation、sequence、时间与消息长度 | 避免重复、乱序、跨实例或恶意事件污染 Desktop 状态 |
+| D-060 | Phase 4-D 替换 Transport，不改 RuntimeBridge 与 Agent Runtime UI 领域合同 | 控制真实 DSH 接入的改动面，并继续禁止通用命令透传 |
 
 ## P0：进入代码阶段前确认
 

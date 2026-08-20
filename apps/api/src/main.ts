@@ -1,10 +1,19 @@
 import 'reflect-metadata'
-import 'dotenv/config'
+
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { config as loadEnvironment } from 'dotenv'
 
 import { NestFactory } from '@nestjs/core'
 import type { NestExpressApplication } from '@nestjs/platform-express'
 
 import { AppModule } from './app.module.js'
+
+// The API is commonly started from apps/api, while HarnessHub keeps its
+// deployment configuration at the repository root. Resolve from this module
+// so development, production builds, and test shells load the same .env file.
+const moduleDirectory = dirname(fileURLToPath(import.meta.url))
+loadEnvironment({ path: resolve(moduleDirectory, '../../../.env') })
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule)

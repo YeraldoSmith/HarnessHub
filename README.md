@@ -8,7 +8,7 @@ HarnessHub 是面向 DeepSeek Harness（DSH）生态起步的第三方社区平�
 
 HarnessHub 由 **YeraldoSmith** 创建，初始身份为 **Founder & Initial Maintainer**。
 
-> 当前状态：Phase 2-B1 GitHub-only OAuth 已完成。Web/Desktop 可通过后端 callback 建立 HarnessHub Session；Founder 只按数据库中预置的 GitHub 数字 user ID 识别。Google、账号绑定、Developer Claim 与社区能力尚未实现。Phase 1 Registry Foundation 保持稳定。
+> 当前状态：Phase 2-B1.5 Localization Foundation 已完成。Web/Desktop 共用 `zh-CN`（默认）与 `en-US` 语言资源；GitHub OAuth 与 Founder 稳定 ID 规则保持不变。Google、账号绑定、Developer Claim 与社区能力尚未实现。
 
 ## v0.1 的最小闭环
 
@@ -90,10 +90,11 @@ pnpm db:local:stop
 - [Phase 1-C Registry Hardening](docs/PHASE_1C_REGISTRY_HARDENING.md)
 - [Phase 1-D Production Hardening](docs/PHASE_1D_PRODUCTION_HARDENING.md)
 - [Phase 2-B1 GitHub OAuth](docs/PHASE_2B1_GITHUB_OAUTH.md)
+- [Localization Foundation](docs/LOCALIZATION.md)
 
 ## 后续门槛
 
-Phase 2-B1 已完成。下一阶段仍不得直接开放 Google 或自动账号绑定；必须先实现并验证显式 Account Linking 的 recent-auth、冲突拒绝和跨 provider email 自动合并隔离。
+Phase 2-B1.5 已完成语言层抽象。下一阶段仍不得直接开放 Google 或自动账号绑定；必须先实现并验证显式 Account Linking 的 recent-auth、冲突拒绝和跨 provider email 自动合并隔离。
 
 ## Copyright
 

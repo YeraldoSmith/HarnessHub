@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { openUrl } from '@tauri-apps/plugin-opener'
 
+import { LanguageSelect, useI18n } from '@harnesshub/i18n'
 import {
   desktopOAuthStartResponseSchema,
   desktopSessionExchangeResponseSchema,
@@ -16,6 +17,7 @@ function wait(milliseconds: number): Promise<void> {
 }
 
 export function App() {
+  const { t } = useI18n()
   const [plugin, setPlugin] = useState<Plugin | null>(null)
   const [error, setError] = useState('')
   const [auth, setAuth] = useState<AuthSessionResponse>({ authenticated: false })
@@ -32,14 +34,14 @@ export function App() {
       .then((registry) => {
         if (active) setPlugin(registry.items[0] ?? null)
       })
-      .catch((reason: unknown) => {
-        if (active) setError(reason instanceof Error ? reason.message : 'Registry unavailable.')
+      .catch(() => {
+        if (active) setError(t('status.registryRequestFailed'))
       })
 
     return () => {
       active = false
     }
-  }, [])
+  }, [t])
 
   async function signIn(): Promise<void> {
     setAuthState('waiting')
@@ -49,7 +51,9 @@ export function App() {
         method: 'POST',
         headers: { Accept: 'application/json' },
       })
-      if (!startResponse.ok) throw new Error(`Login could not start (${startResponse.status}).`)
+      if (!startResponse.ok) {
+        throw new Error(t('auth.loginStartFailed', { status: startResponse.status }))
+      }
       const started = desktopOAuthStartResponseSchema.parse(await startResponse.json())
       await openUrl(started.authorization_url)
 
@@ -63,7 +67,9 @@ export function App() {
             poll_token: started.poll_token,
           }),
         })
-        if (!exchangeResponse.ok) throw new Error(`Login could not finish (${exchangeResponse.status}).`)
+        if (!exchangeResponse.ok) {
+          throw new Error(t('auth.loginFinishFailed', { status: exchangeResponse.status }))
+        }
         const exchange = desktopSessionExchangeResponseSchema.parse(await exchangeResponse.json())
         if (exchange.status === 'COMPLETE') {
           setSessionToken(exchange.session_token)
@@ -72,10 +78,10 @@ export function App() {
           return
         }
       }
-      throw new Error('GitHub login expired. Please try again.')
+      throw new Error(t('auth.loginExpired'))
     } catch (reason) {
       setAuthState('error')
-      setError(reason instanceof Error ? reason.message : 'GitHub login failed.')
+      setError(reason instanceof Error ? reason.message : t('auth.loginFailed'))
     }
   }
 
@@ -98,29 +104,29 @@ export function App() {
           <span aria-hidden="true">H</span>
           <div>
             <strong>HarnessHub</strong>
-            <small>Desktop preview</small>
+            <small>{t('desktop.preview')}</small>
           </div>
         </div>
 
-        <nav aria-label="Desktop navigation">
+        <nav aria-label={t('desktop.navigation')}>
           <a className="active" href="#registry">
-            Registry
+            {t('nav.registry')}
           </a>
-          <span>Developers</span>
-          <span>Requests</span>
+          <span>{t('nav.developers')}</span>
+          <span>{t('nav.requests')}</span>
         </nav>
 
         <div className="desktop-scope-note">
-          <strong>Phase 2-B1</strong>
-          <p>GitHub identity and secure sessions are enabled. Registry access remains read-only.</p>
+          <strong>{t('desktop.phase')}</strong>
+          <p>{t('desktop.scope')}</p>
         </div>
       </aside>
 
       <main className="desktop-main" id="registry">
         <header className="desktop-toolbar">
           <div>
-            <span>Plugin Registry</span>
-            <strong>Foundation preview</strong>
+            <span>{t('desktop.toolbarLabel')}</span>
+            <strong>{t('desktop.foundationPreview')}</strong>
           </div>
           <div className="desktop-auth">
             {auth.authenticated ? (
@@ -128,31 +134,28 @@ export function App() {
                 <span>{auth.user.github.login ?? `GitHub ${auth.user.github.user_id}`}</span>
                 {auth.user.badges.includes('FOUNDER') ? <IdentityBadge kind="founder" /> : null}
                 <button onClick={() => void signOut()} type="button">
-                  Sign out
+                {t('auth.signOut')}
                 </button>
               </>
             ) : (
               <button disabled={authState === 'waiting'} onClick={() => void signIn()} type="button">
-                {authState === 'waiting' ? 'Waiting for GitHub…' : 'Sign in with GitHub'}
+                {authState === 'waiting' ? t('auth.waiting') : t('auth.signIn')}
               </button>
             )}
+            <LanguageSelect className="desktop-language-select" />
           </div>
         </header>
 
         <section className="desktop-content">
           <div className="desktop-intro">
             <div>
-              <span>One validated record</span>
-              <h1>Registry data, clearly explained.</h1>
+              <span>{t('desktop.validatedRecord')}</span>
+              <h1>{t('desktop.title')}</h1>
             </div>
-            <p>
-              The desktop shell reads the same PostgreSQL-backed Registry API as the Web app. No local
-              DSH command is exposed in this phase. OAuth opens in your system browser and GitHub tokens
-              remain on the server.
-            </p>
+            <p>{t('desktop.description')}</p>
           </div>
           {plugin ? <PluginDetail plugin={plugin} /> : null}
-          {!plugin && !error ? <div className="desktop-message">Loading Registry snapshot…</div> : null}
+          {!plugin && !error ? <div className="desktop-message">{t('desktop.loading')}</div> : null}
           {error ? <div className="desktop-message desktop-message--error">{error}</div> : null}
         </section>
       </main>

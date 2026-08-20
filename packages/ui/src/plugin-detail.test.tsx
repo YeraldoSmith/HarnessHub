@@ -12,7 +12,7 @@ const fixture = pluginSchema.parse(
 )
 
 describe('PluginDetail', () => {
-  it('renders the test-only Mock Plugin snapshot without implying production trust', () => {
+  it('renders localized UI around unchanged third-party plugin content', () => {
     const markup = renderToStaticMarkup(
       <PluginDetail
         plugin={fixture}
@@ -28,10 +28,12 @@ describe('PluginDetail', () => {
       />,
     )
 
-    expect(markup).toContain('Mock Plugin · not installable')
-    expect(markup).toContain('Not available')
-    expect(markup).toContain('Test fixture')
-    expect(markup).toContain('Snapshot history')
+    expect(markup).toContain('模拟插件 · 不可安装')
+    expect(markup).toContain('不可用')
+    expect(markup).toContain('测试数据')
+    expect(markup).toContain('快照历史 Snapshot')
+    expect(markup).toContain(fixture.name)
+    expect(markup).toContain(fixture.description)
     expect(markup).not.toContain('◆ Founder')
   })
 })

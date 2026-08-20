@@ -118,6 +118,17 @@ nav a:hover,
   justify-self: end;
 }
 
+.language-select select {
+  padding: 0.52rem 1.9rem 0.52rem 0.65rem;
+  border: 1px solid #cbd9d0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--hh-ink);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
 .signed-in-user > img {
   width: 1.9rem;
   height: 1.9rem;
@@ -439,6 +450,10 @@ footer strong {
   }
 
   .site-header nav {
+    display: none;
+  }
+
+  .phase-pill {
     display: none;
   }
 

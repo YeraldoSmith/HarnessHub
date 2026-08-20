@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 
+import { LanguageSelect, useI18n } from '@harnesshub/i18n'
 import type { AuthSessionResponse, Plugin, PluginSnapshotRecord } from '@harnesshub/types'
 import { IdentityBadge, PluginCard, PluginDetail } from '@harnesshub/ui'
 
@@ -20,6 +21,7 @@ function pluginIdFromPath(): string | null {
 }
 
 export function App() {
+  const { t } = useI18n()
   const pluginId = useMemo(pluginIdFromPath, [])
   const [plugins, setPlugins] = useState<Plugin[]>([])
   const [selectedPlugin, setSelectedPlugin] = useState<Plugin | null>(null)
@@ -72,9 +74,9 @@ export function App() {
           setHasNext(result.hasNext)
         }
         setLoadState('ready')
-      } catch (reason) {
+      } catch {
         if (!active) return
-        setError(reason instanceof Error ? reason.message : 'The registry could not be loaded.')
+        setError(t('status.registryRequestFailed'))
         setLoadState('error')
       }
     })()
@@ -82,26 +84,27 @@ export function App() {
     return () => {
       active = false
     }
-  }, [pluginId, query, page])
+  }, [pluginId, query, page, t])
 
   return (
     <div className="site-shell">
       <header className="site-header">
-        <a className="brand" href="/" aria-label="HarnessHub home">
+        <a className="brand" href="/" aria-label={t('web.homeLabel')}>
           <span className="brand-mark" aria-hidden="true">
             H
           </span>
           <span>
             <strong>HarnessHub</strong>
-            <small>Agent plugin registry</small>
+            <small>{t('web.brandSubtitle')}</small>
           </span>
         </a>
-        <nav aria-label="Primary navigation">
-          <a href="/">Registry</a>
-          <a href="#principles">Principles</a>
+        <nav aria-label={t('web.primaryNavigation')}>
+          <a href="/">{t('nav.registry')}</a>
+          <a href="#principles">{t('nav.principles')}</a>
         </nav>
         <div className="header-auth">
-          <span className="phase-pill">Phase 2-B1 · GitHub OAuth</span>
+          <span className="phase-pill">{t('web.phase')}</span>
+          <LanguageSelect className="language-select" />
           {auth.authenticated ? (
             <div className="signed-in-user">
               {auth.user.github.avatar_url ? (
@@ -119,12 +122,12 @@ export function App() {
                 }}
                 type="button"
               >
-                Sign out
+                {t('auth.signOut')}
               </button>
             </div>
           ) : (
             <a className="github-login" href={githubLoginUrl}>
-              Sign in with GitHub
+              {t('auth.signIn')}
             </a>
           )}
         </div>
@@ -134,7 +137,7 @@ export function App() {
         {pluginId ? (
           <section className="detail-layout">
             <a className="back-link" href="/">
-              ← Back to registry
+              {t('web.backToRegistry')}
             </a>
             {loadState === 'ready' && selectedPlugin ? (
               <PluginDetail plugin={selectedPlugin} snapshots={snapshots} />
@@ -145,29 +148,23 @@ export function App() {
           <>
             <section className="hero">
               <div className="hero-copy">
-                <div className="eyebrow">Community Marketplace for AI Agent Plugins</div>
+                <div className="eyebrow">{t('web.marketplace')}</div>
                 <h1>
-                  Discover plugins.
+                  {t('web.heroTitleFirst')}
                   <br />
-                  Understand <em>before</em> you install.
+                  <em>{t('web.heroTitleSecond')}</em>
                 </h1>
-                <p>
-                  HarnessHub turns plugin sources, versions, permissions, compatibility and licensing
-                  into a registry people can actually evaluate.
-                </p>
+                <p>{t('web.heroDescription')}</p>
                 <div className="founder-line">
-                  <span>Created by YeraldoSmith</span>
+                  <span>{t('web.createdBy')}</span>
                   <IdentityBadge kind="founder" />
                 </div>
               </div>
               <aside className="registry-note">
                 <span className="registry-note__number">01</span>
                 <div>
-                  <strong>Registry first</strong>
-                  <p>
-                    This phase reads manually allowlisted DSH sources through immutable GitHub and npm
-                    evidence. Community and payment features are intentionally absent.
-                  </p>
+                  <strong>{t('web.registryFirst')}</strong>
+                  <p>{t('web.registryFirstDescription')}</p>
                 </div>
               </aside>
             </section>
@@ -175,17 +172,17 @@ export function App() {
             <section className="registry-section" aria-labelledby="registry-heading">
               <div className="section-heading">
                 <div>
-                  <span className="eyebrow">Plugin registry</span>
-                  <h2 id="registry-heading">Explore the foundation</h2>
+                  <span className="eyebrow">{t('web.pluginRegistry')}</span>
+                  <h2 id="registry-heading">{t('web.exploreFoundation')}</h2>
                 </div>
                 <label className="search-box">
-                  <span className="sr-only">Search plugins</span>
+                  <span className="sr-only">{t('web.searchLabel')}</span>
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="m20 20-4.4-4.4m2.4-5.1a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z" />
                   </svg>
                   <input
                     type="search"
-                    placeholder="Search by name, author, or category"
+                    placeholder={t('web.searchPlaceholder')}
                     value={query}
                     onChange={(event) => {
                       setQuery(event.target.value)
@@ -203,22 +200,22 @@ export function App() {
                   ))}
                   {plugins.length === 0 ? (
                     <div className="empty-state">
-                      <strong>No matching plugins</strong>
-                      <span>Try a different name, author, or category.</span>
+                      <strong>{t('web.noMatches')}</strong>
+                      <span>{t('web.tryDifferentSearch')}</span>
                     </div>
                   ) : null}
                 </div>
               ) : null}
               {loadState === 'ready' && total > 0 ? (
-                <nav className="registry-pagination" aria-label="Registry pages">
+                <nav className="registry-pagination" aria-label={t('web.pagination')}>
                   <button disabled={page === 1} onClick={() => setPage((value) => value - 1)} type="button">
-                    Previous
+                    {t('web.previous')}
                   </button>
                   <span>
-                    Page {page} · {total} plugins
+                    {t('web.pageSummary', { page, total })}
                   </span>
                   <button disabled={!hasNext} onClick={() => setPage((value) => value + 1)} type="button">
-                    Next
+                    {t('web.next')}
                   </button>
                 </nav>
               ) : null}
@@ -226,24 +223,24 @@ export function App() {
 
             <section className="principles" id="principles">
               <div>
-                <span className="eyebrow">What HarnessHub is</span>
-                <h2>Open, but trustworthy.</h2>
+                <span className="eyebrow">{t('web.whatIsHarnessHub')}</span>
+                <h2>{t('web.openTrustworthy')}</h2>
               </div>
               <div className="principle-grid">
                 <article>
                   <span>01</span>
-                  <h3>An ecosystem entry point</h3>
-                  <p>Structured plugin evidence instead of an unfiltered repository list.</p>
+                  <h3>{t('web.principleOneTitle')}</h3>
+                  <p>{t('web.principleOneBody')}</p>
                 </article>
                 <article>
                   <span>02</span>
-                  <h3>A user and developer community</h3>
-                  <p>Transparent roles and rules, introduced only when their phase is ready.</p>
+                  <h3>{t('web.principleTwoTitle')}</h3>
+                  <p>{t('web.principleTwoBody')}</p>
                 </article>
                 <article>
                   <span>03</span>
-                  <h3>Public by default</h3>
-                  <p>Browsing stays open. Trust labels keep one precise, auditable meaning.</p>
+                  <h3>{t('web.principleThreeTitle')}</h3>
+                  <p>{t('web.principleThreeBody')}</p>
                 </article>
               </div>
             </section>
@@ -254,23 +251,24 @@ export function App() {
       <footer>
         <div>
           <strong>HarnessHub</strong>
-          <span>面向 AI Agent 插件生态的社区型市场平台</span>
+          <span>{t('web.footerPositioning')}</span>
         </div>
-        <span>Created by YeraldoSmith · Copyright © 2026 YeraldoSmith</span>
+        <span>{t('web.copyright')}</span>
       </footer>
     </div>
   )
 }
 
 function LoadMessage({ state, error }: { state: LoadState; error: string }) {
+  const { t } = useI18n()
   if (state === 'loading') {
-    return <div className="load-message">Loading the registry…</div>
+    return <div className="load-message">{t('status.loadingRegistry')}</div>
   }
 
   if (state === 'error') {
     return (
       <div className="load-message load-message--error" role="alert">
-        <strong>Registry unavailable</strong>
+        <strong>{t('status.registryUnavailable')}</strong>
         <span>{error}</span>
       </div>
     )

@@ -78,6 +78,9 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@harnesshub/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@harnesshub/plugin-schema':
         specifier: workspace:*
         version: link:../../packages/plugin-schema
@@ -118,6 +121,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@harnesshub/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@harnesshub/plugin-schema':
         specifier: workspace:*
         version: link:../../packages/plugin-schema
@@ -146,6 +152,21 @@ importers:
       vite:
         specifier: ^8.2.1
         version: 8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)
+
+  packages/i18n:
+    devDependencies:
+      '@types/react':
+        specifier: ^19.2.0
+        version: 19.2.18
+      react:
+        specifier: ^19.2.8
+        version: 19.2.8
+      react-dom:
+        specifier: ^19.2.8
+        version: 19.2.8(react@19.2.8)
+      vitest:
+        specifier: ^4.1.11
+        version: 4.1.11(@types/node@24.13.3)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12))
 
   packages/plugin-schema:
     dependencies:
@@ -180,6 +201,9 @@ importers:
 
   packages/ui:
     dependencies:
+      '@harnesshub/i18n':
+        specifier: workspace:*
+        version: link:../i18n
       '@harnesshub/types':
         specifier: workspace:*
         version: link:../types

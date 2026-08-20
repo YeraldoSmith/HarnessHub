@@ -10,6 +10,7 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
+    "@harnesshub/i18n": "workspace:*",
     "@harnesshub/plugin-schema": "workspace:*",
     "@harnesshub/types": "workspace:*",
     "@harnesshub/ui": "workspace:*",

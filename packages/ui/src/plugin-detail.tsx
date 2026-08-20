@@ -1,5 +1,11 @@
 import type { Plugin, PluginSnapshotRecord } from '@harnesshub/types'
+import { useI18n, type TranslationKey } from '@harnesshub/i18n'
 
+const statusKeys: Record<Plugin['source_status'][number]['status'], TranslationKey> = {
+  AVAILABLE: 'plugin.available',
+  UNAVAILABLE: 'plugin.unavailable',
+  UNKNOWN: 'plugin.unknown',
+}
 
 export interface PluginDetailProps {
   plugin: Plugin
@@ -7,11 +13,12 @@ export interface PluginDetailProps {
 }
 
 export function PluginDetail({ plugin, snapshots }: PluginDetailProps) {
+  const { t } = useI18n()
   return (
     <article className="hh-plugin-detail">
       <div className="hh-plugin-detail__eyebrow">
         <span>{plugin.category}</span>
-        {plugin.is_mock ? <span className="hh-status-pill">Mock Plugin · not installable</span> : null}
+        {plugin.is_mock ? <span className="hh-status-pill">{t('plugin.mockNotInstallable')}</span> : null}
       </div>
 
       <header className="hh-plugin-detail__header">
@@ -21,7 +28,7 @@ export function PluginDetail({ plugin, snapshots }: PluginDetailProps) {
         <div>
           <h1>{plugin.name}</h1>
           <div className="hh-plugin-card__author">
-            <span>by {plugin.author.name}</span>
+            <span>{t('plugin.byAuthor', { name: plugin.author.name })}</span>
           </div>
         </div>
       </header>
@@ -29,7 +36,7 @@ export function PluginDetail({ plugin, snapshots }: PluginDetailProps) {
       <p className="hh-plugin-detail__description">{plugin.description}</p>
 
       {plugin.tags.length > 0 ? (
-        <div className="hh-tag-list" aria-label="Plugin tags">
+        <div className="hh-tag-list" aria-label={t('plugin.tags')}>
           {plugin.tags.map((tag) => (
             <span key={tag}>#{tag}</span>
           ))}
@@ -38,37 +45,37 @@ export function PluginDetail({ plugin, snapshots }: PluginDetailProps) {
 
       <dl className="hh-fact-grid">
         <div>
-          <dt>Version</dt>
+          <dt>{t('plugin.version')}</dt>
           <dd>{plugin.version}</dd>
         </div>
         <div>
-          <dt>Source</dt>
+          <dt>{t('plugin.source')}</dt>
           <dd>{plugin.source}</dd>
         </div>
         <div>
-          <dt>Commit SHA</dt>
+          <dt>{t('plugin.commitSha')}</dt>
           <dd title={plugin.source_commit ?? undefined}>
-            {plugin.source_commit?.slice(0, 12) ?? 'Not available'}
+            {plugin.source_commit?.slice(0, 12) ?? t('plugin.notAvailable')}
           </dd>
         </div>
         <div>
-          <dt>npm version</dt>
-          <dd>{plugin.npm_version ?? 'Not available'}</dd>
+          <dt>{t('plugin.npmVersion')}</dt>
+          <dd>{plugin.npm_version ?? t('plugin.notAvailable')}</dd>
         </div>
         <div>
-          <dt>DSH compatibility</dt>
+          <dt>{t('plugin.compatibility')}</dt>
           <dd>{plugin.compatibility.dsh}</dd>
         </div>
         <div>
-          <dt>License</dt>
+          <dt>{t('plugin.license')}</dt>
           <dd>{plugin.license.name}</dd>
         </div>
       </dl>
 
       <section className="hh-plugin-detail__section hh-plugin-detail__availability">
         <div>
-          <span className="hh-section-kicker">Current upstream state</span>
-          <h2>Source status</h2>
+          <span className="hh-section-kicker">{t('plugin.currentUpstream')}</span>
+          <h2>{t('plugin.sourceStatus')}</h2>
         </div>
         <div className="hh-source-status-list">
           {plugin.source_status.map((source) => (
@@ -78,27 +85,30 @@ export function PluginDetail({ plugin, snapshots }: PluginDetailProps) {
             >
               <div>
                 <strong>{source.provider}</strong>
-                <span>{source.status}</span>
+                <span>{t(statusKeys[source.status])}</span>
               </div>
               <small>
-                Last verified:{' '}
-                {source.last_verified_at ? new Date(source.last_verified_at).toISOString() : 'Never'}
+                {t('plugin.lastVerified', {
+                  time: source.last_verified_at
+                    ? new Date(source.last_verified_at).toISOString()
+                    : t('plugin.never'),
+                })}
               </small>
               {source.status === 'UNAVAILABLE' ? (
-                <p>Upstream unavailable. Historical snapshots remain available.</p>
+                <p>{t('plugin.upstreamUnavailable')}</p>
               ) : null}
             </div>
           ))}
           {plugin.source_status.length === 0 ? (
-            <div className="hh-empty-evidence">No production source status exists for this fixture.</div>
+            <div className="hh-empty-evidence">{t('plugin.noSourceStatus')}</div>
           ) : null}
         </div>
       </section>
 
       <section className="hh-plugin-detail__section">
         <div>
-          <span className="hh-section-kicker">Declared capabilities</span>
-          <h2>Permissions</h2>
+          <span className="hh-section-kicker">{t('plugin.declaredCapabilities')}</span>
+          <h2>{t('plugin.permissions')}</h2>
         </div>
         <div className="hh-permission-details">
           {plugin.permissions.length > 0 ? (
@@ -114,7 +124,7 @@ export function PluginDetail({ plugin, snapshots }: PluginDetailProps) {
             ))
           ) : (
             <div className="hh-empty-evidence">
-              Permission analysis is intentionally outside the Registry phase. No safety conclusion is attached.
+              {t('plugin.permissionNotice')}
             </div>
           )}
         </div>
@@ -122,17 +132,17 @@ export function PluginDetail({ plugin, snapshots }: PluginDetailProps) {
 
       <section className="hh-plugin-detail__section hh-plugin-detail__sources">
         <div>
-          <span className="hh-section-kicker">Immutable snapshot</span>
-          <h2>Source evidence</h2>
+          <span className="hh-section-kicker">{t('plugin.immutableSnapshot')}</span>
+          <h2>{t('plugin.sourceEvidence')}</h2>
         </div>
         <div className="hh-evidence-list">
           {plugin.source_evidence.map((evidence) => (
             <a href={evidence.url} key={`${evidence.provider}-${evidence.url}`} rel="noreferrer" target="_blank">
               <span>{evidence.provider}</span>
               <strong>
-                {evidence.commit_sha?.slice(0, 12) ?? evidence.npm_version ?? 'source record'}
+                {evidence.commit_sha?.slice(0, 12) ?? evidence.npm_version ?? t('plugin.sourceRecord')}
               </strong>
-              <small>Fetched {new Date(evidence.fetched_at).toISOString()}</small>
+              <small>{t('plugin.fetched', { time: new Date(evidence.fetched_at).toISOString() })}</small>
             </a>
           ))}
         </div>
@@ -141,33 +151,35 @@ export function PluginDetail({ plugin, snapshots }: PluginDetailProps) {
       {snapshots ? (
         <section className="hh-plugin-detail__section hh-plugin-detail__history">
           <div>
-            <span className="hh-section-kicker">Append-only observations</span>
-            <h2>Snapshot history</h2>
+            <span className="hh-section-kicker">{t('plugin.observations')}</span>
+            <h2>{t('plugin.snapshotHistory')}</h2>
           </div>
           <ol className="hh-snapshot-list">
             {snapshots.map((snapshot) => (
               <li key={snapshot.id}>
                 <div>
                   <strong>v{snapshot.plugin.version}</strong>
-                  <span>{snapshot.plugin.source_commit?.slice(0, 12) ?? 'No commit'}</span>
+                  <span>{snapshot.plugin.source_commit?.slice(0, 12) ?? t('plugin.noCommit')}</span>
                 </div>
                 <time dateTime={snapshot.checked_at}>
                   {new Date(snapshot.checked_at).toISOString()}
                 </time>
-                <small>{snapshot.plugin.source_evidence.length} evidence records</small>
+                <small>{t('plugin.evidenceCount', { count: snapshot.plugin.source_evidence.length })}</small>
               </li>
             ))}
-            {snapshots.length === 0 ? <li className="hh-snapshot-list__empty">No snapshots recorded.</li> : null}
+            {snapshots.length === 0 ? (
+              <li className="hh-snapshot-list__empty">{t('plugin.noSnapshots')}</li>
+            ) : null}
           </ol>
         </section>
       ) : null}
 
       <aside className="hh-trust-note">
-        <strong>{plugin.is_mock ? 'Test fixture' : 'Source snapshot, not a safety review'}</strong>
+        <strong>{plugin.is_mock ? t('plugin.testFixture') : t('plugin.snapshotNotReview')}</strong>
         <p>
           {plugin.is_mock
-            ? 'This record is test-only and must not enter the production Registry.'
-            : 'HarnessHub cross-checked the listed GitHub and npm identities at the recorded time. No install action, safety endorsement, or developer verification is attached.'}
+            ? t('plugin.testFixtureNotice')
+            : t('plugin.snapshotNotice')}
         </p>
       </aside>
     </article>

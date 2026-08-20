@@ -124,6 +124,17 @@ body {
   gap: 0.65rem;
 }
 
+.desktop-language-select select {
+  padding: 0.5rem 1.8rem 0.5rem 0.6rem;
+  border: 1px solid #cbd9d0;
+  border-radius: 9px;
+  background: #fff;
+  color: var(--hh-ink);
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+
 .desktop-auth > span {
   color: var(--hh-ink);
   font-size: 0.78rem;

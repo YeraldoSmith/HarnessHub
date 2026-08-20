@@ -1,3 +1,5 @@
+import { useI18n, type TranslationKey } from '@harnesshub/i18n'
+
 export type IdentityBadgeKind =
   | 'founder'
   | 'official'
@@ -5,12 +7,12 @@ export type IdentityBadgeKind =
   | 'moderator'
   | 'reviewer'
 
-const labels: Record<IdentityBadgeKind, string> = {
-  founder: '◆ Founder',
-  official: '✓ Official',
-  'verified-developer': '✓ Verified Developer',
-  moderator: '◆ Moderator',
-  reviewer: '✓ Reviewer',
+const labelKeys: Record<IdentityBadgeKind, TranslationKey> = {
+  founder: 'badge.founder',
+  official: 'badge.official',
+  'verified-developer': 'badge.verifiedDeveloper',
+  moderator: 'badge.moderator',
+  reviewer: 'badge.reviewer',
 }
 
 export interface IdentityBadgeProps {
@@ -18,5 +20,6 @@ export interface IdentityBadgeProps {
 }
 
 export function IdentityBadge({ kind }: IdentityBadgeProps) {
-  return <span className={`hh-identity-badge hh-identity-badge--${kind}`}>{labels[kind]}</span>
+  const { t } = useI18n()
+  return <span className={`hh-identity-badge hh-identity-badge--${kind}`}>{t(labelKeys[kind])}</span>
 }

@@ -25,6 +25,7 @@ HarnessHub/
 │   ├── ui/                  # Web/Desktop 共用 UI
 │   ├── domain/              # 纯业务类型与状态机
 │   ├── plugin-schema/       # HarnessHub 元数据与 DSH 解析模型
+│   ├── i18n/                # Web/Desktop/UI 共用语言资源与运行时
 │   ├── dsh-adapter/         # CLI/清单/版本兼容适配
 │   ├── api-client/          # 类型安全 API 客户端
 │   └── config/              # lint、TypeScript、Tailwind 等共享配置
@@ -41,6 +42,8 @@ Phase 1-C 增加 Snapshot 历史/比较只读接口、隔离 PostgreSQL 集成�
 Phase 1-D 将列表查询下推 PostgreSQL：稳定排序、分页、trigram 文本索引和 GIN 标签索引。同步流程写入 SyncJob，并独立维护 GitHub/npm 当前可用状态；上游失效只改变当前状态，不删除版本或 Snapshot。
 
 Phase 2-B1 已实现 GitHub-only 身份基础：内部 User 与 OAuthIdentity 分离，Role 与公开 Badge 分离，Founder 绑定 GitHub 数字 user ID。NestJS 后端拥有 callback、PKCE/state、Session 和授权事实；Web/Desktop 不接收 GitHub token。
+
+Phase 2-B1.5 新增 `packages/i18n`：Web、Desktop 与共享 UI 使用同一强类型 translation key、React Provider 和 `zh-CN`/`en-US` JSON。默认中文，手动语言选择仅保存在本机；第三方插件内容不进入平台翻译资源。
 
 当前只读 Registry 的依赖方向：
 

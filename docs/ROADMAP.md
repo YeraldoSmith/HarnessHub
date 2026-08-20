@@ -114,6 +114,15 @@ Phase 1 至此结束。Phase 2 Identity Foundation 不在本阶段实现。
 - GitHub access token 不进入客户端或业务数据库；
 - state 回放、Founder 改名/冒名和 Desktop 重复交付具备安全回归测试。
 
+### Phase 2-B1.5：Localization Foundation（已完成）
+
+- 新增 Web/Desktop/UI 共用 `packages/i18n`；
+- 初始支持 `zh-CN` 与 `en-US`，默认 `zh-CN`；
+- 提供语言切换、本机持久化和未来系统语言检测接口；
+- 抽离登录、搜索、状态、错误、Registry 与身份 Badge 等优先界面文字；
+- 插件名称、描述、README 与开发者内容保持作者原文；
+- 不修改 Registry 数据模型或 OAuth 逻辑。
+
 ### Phase 2-B2：Google OAuth 与 Account Linking（安全门槛后）
 
 - 目标 Auth broker 必须禁用或隔离按 email 自动合并；

@@ -35,6 +35,7 @@
 | D-027 | Account Linking 必须由已登录用户 recent-auth 后显式发起 | 防止预注册接管、email 碰撞和会话劫持后的静默绑定 |
 | D-028 | Phase 2-B1 由 NestJS 后端直接持有 GitHub OAuth callback 与平台 Session；此项取代 D-009 的 Phase 2-B1 Auth 实现部分 | 精确执行 PKCE/state、稳定 GitHub ID 和禁止 email 自动合并；PostgreSQL + Prisma 部分保持不变 |
 | D-029 | Web 使用 HttpOnly Cookie；Desktop 通过单次 poll token 换取 opaque Session；数据库只保存 Session 摘要 | GitHub token 不进入客户端，桌面无需在 URL 或本地存储中传递长期凭据 |
+| D-030 | `packages/i18n` 是 Web/Desktop/共享 UI 的唯一平台界面语言层；默认 `zh-CN`，同时支持 `en-US` | 提前阻止硬编码文案扩散，同时保持第三方插件作者内容原样与产品边界清晰 |
 
 ## P0：进入代码阶段前确认
 

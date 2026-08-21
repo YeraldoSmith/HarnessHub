@@ -1,6 +1,6 @@
 {
   "name": "harnesshub",
-  "version": "0.7.3-beta",
+  "version": "0.7.3-beta.1",
   "private": true,
   "description": "Community Marketplace for AI Agent Plugins",
   "author": "YeraldoSmith",
@@ -11,7 +11,7 @@
     "node": ">=22.19.0"
   },
   "scripts": {
-    "build:packages": "pnpm --filter './packages/**' -r build",
+    "build:packages": "pnpm --filter @harnesshub/types --filter @harnesshub/i18n --filter @harnesshub/plugin-schema --filter @harnesshub/plugin-sources --filter @harnesshub/ui --filter @harnesshub/installation-prototype --filter @harnesshub/runtime-integration --filter @harnesshub/runtime-bridge -r build",
     "dev": "pnpm build:packages && pnpm --parallel --filter @harnesshub/api --filter @harnesshub/web dev",
     "dev:api": "pnpm build:packages && pnpm --filter @harnesshub/api dev",
     "dev:web": "pnpm build:packages && pnpm --filter @harnesshub/web dev",

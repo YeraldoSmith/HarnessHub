@@ -8,9 +8,9 @@ macOS-to-Linux cross-compilation.
 
 | Platform | Rust target | Bundles |
 | --- | --- | --- |
-| Windows x86 | `i686-pc-windows-msvc` | NSIS `.exe`, WiX `.msi` |
-| Windows x64 | `x86_64-pc-windows-msvc` | NSIS `.exe`, WiX `.msi` |
-| Windows ARM64 | `aarch64-pc-windows-msvc` | NSIS `.exe`, WiX `.msi` |
+| Windows x86 | `i686-pc-windows-msvc` | NSIS `.exe` |
+| Windows x64 | `x86_64-pc-windows-msvc` | NSIS `.exe` |
+| Windows ARM64 | `aarch64-pc-windows-msvc` | NSIS `.exe` |
 | Linux x64 | `x86_64-unknown-linux-gnu` | `.deb`, `.AppImage` |
 | Linux ARM64 | `aarch64-unknown-linux-gnu` | `.deb`, `.AppImage` |
 
@@ -30,3 +30,7 @@ Artifacts are functional unsigned test installers. Before public distribution,
 configure Windows code signing and validate each installer in a clean VM or
 device of its target architecture. Linux bundles should likewise be tested on
 the matching distribution and architecture.
+
+Public Beta tags use NSIS installers because WiX MSI packages do not accept a
+semantic pre-release suffix such as `beta.3`. A stable release may add a
+numeric MSI-compatible version and WiX output after Windows signing validation.

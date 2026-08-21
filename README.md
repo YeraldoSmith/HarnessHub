@@ -56,7 +56,7 @@ pipeline builds these native targets:
 
 | Platform | Architecture | Package formats |
 | --- | --- | --- |
-| Windows | x86, x64, ARM64 | `.exe`, `.msi` |
+| Windows | x86, x64, ARM64 | `.exe` |
 | Linux | x64, ARM64 | `.deb`, `.AppImage` |
 | macOS | Apple Silicon | `.dmg` |
 

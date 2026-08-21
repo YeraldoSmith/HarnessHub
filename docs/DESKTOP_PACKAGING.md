@@ -13,6 +13,7 @@ macOS-to-Linux cross-compilation.
 | Windows ARM64 | `aarch64-pc-windows-msvc` | NSIS `.exe` |
 | Linux x64 | `x86_64-unknown-linux-gnu` | `.deb`, `.AppImage` |
 | Linux ARM64 | `aarch64-unknown-linux-gnu` | `.deb`, `.AppImage` |
+| macOS Apple Silicon | `aarch64-apple-darwin` | `.dmg` |
 
 ## Running a package build
 

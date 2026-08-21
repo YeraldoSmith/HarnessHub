@@ -1612,6 +1612,52 @@ fn remove_profile_package_entry(app: &AppHandle, package_name: &str) -> Result<(
     update_profile_manifest(app, package_name, false, true)
 }
 
+/// Checks only Profile metadata and installed package manifests. This is safe to
+/// run during install, uninstall, and recovery because it never loads plugin
+/// code. Starting DSH remains the single point that activates installed code.
+fn verify_profile_manifest_consistency(app: &AppHandle) -> Result<(), String> {
+    let path = profile_manifest_path(app)?;
+    let content =
+        fs::read_to_string(&path).map_err(|_| "无法读取 DSH Profile 配置。".to_string())?;
+    let value: serde_json::Value = serde_json::from_str(&content)
+        .map_err(|_| "DSH Profile 配置无效，操作已停止。".to_string())?;
+    let bundles = value
+        .get("dsh")
+        .and_then(serde_json::Value::as_object)
+        .and_then(|dsh| dsh.get("profile"))
+        .and_then(serde_json::Value::as_object)
+        .and_then(|profile| profile.get("bundles"))
+        .and_then(serde_json::Value::as_array)
+        .ok_or_else(|| "DSH Profile 缺少受控 bundle 配置。".to_string())?;
+    let dependencies = value
+        .get("dependencies")
+        .and_then(serde_json::Value::as_object)
+        .ok_or_else(|| "DSH Profile 缺少插件依赖配置。".to_string())?;
+
+    for bundle in bundles {
+        let package_name = bundle
+            .as_str()
+            .filter(|name| !name.trim().is_empty())
+            .ok_or_else(|| "DSH Profile 包含无效的 bundle 标识。".to_string())?;
+        // DSH supplies these built-in bundles itself. Every other bundle must
+        // have an exact Profile dependency and a matching package manifest.
+        if package_name.starts_with("@deepseek-ai/dsh-") {
+            continue;
+        }
+        let version = dependencies
+            .get(package_name)
+            .and_then(serde_json::Value::as_str)
+            .filter(|version| !version.trim().is_empty())
+            .ok_or_else(|| format!("DSH Profile 中的插件 {package_name} 缺少依赖记录。"))?;
+        if !profile_package_is_bundle(app, package_name, version)? {
+            return Err(format!(
+                "DSH Profile 中的插件 {package_name} 未正确安装，已阻止启动。"
+            ));
+        }
+    }
+    Ok(())
+}
+
 fn remove_profile_package_link(app: &AppHandle, package_name: &str) -> Result<(), String> {
     let path = profile_package_dir(app, package_name)?;
     let Ok(metadata) = fs::symlink_metadata(&path) else {
@@ -1748,16 +1794,7 @@ fn reconcile_managed_profile(app: &AppHandle, state: &mut RuntimeStateFile) -> R
         );
     }
     write_runtime_state(app, state)?;
-    let verification = run_dsh(
-        app,
-        &["web".to_string(), "--dump-config".to_string()],
-        PROFILE_MUTATION_TIMEOUT,
-    )?;
-    if verification.success() {
-        Ok(())
-    } else {
-        Err("DSH Profile 验证未通过，Runtime 没有启动。请在任务页面查看恢复记录。".to_string())
-    }
+    verify_profile_manifest_consistency(app)
 }
 
 fn verify_dsh_integrity(app: &AppHandle) -> Result<(), String> {
@@ -2177,17 +2214,12 @@ fn install_managed_plugin_blocking(
         return Err(message);
     }
     update_profile_bundle(&app, &request.package_name, true)?;
-    let verification = run_dsh(
-        &app,
-        &["web".to_string(), "--dump-config".to_string()],
-        PROFILE_MUTATION_TIMEOUT,
-    )?;
-    if !verification.success() {
+    if let Err(reason) = verify_profile_manifest_consistency(&app) {
         let restored = restore_profile_and_dependencies(&app, &backups).is_ok();
         let message = if restored {
-            "插件验证失败，已恢复原配置。"
+            format!("插件配置验证失败，已恢复原配置。{reason}")
         } else {
-            "插件验证失败且自动恢复未完成。"
+            "插件验证失败且自动恢复未完成。".to_string()
         };
         audit(
             &app,
@@ -2200,9 +2232,9 @@ fn install_managed_plugin_blocking(
             } else {
                 "RECOVERY_REQUIRED"
             },
-            message,
+            &message,
         );
-        return Err(message.to_string());
+        return Err(message);
     }
     let mut next = read_runtime_state(&app);
     next.plugins.retain(|plugin| {
@@ -2281,17 +2313,12 @@ fn remove_managed_plugin_blocking(
     // The functional uninstall is a local, atomic manifest operation. It does
     // not depend on a package-manager subprocess or network availability.
     remove_profile_package_entry(&app, &installed.package_name)?;
-    let verification = run_dsh(
-        &app,
-        &["web".to_string(), "--dump-config".to_string()],
-        PROFILE_MUTATION_TIMEOUT,
-    )?;
-    if !verification.success() {
+    if let Err(reason) = verify_profile_manifest_consistency(&app) {
         let restored = restore_profile_files(&backups).is_ok();
         let message = if restored {
-            "卸载验证失败，已恢复原配置。"
+            format!("卸载配置验证失败，已恢复原配置。{reason}")
         } else {
-            "卸载验证失败且自动恢复未完成。"
+            "卸载验证失败且自动恢复未完成。".to_string()
         };
         audit(
             &app,
@@ -2304,9 +2331,9 @@ fn remove_managed_plugin_blocking(
             } else {
                 "RECOVERY_REQUIRED"
             },
-            message,
+            &message,
         );
-        return Err(message.to_string());
+        return Err(message);
     }
     let mut next = read_runtime_state(&app);
     next.plugins
@@ -2363,6 +2390,42 @@ fn reserve_loopback_port() -> Result<u16, String> {
 #[tauri::command]
 async fn start_managed_runtime(app: AppHandle) -> Result<ManagedRuntimeStatus, String> {
     background_operation(move || start_managed_runtime_blocking(app)).await
+}
+
+#[tauri::command]
+async fn reconnect_managed_runtime(app: AppHandle) -> Result<ManagedRuntimeStatus, String> {
+    background_operation(move || reconnect_managed_runtime_blocking(app)).await
+}
+
+/// Reconnect means recover the managed local Runtime, rather than merely
+/// re-reading a stale UI snapshot. If a process survived the Desktop restart we
+/// adopt it; otherwise we perform the same guarded start path as the Start
+/// button, including Profile reconciliation and audit logging.
+fn reconnect_managed_runtime_blocking(app: AppHandle) -> Result<ManagedRuntimeStatus, String> {
+    let native = app.state::<NativeState>();
+    let current = runtime_status(&app, &native);
+    if current.running {
+        audit(
+            &app,
+            "RECONNECT_RUNTIME",
+            None,
+            Some(DSH_PACKAGE),
+            Some(DSH_VERSION),
+            "SUCCESS",
+            "已恢复与现有本地 DSH Runtime 的连接。",
+        );
+        return Ok(current);
+    }
+    audit(
+        &app,
+        "RECONNECT_RUNTIME",
+        None,
+        Some(DSH_PACKAGE),
+        Some(DSH_VERSION),
+        "RUNNING",
+        "本地 DSH Runtime 未运行，正在执行受控恢复。",
+    );
+    start_managed_runtime_blocking(app)
 }
 
 fn start_managed_runtime_blocking(app: AppHandle) -> Result<ManagedRuntimeStatus, String> {
@@ -2600,6 +2663,7 @@ pub fn run() {
             install_managed_plugin,
             remove_managed_plugin,
             start_managed_runtime,
+            reconnect_managed_runtime,
             stop_managed_runtime,
             open_managed_runtime_workspace,
             save_session_token,

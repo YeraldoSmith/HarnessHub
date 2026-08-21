@@ -243,6 +243,15 @@ export async function startManagedRuntime(): Promise<ManagedRuntimeStatus> {
   return invoke<ManagedRuntimeStatus>('start_managed_runtime')
 }
 
+/**
+ * Recover the managed Runtime after a Desktop restart, an interrupted local
+ * connection, or a stopped process. This always remains a local Tauri command;
+ * it never forwards arbitrary commands to DSH.
+ */
+export async function reconnectManagedRuntime(): Promise<ManagedRuntimeStatus> {
+  return invoke<ManagedRuntimeStatus>('reconnect_managed_runtime')
+}
+
 export async function stopManagedRuntime(): Promise<ManagedRuntimeStatus> {
   return invoke<ManagedRuntimeStatus>('stop_managed_runtime')
 }

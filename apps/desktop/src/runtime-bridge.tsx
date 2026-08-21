@@ -57,7 +57,10 @@ export function RuntimeBridgeView({
   const { t } = useI18n()
   const connected = snapshot.connection === 'CONNECTED'
   const realRuntime = snapshot.implementation === 'LOCAL_DSH'
-  const canStart = runtimeReady && connected && (snapshot.status === 'NOT_RUNNING' || snapshot.status === 'ERROR')
+  // A stopped local Runtime is intentionally disconnected. Requiring an
+  // existing connection here made recovery impossible: the user could neither
+  // reconnect nor start the Runtime again after it had stopped.
+  const canStart = runtimeReady && (snapshot.status === 'NOT_RUNNING' || snapshot.status === 'ERROR')
   const canStop = connected && ['RUNNING', 'BUSY', 'WAITING_INPUT', 'ERROR'].includes(snapshot.status)
 
   return (

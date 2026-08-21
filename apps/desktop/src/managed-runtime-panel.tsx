@@ -7,6 +7,7 @@ import {
   getManagedRuntimeStatus,
   nativeAvailable,
   openManagedRuntimeWorkspace,
+  reconnectManagedRuntime,
   removeManagedPluginRecord,
   startManagedRuntime,
   stopManagedRuntime,
@@ -130,6 +131,30 @@ export function ManagedRuntimePanel({
     }
   }
 
+  async function reconnect(): Promise<void> {
+    setPending(true)
+    setError('')
+    try {
+      const next = await reconnectManagedRuntime()
+      const nextEvents = addEvent(
+        next.running ? 'RUNTIME_STARTED' : 'RUNTIME_ERROR',
+        next.running ? 'RUNNING' : 'ERROR',
+      )
+      publish(next, nextEvents)
+      onAuditChange()
+    } catch (reason) {
+      const nextEvents = addEvent('RUNTIME_ERROR', 'ERROR')
+      const failed = { ...runtime, running: false, port: null, url: null, pid: null }
+      const nextSnapshot = { ...toSnapshot(failed), status: 'ERROR' as const }
+      setSnapshot(nextSnapshot)
+      onStateChange(nextSnapshot, nextEvents)
+      setError(reason instanceof Error ? reason.message : String(reason))
+      onAuditChange()
+    } finally {
+      setPending(false)
+    }
+  }
+
   async function removePlugin(packageName: string): Promise<void> {
     const record = runtime.plugins.find((plugin) => plugin.packageName === packageName)
     if (!record || !confirmedRemoval.includes(packageName)) return
@@ -155,7 +180,7 @@ export function ManagedRuntimePanel({
         error={error}
         events={events}
         onOpen={() => void openManagedRuntimeWorkspace().catch((reason) => setError(reason instanceof Error ? reason.message : String(reason)))}
-        onReconnect={() => void getManagedRuntimeStatus().then((next) => publish(next))}
+        onReconnect={() => void reconnect()}
         onStart={() => void start()}
         onStop={() => void stop()}
         pending={pending}

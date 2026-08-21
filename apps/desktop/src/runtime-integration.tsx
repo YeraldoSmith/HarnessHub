@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { invoke, isTauri } from '@tauri-apps/api/core'
+import { invoke } from '@tauri-apps/api/core'
 
 import { useI18n } from '@harnesshub/i18n'
+
+import { isHarnessHubDesktop } from './desktop-environment.js'
 import {
   ControlledDshAdapter,
   evaluateTrustedInstallBoundary,
@@ -15,7 +17,7 @@ import {
 
 class TauriReadonlyEnvironmentProbe implements ReadonlyEnvironmentProbe {
   async detect(): Promise<NativeRuntimeEnvironmentSnapshot> {
-    if (!isTauri()) throw new Error('Runtime detection is available only inside the packaged desktop app.')
+    if (!isHarnessHubDesktop()) throw new Error('Runtime detection is available only inside the packaged desktop app.')
     return invoke<NativeRuntimeEnvironmentSnapshot>('detect_runtime_environment')
   }
 }
@@ -125,7 +127,7 @@ export function RuntimeIntegrationPanel({ onSnapshot, probe }: RuntimeIntegratio
       setState('ready')
     } catch {
       setState('error')
-      setError(isTauri() ? t('runtime.detectionFailed') : t('runtime.packagedOnly'))
+      setError(isHarnessHubDesktop() ? t('runtime.detectionFailed') : t('runtime.packagedOnly'))
     }
   }, [manager, onSnapshot, t])
 

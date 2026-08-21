@@ -66,6 +66,8 @@ export interface PublicSourceCandidate {
   external_id: string
   repository: string
   repository_url: string
+  /** Optional safe workspace directory containing this DSH Bundle. */
+  bundle_directory: string | null
   author: string
   description: string
   default_branch: string
@@ -78,6 +80,8 @@ export interface PublicSourceCandidate {
   commit_sha: string | null
   package_name: string | null
   package_integrity: string | null
+  /** The exact dsh.bundle.patch declaration observed in the installable package. */
+  dsh_bundle_patch: string | null
   dsh_compatibility: string | null
   category: PluginCategory
   permissions: PluginPermission[]

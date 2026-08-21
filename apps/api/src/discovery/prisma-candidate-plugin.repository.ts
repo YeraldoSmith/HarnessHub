@@ -26,7 +26,7 @@ export class PrismaCandidatePluginRepository implements CandidatePluginRepositor
     const [records, total] = await this.prisma.$transaction([
       this.prisma.candidatePlugin.findMany({
         where,
-        take: Math.min(200, Math.max(1, limit)),
+        take: Math.min(1_000, Math.max(1, limit)),
         orderBy: [{ upstreamUpdatedAt: 'desc' }, { canonicalKey: 'asc' }],
       }),
       this.prisma.candidatePlugin.count({ where }),
@@ -38,19 +38,21 @@ export class PrismaCandidatePluginRepository implements CandidatePluginRepositor
     if (candidates.length === 0) return 0
     const publishedSources = await this.prisma.pluginSource.findMany({
       where: { provider: SourceProvider.GITHUB, repositoryUrl: { not: null } },
-      select: { repositoryUrl: true },
+      select: { repositoryUrl: true, packageName: true },
     })
-    const published = new Set(publishedSources.flatMap(({ repositoryUrl }) => {
+    const published = new Set(publishedSources.flatMap(({ repositoryUrl, packageName }) => {
       if (!repositoryUrl) return []
       try {
         const url = new URL(repositoryUrl)
-        return [url.pathname.replace(/^\//, '').replace(/\/$/, '').replace(/\.git$/, '').toLowerCase()]
+        const repository = url.pathname.replace(/^\//, '').replace(/\/$/, '').replace(/\.git$/, '').toLowerCase()
+        return [`${repository}#${packageName ?? ''}`]
       } catch { return [] }
     }))
     const deduplicated = new Map<string, PublicSourceCandidate>()
     for (const candidate of candidates) {
-      const key = candidate.repository.toLowerCase()
-      if (!published.has(key)) deduplicated.set(key, candidate)
+      const key = candidateCanonicalKey(candidate)
+      const publishedKey = `${candidate.repository.toLowerCase()}#${candidate.package_name ?? ''}`
+      if (!published.has(publishedKey)) deduplicated.set(key, candidate)
     }
     const keys = [...deduplicated.keys()]
     const existingRecords = keys.length > 0
@@ -156,14 +158,18 @@ export class PrismaCandidatePluginRepository implements CandidatePluginRepositor
     packageVersion: string | null; packageIntegrity: string | null; dshCompatibility: string | null
     category: string; permissions: Prisma.JsonValue; riskLevel: PluginRiskLevel; riskReasons: Prisma.JsonValue
     riskAssessedAt: Date; riskModelVersion: string; metadataSha256: string; discoveredAt: Date
-    lastObservedAt: Date; retryCount: number; lastError: string | null
+    lastObservedAt: Date; retryCount: number; lastError: string | null; sourceMetadata: Prisma.JsonValue
   }): CandidatePlugin {
+    const sourceMetadata = record.sourceMetadata && typeof record.sourceMetadata === 'object' && !Array.isArray(record.sourceMetadata)
+      ? record.sourceMetadata as Record<string, unknown>
+      : {}
     return {
       id: record.id,
       provider: 'github',
       external_id: record.externalId,
       repository: record.repository,
       repository_url: record.repositoryUrl,
+      bundle_directory: typeof sourceMetadata.bundle_directory === 'string' ? sourceMetadata.bundle_directory : null,
       owner: record.owner,
       name: record.name,
       description: record.description,
@@ -176,6 +182,7 @@ export class PrismaCandidatePluginRepository implements CandidatePluginRepositor
       package_name: record.packageName,
       package_version: record.packageVersion,
       package_integrity: record.packageIntegrity,
+      dsh_bundle_patch: typeof sourceMetadata.dsh_bundle_patch === 'string' ? sourceMetadata.dsh_bundle_patch : null,
       dsh_compatibility: record.dshCompatibility,
       category: record.category as CandidatePlugin['category'],
       permissions: record.permissions as unknown as CandidatePlugin['permissions'],
@@ -191,4 +198,8 @@ export class PrismaCandidatePluginRepository implements CandidatePluginRepositor
       last_error: record.lastError,
     }
   }
+}
+
+function candidateCanonicalKey(candidate: PublicSourceCandidate): string {
+  return `${candidate.repository.toLowerCase()}#${candidate.bundle_directory ?? ''}`
 }

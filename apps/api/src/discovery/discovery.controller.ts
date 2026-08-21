@@ -10,7 +10,7 @@ export class DiscoveryController {
   @Get('candidates')
   list(@Query('q') query = '', @Query('limit') rawLimit = '100') {
     const limit = Number(rawLimit)
-    if (!Number.isInteger(limit) || limit < 1 || limit > 200 || query.length > 100) {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 1_000 || query.length > 100) {
       throw new BadRequestException('Invalid discovery query.')
     }
     return this.discovery.list(query, limit)

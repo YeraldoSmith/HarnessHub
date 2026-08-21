@@ -199,7 +199,7 @@ export function ManagedRuntimePanel({
               <li key={plugin.packageName}>
                 <div>
                   <strong>{plugin.packageName}</strong>
-                  <span>{plugin.version} · {plugin.enabled === false ? t('managedPlugins.disabled') : t('managedPlugins.active')}</span>
+                  <span>{plugin.version} · {t('managedPlugins.source', { source: plugin.sourceKind ?? 'NPM' })} · {plugin.enabled === false ? t('managedPlugins.disabled') : t('managedPlugins.active')}</span>
                   {plugin.issue ? <small>{plugin.issue}</small> : null}
                 </div>
                 <label>

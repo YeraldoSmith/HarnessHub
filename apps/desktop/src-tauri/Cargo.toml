@@ -1,6 +1,6 @@
 [package]
 name = "harnesshub-desktop"
-version = "0.7.3-beta.1"
+version = "0.7.3-beta.2"
 description = "HarnessHub read-only desktop registry"
 authors = ["YeraldoSmith"]
 license = "UNLICENSED"

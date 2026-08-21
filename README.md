@@ -58,7 +58,6 @@ pipeline builds these native targets:
 | --- | --- | --- |
 | Windows | x86, x64, ARM64 | `.exe` |
 | Linux | x64, ARM64 | `.deb`, `.AppImage` |
-| macOS | Apple Silicon | `.dmg` |
 
 Windows and Linux installers are built and uploaded only by the native CI
 pipeline. See [Desktop packaging](docs/DESKTOP_PACKAGING.md).

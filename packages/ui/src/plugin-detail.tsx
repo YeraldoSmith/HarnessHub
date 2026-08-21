@@ -2,11 +2,23 @@ import type { Plugin, PluginSnapshotRecord } from '@harnesshub/types'
 import { useI18n, type TranslationKey } from '@harnesshub/i18n'
 import { isPluginSourceVerified, pluginRiskSummary } from './plugin-trust.js'
 import { PluginIcon } from './plugin-icon.js'
+import { permissionLabelKeys, permissionReasonKeys } from './permission-copy.js'
 
 const statusKeys: Record<Plugin['source_status'][number]['status'], TranslationKey> = {
   AVAILABLE: 'plugin.available',
   UNAVAILABLE: 'plugin.unavailable',
   UNKNOWN: 'plugin.unknown',
+}
+
+const riskReasonKeys: Record<string, TranslationKey> = {
+  DANGEROUS_LIFECYCLE_SCRIPT: 'plugin.reasonDangerousLifecycle',
+  HIGH_IMPACT_CAPABILITY: 'plugin.reasonHighImpactCapability',
+  INCOMPLETE_INSTALL_EVIDENCE: 'plugin.reasonIncompleteEvidence',
+  DECLARED_RUNTIME_PERMISSIONS: 'plugin.reasonDeclaredPermissions',
+  NO_HIGH_RISK_SIGNAL_DETECTED: 'plugin.reasonNoHighRiskSignal',
+  LICENSE_NOT_IDENTIFIED: 'plugin.reasonLicenseMissing',
+  INSTALL_SCRIPTS_DISABLED: 'plugin.reasonScriptsDisabled',
+  AUTOMATED_ASSESSMENT: 'plugin.reasonAutomatedAssessment',
 }
 
 export interface PluginDetailProps {
@@ -25,6 +37,8 @@ export function PluginDetail({ plugin, snapshots }: PluginDetailProps) {
   const riskKey: TranslationKey =
     risk === 'pending'
       ? 'plugin.riskPending'
+      : risk === 'critical'
+        ? 'plugin.riskCritical'
       : risk === 'high'
         ? 'plugin.riskHigh'
         : risk === 'medium'
@@ -36,6 +50,9 @@ export function PluginDetail({ plugin, snapshots }: PluginDetailProps) {
         <span>{plugin.category}</span>
         <span className="hh-plugin-card__badges">
           {sourceVerified ? <span className="hh-status-pill hh-status-pill--verified">{t('plugin.sourceVerified')}</span> : null}
+          {plugin.registry_status === 'COLLECTED_UNVERIFIED' ? (
+            <span className="hh-status-pill hh-status-pill--warning">{t('plugin.collectedUnverified')}</span>
+          ) : null}
           {plugin.is_mock ? <span className="hh-status-pill">{t('plugin.mockNotInstallable')}</span> : null}
         </span>
       </div>
@@ -63,7 +80,9 @@ export function PluginDetail({ plugin, snapshots }: PluginDetailProps) {
       <dl className="hh-fact-grid">
         <div>
           <dt>{t('plugin.version')}</dt>
-          <dd>{plugin.version}</dd>
+          <dd>{plugin.registry_status === 'COLLECTED_UNVERIFIED' && !plugin.npm_version
+            ? t('plugin.versionPending')
+            : plugin.version}</dd>
         </div>
         <div>
           <dt>{t('plugin.source')}</dt>
@@ -87,6 +106,9 @@ export function PluginDetail({ plugin, snapshots }: PluginDetailProps) {
           <dt>{t('plugin.license')}</dt>
           <dd>{plugin.license.name}</dd>
         </div>
+        {plugin.stars !== null && plugin.stars !== undefined ? (
+          <div><dt>GitHub Stars</dt><dd>{plugin.stars}</dd></div>
+        ) : null}
       </dl>
 
       <section className="hh-plugin-detail__section hh-plugin-detail__security">
@@ -96,8 +118,21 @@ export function PluginDetail({ plugin, snapshots }: PluginDetailProps) {
         </div>
         <div className="hh-security-summary">
           <div className={`hh-risk-summary hh-risk-summary--${risk}`}>{t(riskKey)}</div>
-          <strong>{sourceVerified ? t('plugin.sourceIdentityVerified') : t('plugin.riskPending')}</strong>
-          <p>{t('plugin.sourceIdentityNotice')}</p>
+          <strong>{sourceVerified
+            ? t('plugin.sourceIdentityVerified')
+            : plugin.registry_status === 'COLLECTED_UNVERIFIED'
+              ? t('plugin.candidateSecurityTitle')
+              : t('plugin.riskPending')}</strong>
+          <p>{t(plugin.registry_status === 'COLLECTED_UNVERIFIED'
+            ? 'plugin.candidateRiskNotice'
+            : 'plugin.sourceIdentityNotice')}</p>
+          {plugin.risk_reasons && plugin.risk_reasons.length > 0 ? (
+            <ul className="hh-risk-reasons">
+              {plugin.risk_reasons.map((reason) => (
+                <li key={reason}>{riskReasonKeys[reason] ? t(riskReasonKeys[reason]) : reason}</li>
+              ))}
+            </ul>
+          ) : null}
         </div>
       </section>
 
@@ -145,8 +180,8 @@ export function PluginDetail({ plugin, snapshots }: PluginDetailProps) {
               <div className="hh-permission-detail" key={permission.id}>
                 <span className={`hh-risk-dot hh-risk-dot--${permission.risk}`} aria-hidden="true" />
                 <div>
-                  <strong>{permission.label}</strong>
-                  <p>{permission.description}</p>
+                  <strong>{t(permissionLabelKeys[permission.id])}</strong>
+                  <p>{t(permissionReasonKeys[permission.id])}</p>
                 </div>
                 <span className="hh-risk-label">{permission.risk}</span>
               </div>
@@ -212,11 +247,17 @@ export function PluginDetail({ plugin, snapshots }: PluginDetailProps) {
       ) : null}
 
       <aside className="hh-trust-note">
-        <strong>{plugin.is_mock ? t('plugin.testFixture') : t('plugin.snapshotNotReview')}</strong>
+        <strong>{plugin.is_mock
+          ? t('plugin.testFixture')
+          : plugin.registry_status === 'COLLECTED_UNVERIFIED'
+            ? t('plugin.collectedUnverified')
+            : t('plugin.snapshotNotReview')}</strong>
         <p>
           {plugin.is_mock
             ? t('plugin.testFixtureNotice')
-            : t('plugin.snapshotNotice')}
+            : plugin.registry_status === 'COLLECTED_UNVERIFIED'
+              ? t('plugin.candidateSecurityNotice')
+              : t('plugin.snapshotNotice')}
         </p>
       </aside>
     </article>

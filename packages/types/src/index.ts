@@ -2,6 +2,16 @@ export type PluginSource = 'mock' | 'github' | 'npm' | 'github+npm'
 
 export type PermissionRisk = 'low' | 'medium' | 'high'
 
+export type PluginCategory =
+  | 'Coding'
+  | 'Productivity'
+  | 'Automation'
+  | 'Data'
+  | 'Research'
+  | 'Other'
+
+export type PluginRiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+
 export type PluginPermissionId =
   | 'filesystem-read'
   | 'filesystem-write'
@@ -79,7 +89,61 @@ export interface Plugin {
   source_evidence: SourceEvidence[]
   source_status: PluginSourceStatus[]
   readme_excerpt?: string | null
+  registry_status?: 'PUBLISHED' | 'COLLECTED_UNVERIFIED'
+  risk_level?: PluginRiskLevel | null
+  risk_reasons?: string[]
+  risk_assessed_at?: string | null
+  risk_model_version?: string | null
+  discovery_snapshot_sha256?: string | null
+  stars?: number | null
+  upstream_updated_at?: string | null
   is_mock: boolean
+}
+
+export interface CandidatePlugin {
+  id: string
+  provider: 'github'
+  external_id: string
+  repository: string
+  repository_url: string
+  owner: string
+  name: string
+  description: string
+  default_branch: string
+  readme_excerpt: string | null
+  license_spdx: string | null
+  stars: number
+  upstream_updated_at: string
+  commit_sha: string | null
+  package_name: string | null
+  package_version: string | null
+  package_integrity: string | null
+  dsh_compatibility: string | null
+  category: PluginCategory
+  permissions: PluginPermission[]
+  risk_level: PluginRiskLevel
+  risk_reasons: string[]
+  risk_assessed_at: string
+  risk_model_version: string
+  metadata_sha256: string
+  discovered_at: string
+  last_observed_at: string
+  status: 'COLLECTED_UNVERIFIED'
+  retry_count: number
+  last_error: string | null
+}
+
+export interface CandidatePluginResponse {
+  items: CandidatePlugin[]
+  total: number
+}
+
+export interface DiscoveryRefreshResponse {
+  status: 'SUCCESS' | 'PARTIAL' | 'COOLDOWN' | 'IN_PROGRESS'
+  discovered: number
+  stored: number
+  failed: number
+  next_refresh_at: string | null
 }
 
 export interface PluginSnapshot {

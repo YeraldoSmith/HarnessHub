@@ -239,9 +239,21 @@
   color: var(--hh-amber);
 }
 
-.hh-risk-summary--high {
+.hh-risk-summary--high,
+.hh-risk-summary--critical {
   background: #fff0ed;
   color: var(--hh-red);
+}
+
+.hh-risk-summary--critical {
+  box-shadow: inset 0 0 0 1px #d74a35;
+}
+
+.hh-risk-reasons {
+  margin: 0.65rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--hh-muted);
+  font-size: 0.76rem;
 }
 
 .hh-tag-list {

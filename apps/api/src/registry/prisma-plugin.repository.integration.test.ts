@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import type { PluginSnapshot } from '@harnesshub/types'
+import type { PublicSourceCandidate } from '@harnesshub/plugin-sources'
 
 import { AuthConfig } from '../auth/auth.config.js'
 import { AuthService } from '../auth/auth.service.js'
@@ -16,6 +17,7 @@ import {
   type GitHubRepositoryVerifier,
 } from '../developer-trust/github-repository.verifier.js'
 import { PrismaDeveloperTrustRepository } from '../developer-trust/prisma-developer-trust.repository.js'
+import { PrismaCandidatePluginRepository } from '../discovery/prisma-candidate-plugin.repository.js'
 import { PrismaSyncJobRepository } from '../sync/prisma-sync-job.repository.js'
 import { PrismaPluginRepository } from './prisma-plugin.repository.js'
 
@@ -39,6 +41,7 @@ const repository = new PrismaPluginRepository(prisma)
 const syncJobs = new PrismaSyncJobRepository(prisma)
 const authRepository = new PrismaAuthRepository(prisma)
 const developerTrustRepository = new PrismaDeveloperTrustRepository(prisma)
+const candidateRepository = new PrismaCandidatePluginRepository(prisma)
 
 class FakeRepositoryVerifier implements GitHubRepositoryVerifier {
   readonly observations = new Map<string, GitHubChallengeObservation>()
@@ -293,6 +296,70 @@ describe.sequential('PrismaPluginRepository', () => {
     await expect(
       prisma.pluginSnapshot.count({ where: { pluginVersion: { pluginId: snapshot.plugin.id } } }),
     ).resolves.toBe(snapshotCount)
+  })
+})
+
+describe.sequential('public plugin discovery candidates', () => {
+  const candidate = (repositoryName: string): PublicSourceCandidate => ({
+    provider: 'github',
+    external_id: repositoryName,
+    repository: repositoryName,
+    repository_url: `https://github.com/${repositoryName}`,
+    author: repositoryName.split('/')[0] ?? 'example',
+    name: repositoryName.split('/')[1] ?? 'plugin',
+    description: 'Automatically discovered candidate',
+    default_branch: 'main',
+    readme_excerpt: '# Candidate',
+    license_spdx: 'MIT',
+    stars: 12,
+    upstream_updated_at: '2026-08-20T12:00:00.000Z',
+    version: '1.0.0',
+    commit_sha: 'c'.repeat(40),
+    package_name: '@example/candidate',
+    package_integrity: 'sha512-proof',
+    dsh_compatibility: '^0.1.0',
+    category: 'Coding',
+    permissions: [],
+    risk_level: 'LOW',
+    risk_reasons: ['NO_HIGH_RISK_SIGNAL_DETECTED', 'AUTOMATED_ASSESSMENT'],
+    risk_assessed_at: '2026-08-20T12:00:00.000Z',
+    risk_model_version: 'hhrisk-1',
+    metadata_sha256: 'd'.repeat(64),
+    discovered_at: '2026-08-20T12:00:00.000Z',
+    status: 'COLLECTED_UNVERIFIED',
+    retry_count: 0,
+    last_error: null,
+  })
+
+  it('deduplicates owner/repo case-insensitively and excludes published Registry sources', async () => {
+    const newCandidate = candidate('PublicOrg/DSH-New-Plugin')
+    await expect(candidateRepository.upsertMany([
+      newCandidate,
+      { ...newCandidate, repository: 'publicorg/dsh-new-plugin' },
+      candidate('example/integration-registry-plugin'),
+    ])).resolves.toBe(1)
+
+    const result = await candidateRepository.list('', 20)
+    expect(result.total).toBe(1)
+    expect(result.items[0]).toMatchObject({
+      repository: 'publicorg/dsh-new-plugin',
+      status: 'COLLECTED_UNVERIFIED',
+      stars: 12,
+      category: 'Coding',
+      risk_level: 'LOW',
+    })
+    await expect(prisma.candidatePluginSnapshot.count()).resolves.toBe(1)
+  })
+
+  it('keeps immutable candidate snapshots only when evidence changes', async () => {
+    const first = candidate('PublicOrg/DSH-Snapshots')
+    await candidateRepository.upsertMany([first])
+    const stored = await prisma.candidatePlugin.findUniqueOrThrow({ where: { canonicalKey: 'publicorg/dsh-snapshots' } })
+    await candidateRepository.upsertMany([first])
+    await expect(prisma.candidatePluginSnapshot.count({ where: { candidatePluginId: stored.id } })).resolves.toBe(1)
+
+    await candidateRepository.upsertMany([{ ...first, metadata_sha256: 'e'.repeat(64), risk_level: 'MEDIUM' }])
+    await expect(prisma.candidatePluginSnapshot.count({ where: { candidatePluginId: stored.id } })).resolves.toBe(2)
   })
 })
 

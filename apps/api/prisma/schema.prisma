@@ -24,6 +24,17 @@ enum SourceAvailability {
   UNAVAILABLE
 }
 
+enum CandidatePluginStatus {
+  COLLECTED_UNVERIFIED
+}
+
+enum PluginRiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
 enum SyncJobStatus {
   PENDING
   RUNNING
@@ -404,4 +415,66 @@ model PluginSnapshot {
 
   @@index([pluginVersionId, checkedAt(sort: Desc)])
   @@map("plugin_snapshots")
+}
+
+model CandidatePlugin {
+  id                String                @id @default(cuid()) @db.VarChar(40)
+  provider          SourceProvider        @default(GITHUB)
+  externalId        String                @map("external_id") @db.VarChar(255)
+  canonicalKey      String                @unique @map("canonical_key") @db.VarChar(255)
+  repository        String                @db.VarChar(255)
+  repositoryUrl     String                @map("repository_url") @db.VarChar(500)
+  owner             String                @db.VarChar(120)
+  name              String                @db.VarChar(120)
+  description       String                @db.Text
+  defaultBranch     String                @map("default_branch") @db.VarChar(255)
+  readmeExcerpt     String?               @map("readme_excerpt") @db.Text
+  licenseSpdx       String?               @map("license_spdx") @db.VarChar(80)
+  stars             Int                   @default(0)
+  upstreamUpdatedAt DateTime              @map("upstream_updated_at") @db.Timestamptz(3)
+  commitSha         String?               @map("commit_sha") @db.VarChar(40)
+  packageName       String?               @map("package_name") @db.VarChar(214)
+  packageVersion    String?               @map("package_version") @db.VarChar(80)
+  packageIntegrity  String?               @map("package_integrity") @db.VarChar(300)
+  dshCompatibility  String?               @map("dsh_compatibility") @db.VarChar(80)
+  category          String                @default("Other") @db.VarChar(40)
+  permissions       Json
+  riskLevel         PluginRiskLevel       @default(HIGH) @map("risk_level")
+  riskReasons       Json                  @map("risk_reasons")
+  riskAssessedAt    DateTime              @map("risk_assessed_at") @db.Timestamptz(3)
+  riskModelVersion  String                @map("risk_model_version") @db.VarChar(40)
+  metadataSha256    String                @map("metadata_sha256") @db.Char(64)
+  sourceMetadata    Json                  @map("source_metadata")
+  status            CandidatePluginStatus @default(COLLECTED_UNVERIFIED)
+  active            Boolean               @default(true)
+  retryCount        Int                   @default(0) @map("retry_count")
+  lastError         String?               @map("last_error") @db.VarChar(500)
+  discoveredAt      DateTime              @map("discovered_at") @db.Timestamptz(3)
+  lastObservedAt    DateTime              @map("last_observed_at") @db.Timestamptz(3)
+  createdAt         DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+  snapshots         CandidatePluginSnapshot[]
+
+  @@index([active, status, upstreamUpdatedAt(sort: Desc)])
+  @@index([owner, name])
+  @@map("candidate_plugins")
+}
+
+model CandidatePluginSnapshot {
+  id                String          @id @default(cuid()) @db.VarChar(40)
+  candidatePluginId String          @map("candidate_plugin_id") @db.VarChar(40)
+  metadataSha256    String          @map("metadata_sha256") @db.Char(64)
+  category          String          @db.VarChar(40)
+  riskLevel         PluginRiskLevel @map("risk_level")
+  riskReasons       Json            @map("risk_reasons")
+  permissions       Json
+  sourceMetadata    Json            @map("source_metadata")
+  evidence          Json
+  observedAt        DateTime        @map("observed_at") @db.Timestamptz(3)
+  createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  candidatePlugin   CandidatePlugin @relation(fields: [candidatePluginId], references: [id], onDelete: Restrict)
+
+  @@unique([candidatePluginId, metadataSha256])
+  @@index([candidatePluginId, observedAt(sort: Desc)])
+  @@map("candidate_plugin_snapshots")
 }

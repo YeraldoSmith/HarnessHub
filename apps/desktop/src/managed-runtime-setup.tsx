@@ -20,6 +20,11 @@ class TauriEnvironmentProbe implements ReadonlyEnvironmentProbe {
   }
 }
 
+export async function detectManagedRuntimeEnvironment(): Promise<RuntimeEnvironmentSnapshot | null> {
+  if (!isTauri()) return null
+  return new RuntimeEnvironmentManager(new TauriEnvironmentProbe()).detect()
+}
+
 interface ManagedRuntimeSetupProps {
   runtime: ManagedRuntimeStatus
   onRuntimeChange(runtime: ManagedRuntimeStatus): void

@@ -1,44 +1,85 @@
 # HarnessHub
 
-**Community Marketplace for AI Agent Plugins**
+> **Community Marketplace for AI Agent Plugins**
+> **面向 AI Agent 插件生态的社区型市场平台**
 
-**面向 AI Agent 插件生态的社区型市场平台**
+[![License: AGPL-3.0-or-later](https://img.shields.io/badge/License-AGPL--3.0--or--later-blue.svg)](LICENSE)
 
-HarnessHub 是面向 DeepSeek Harness（DSH）生态起步的第三方社区平台。它帮助用户发现、评估和安装插件，也帮助开发者发布、维护插件并获得可信反馈。
+HarnessHub is a local-first desktop hub for discovering AI Agent plugins and
+preparing a controlled local DeepSeek Harness (DSH) Runtime. It begins with the
+DSH ecosystem while keeping the Registry, Runtime Bridge, and trust model
+adaptable to other runtimes in the future.
 
-HarnessHub 由 **YeraldoSmith** 创建，初始身份为 **Founder & Initial Maintainer**。
+HarnessHub 是一个本地优先的桌面工作台：用于发现 AI Agent 插件、审查来源和
+风险信息，并在隔离环境中准备本地 DSH Runtime。
 
-> 当前状态：Phase 4-C DSH Runtime Bridge Prototype 与 Beta Desktop UI Refinement 已完成。Desktop 采用固定 Sidebar + 独立滚动工作区，首页集中展示 Runtime、DSH、插件入口与最近活动；可以连接本地 Contract Fixture、启动/停止模拟 Runtime、同步状态和验证断线重连。没有连接真实 DSH、执行 Agent、调用模型或安装插件。
+Created by **YeraldoSmith** · Founder & Initial Maintainer
+Copyright © 2026 YeraldoSmith
 
-## v0.1 的最小闭环
+## What users can do / 可以做什么
 
-用户能够：
+- Browse, search, filter, and inspect plugin source, version, compatibility,
+  license, snapshot, permissions, and risk information.
+- Use the Desktop app as a guest: browsing, preparing the pinned local DSH
+  Runtime, and local plugin operations do not require a GitHub account.
+- Prepare an isolated, fixed-version Node.js/pnpm/DSH toolchain without editing
+  the global `PATH`, shell configuration, or an existing `DSH_HOME`.
+- Start and stop the local DSH web Runtime from HarnessHub and open its local
+  workspace in a managed app window.
+- Install, update, remove, and recover managed plugin records through explicit
+  confirmations, pinned versions, integrity evidence, disabled lifecycle
+  scripts, and a local append-only audit trail.
 
-1. 浏览和搜索 DSH 插件；
-2. 看懂来源、版本、兼容性、权限与风险提示；
-3. 在桌面端确认不可变版本后执行安装；
-4. 查看安装结果，之后更新或卸载。
+登录只用于身份、同步、多设备、开发者功能与徽章等增强能力；它不是基础使用门槛。
 
-开发者能够：
+## Safety model / 安全模型
 
-1. 使用 GitHub 登录；
-2. 认领或提交一个真实的 DSH Bundle；
-3. 通过来源、许可证和基础安全检查；
-4. 发布插件页并维护版本信息。
+HarnessHub does **not** claim that third-party plugins are safe. Source
+collection, a visible badge, a risk label, a version pin, or a completed
+installation is not a security guarantee.
 
-## 当前硬性边界
+- Every installation requires user confirmation.
+- Automatically collected, unverified, high-risk, and critical-risk candidates
+  require two explicit confirmations; none are executed silently.
+- GitHub dependencies are pinned to a commit; npm dependencies are pinned to an
+  exact version and integrity evidence when available.
+- Package lifecycle scripts are disabled by the managed installer.
 
-- HarnessHub 不是 DeepSeek 官方产品；产品页面必须清楚披露第三方身份。
-- 匿名用户可以浏览；提交、评价、收藏、关注和举报需要登录。
-- 平台不代收打赏、不托管赏金、不分账。
-- 网页端只提供发现和安装指引；会修改本机 DSH Profile 的操作只在桌面端发生。
-- 不承诺第三方插件绝对安全。任何自动扫描结果都必须附带范围和时间。
-- 不自动批准 Git 依赖的安装构建脚本，也不静默安装或更新插件。
-- DSH 尚处于开发者预览阶段，所有 DSH 集成都经过独立适配层。
+Read [the security model](docs/SECURITY_MODEL.md),
+[installation boundary](docs/MANAGED_RUNTIME_AND_INSTALLATION.md), and
+[legal notice](docs/LEGAL_NOTICE.md) before using third-party plugins.
 
-## Registry Foundation 本地运行
+## Releases / 安装包
 
-要求：Node.js 22.19+、pnpm 11、PostgreSQL 17。macOS 可使用仓库内的项目级数据库启动脚本；它不会注册系统常驻服务。Desktop 原生壳检查还需要 Rust 工具链。
+Download Desktop installers from [GitHub Releases](../../releases). The release
+pipeline builds these native targets:
+
+| Platform | Architecture | Package formats |
+| --- | --- | --- |
+| Windows | x86, x64, ARM64 | `.exe`, `.msi` |
+| Linux | x64, ARM64 | `.deb`, `.AppImage` |
+| macOS | Apple Silicon | `.dmg` |
+
+Windows and Linux installers are built and uploaded only by the native CI
+pipeline. See [Desktop packaging](docs/DESKTOP_PACKAGING.md).
+
+## Quick start / 快速开始
+
+1. Download the installer matching your operating system and CPU architecture.
+2. Open **Runtime** in HarnessHub and choose **Prepare Runtime**.
+3. Review the fixed versions, download hashes, isolated-profile explanation,
+   and operations that will *not* be performed; confirm only if you agree.
+4. Start the Runtime after preparation succeeds, then open the local Agent
+   Workspace.
+5. In **Plugins**, inspect a plugin's source, version, permissions, risk and
+   evidence before confirming an installation.
+
+For detailed local-user and developer instructions, see
+[User Guide](docs/USER_GUIDE.md) and [Developer Guide](docs/DEVELOPER_GUIDE.md).
+
+## Development / 本地开发
+
+Requirements: Node.js 22.19+, pnpm 11, PostgreSQL 17, and Rust for Desktop.
 
 ```bash
 pnpm install
@@ -48,65 +89,34 @@ pnpm registry:sync
 pnpm dev
 ```
 
-GitHub 登录前将 `.env.example` 复制为 `.env`，并在本机设置 `GITHUB_CLIENT_ID`、`GITHUB_CLIENT_SECRET`、`GITHUB_CALLBACK_URL`、`SESSION_SECRET` 和 `AUTH_WEB_SUCCESS_URL`。不要提交 `.env`，也不要把 Secret 放进任何 `VITE_` 前端变量。callback 必须是 `http://127.0.0.1:3001/auth/github/callback`。
-
-启动后：
-
-- Web Registry：`http://127.0.0.1:5173`
-- Registry API：`http://127.0.0.1:3001`
-- 健康检查：`http://127.0.0.1:3001/health`
-
-完整检查：
+For GitHub OAuth, copy `.env.example` to `.env` and provide server-only values.
+Never commit `.env`, OAuth client secrets, session secrets, or GitHub tokens.
 
 ```bash
 pnpm check
 pnpm test:integration
 ```
 
-真实 Registry 来源由 `config/registry-sources.json` 明确列出，不扫描整个 GitHub。同步会交叉核对 GitHub/npm 包身份、仓库地址和许可证，并保存 commit SHA、精确 npm 版本、抓取时间与完整性证据。详见 [Phase 1-B Registry](docs/PHASE_1B_REGISTRY.md)。
+## Documentation
 
-停止项目级数据库：
+- [Product overview](docs/PRODUCT_OVERVIEW.md)
+- [User guide](docs/USER_GUIDE.md)
+- [Legal notice and Beta disclaimers](docs/LEGAL_NOTICE.md)
+- [Privacy and data handling](docs/PRIVACY_AND_DATA.md)
+- [Security model](docs/SECURITY_MODEL.md)
+- [Community guidelines](docs/COMMUNITY_GUIDELINES.md)
+- [Developer guide](docs/DEVELOPER_GUIDE.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Founding principles](docs/FOUNDING_PRINCIPLES.md)
 
-```bash
-pnpm db:local:stop
-```
+## License and copyright
 
-## 文档索引
+Source code and official project assets in this repository are licensed under
+the [GNU Affero General Public License v3.0 or later](LICENSE), unless a file
+states otherwise. The copyright holder is YeraldoSmith.
 
-- [产品规格](docs/PRODUCT_SPEC.md)
-- [系统架构](docs/ARCHITECTURE.md)
-- [数据库设计](docs/DATABASE_SCHEMA.md)
-- [安全模型](docs/SECURITY_MODEL.md)
-- [社区准则](docs/COMMUNITY_GUIDELINES.md)
-- [创始原则](docs/FOUNDING_PRINCIPLES.md)
-- [身份体系](docs/IDENTITY_SYSTEM.md)
-- [Identity Foundation Architecture](docs/IDENTITY_ARCHITECTURE.md)
-- [治理模型](docs/GOVERNANCE.md)
-- [开发者指南](docs/DEVELOPER_GUIDE.md)
-- [路线图](docs/ROADMAP.md)
-- [决策记录](docs/DECISIONS.md)
-- [事实来源与版本基线](docs/SOURCES.md)
-- [Phase 1-B Registry](docs/PHASE_1B_REGISTRY.md)
-- [Phase 1-C Registry Hardening](docs/PHASE_1C_REGISTRY_HARDENING.md)
-- [Phase 1-D Production Hardening](docs/PHASE_1D_PRODUCTION_HARDENING.md)
-- [Phase 2-B1 GitHub OAuth](docs/PHASE_2B1_GITHUB_OAUTH.md)
-- [Localization Foundation](docs/LOCALIZATION.md)
-- [Developer Trust Foundation](docs/DEVELOPER_TRUST.md)
-- [Plugin Submission Architecture](docs/PLUGIN_SUBMISSION_ARCHITECTURE.md)
-- [Installation Security Architecture](docs/INSTALLATION_SECURITY_ARCHITECTURE.md)
-- [Installation Prototype](docs/INSTALLATION_PROTOTYPE.md)
-- [Controlled Runtime Integration Prototype](docs/RUNTIME_INTEGRATION_PROTOTYPE.md)
-- [DSH Runtime Bridge Architecture](docs/DSH_RUNTIME_BRIDGE_ARCHITECTURE.md)
-- [Runtime Bridge Prototype](docs/RUNTIME_BRIDGE_PROTOTYPE.md)
-
-## 后续门槛
-
-Phase 4-C 已跑通 Contract Fixture 闭环。Phase 4-D 应先接入锁定版本的无模型凭据 DSH 测试实例，只开放 handshake、health、status、plugin inventory 和 event observation；不得直接开放 prompt、Tool approval、模型凭据、插件安装、任意命令、Google 或自动账号绑定。
-
-## Copyright
-
-HarnessHub
-
-Created by YeraldoSmith
-
-Copyright © 2026 YeraldoSmith
+Third-party plugins, brands, documentation, and user content remain the
+property of their respective authors and rightsholders. Their presence in a
+Registry or release does not transfer ownership to HarnessHub or constitute an
+endorsement.

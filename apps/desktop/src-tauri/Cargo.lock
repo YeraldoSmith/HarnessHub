@@ -1487,10 +1487,11 @@ dependencies = [
 
 [[package]]
 name = "harnesshub-desktop"
-version = "0.7.0-beta"
+version = "0.7.3-beta"
 dependencies = [
  "flate2",
  "keyring",
+ "libc",
  "reqwest 0.12.28",
  "serde",
  "serde_json",

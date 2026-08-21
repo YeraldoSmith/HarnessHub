@@ -1,6 +1,5 @@
-import { createHash } from 'node:crypto'
-
-import { fetchJson } from './http.js'
+import { fetchJson, SourceFetchError } from './http.js'
+import { CANDIDATE_RISK_MODEL_VERSION, classifyCandidate } from './candidate-risk.js'
 import type {
   PublicSourceCandidate,
   SourceAdapterOptions,
@@ -9,12 +8,16 @@ import type {
 
 interface GitHubSearchRepository {
   id: number
+  name: string
   full_name: string
   html_url: string
   description: string | null
   default_branch: string
   owner: { login: string }
   license: { spdx_id: string } | null
+  stargazers_count: number
+  updated_at: string
+  topics?: string[]
 }
 
 interface GitHubSearchResponse {
@@ -25,10 +28,16 @@ export interface GitHubDiscoveryOptions extends SourceAdapterOptions {
   queries?: string[]
   token?: string
   perQuery?: number
+  detailLimit?: number
+  retries?: number
+  concurrency?: number
+  pagesPerQuery?: number
 }
 
 const defaultQueries = [
+  'topic:dsh-plugin',
   'topic:deepseek-harness',
+  'dsh plugin in:name,description,readme',
   'deepseek-harness plugin in:name,description,readme',
 ]
 
@@ -38,62 +47,339 @@ export class GitHubDiscoveryAdapter implements SourceAggregationAdapter {
   private readonly queries: string[]
   private readonly token?: string
   private readonly perQuery: number
+  private readonly detailLimit: number
+  private readonly retries: number
+  private readonly concurrency: number
+  private readonly pagesPerQuery: number
 
   constructor(options: GitHubDiscoveryOptions = {}) {
     this.fetcher = options.fetch ?? fetch
     this.clock = options.clock ?? (() => new Date())
     this.queries = options.queries?.length ? options.queries : defaultQueries
     this.token = options.token
-    this.perQuery = Math.min(50, Math.max(1, options.perQuery ?? 20))
+    this.perQuery = Math.min(100, Math.max(1, options.perQuery ?? 50))
+    this.detailLimit = Math.min(50, Math.max(0, options.detailLimit ?? (this.token ? 50 : 12)))
+    this.retries = Math.min(3, Math.max(0, options.retries ?? 2))
+    this.concurrency = Math.min(6, Math.max(1, options.concurrency ?? 4))
+    this.pagesPerQuery = Math.min(2, Math.max(1, options.pagesPerQuery ?? 1))
   }
 
   async discover(): Promise<PublicSourceCandidate[]> {
-    const batches = await Promise.all(this.queries.map((query) => this.search(query)))
-    const unique = new Map<string, PublicSourceCandidate>()
-    for (const candidate of batches.flat()) unique.set(candidate.repository.toLowerCase(), candidate)
-    return [...unique.values()].sort((left, right) => left.repository.localeCompare(right.repository))
+    // GitHub search has a separate, low anonymous quota. Limit concurrency and
+    // keep successful query pages when one broad query is rejected or limited.
+    const searches = await this.mapWithConcurrency(
+      this.queries,
+      async (query) => {
+        try { return { items: await this.search(query), error: null as unknown } } catch (error) {
+          return { items: [] as GitHubSearchRepository[], error }
+        }
+      },
+      Math.min(2, this.concurrency),
+    )
+    const batches = searches.map(({ items }) => items)
+    if (batches.every((items) => items.length === 0)) {
+      const error = searches.find((result) => result.error)?.error
+      if (error) throw error
+    }
+    const unique = new Map<string, GitHubSearchRepository>()
+    for (const repository of batches.flat()) unique.set(repository.full_name.toLowerCase(), repository)
+    const repositories = [...unique.values()].sort((left, right) =>
+      right.updated_at.localeCompare(left.updated_at) || left.full_name.localeCompare(right.full_name),
+    )
+    const enriched = await this.mapWithConcurrency(repositories, async (repository, index) => ({
+      repository,
+      candidate: await this.toCandidate(repository, index < this.detailLimit),
+    }))
+    return enriched
+      .filter(({ repository, candidate }) => this.isDshCandidate(repository, candidate))
+      .map(({ candidate }) => candidate)
+      .sort((left, right) => left.repository.localeCompare(right.repository))
   }
 
-  private async search(query: string): Promise<PublicSourceCandidate[]> {
-    const url = new URL('https://api.github.com/search/repositories')
-    url.searchParams.set('q', query)
-    url.searchParams.set('sort', 'updated')
-    url.searchParams.set('order', 'desc')
-    url.searchParams.set('per_page', String(this.perQuery))
+  private async search(query: string): Promise<GitHubSearchRepository[]> {
     const headers: Record<string, string> = {
       Accept: 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2026-03-10',
-      'User-Agent': 'HarnessHub-Registry-Aggregator',
     }
+    if (typeof window === 'undefined') headers['User-Agent'] = 'HarnessHub-Registry-Aggregator'
     if (this.token) headers.Authorization = `Bearer ${this.token}`
-    const response = await fetchJson<GitHubSearchResponse>(this.fetcher, url.toString(), headers)
+    const items: GitHubSearchRepository[] = []
+    for (let page = 1; page <= this.pagesPerQuery; page += 1) {
+      const url = new URL('https://api.github.com/search/repositories')
+      url.searchParams.set('q', query)
+      url.searchParams.set('sort', 'updated')
+      url.searchParams.set('order', 'desc')
+      url.searchParams.set('per_page', String(this.perQuery))
+      url.searchParams.set('page', String(page))
+      const response = await this.withRetry(() => fetchJson<GitHubSearchResponse>(this.fetcher, url.toString(), headers))
+      items.push(...response.items)
+      if (response.items.length < this.perQuery) break
+    }
+    return items
+  }
+
+  private async toCandidate(repository: GitHubSearchRepository, enrich: boolean): Promise<PublicSourceCandidate> {
     const discoveredAt = this.clock().toISOString()
-    return response.items.map((repository) => {
-      const canonical = JSON.stringify({
-        external_id: String(repository.id),
-        repository: repository.full_name,
-        repository_url: repository.html_url,
-        author: repository.owner.login,
-        description: repository.description ?? '',
-        default_branch: repository.default_branch,
-        license_spdx: repository.license?.spdx_id ?? null,
-      })
-      return {
-        provider: 'github',
-        external_id: String(repository.id),
-        repository: repository.full_name,
-        repository_url: repository.html_url,
-        author: repository.owner.login,
-        description: repository.description ?? '',
-        default_branch: repository.default_branch,
-        license_spdx: repository.license?.spdx_id ?? null,
-        version: null,
-        commit_sha: null,
-        package_integrity: null,
-        metadata_sha256: createHash('sha256').update(canonical).digest('hex'),
-        discovered_at: discoveredAt,
-        status: 'COLLECTED_UNVERIFIED',
+    let readmeExcerpt: string | null = null
+    let commitSha: string | null = null
+    let packageName: string | null = null
+    let packageVersion: string | null = null
+    let packageIntegrity: string | null = null
+    let compatibility: string | null = null
+    let packageManifest: Record<string, unknown> = {}
+    let retryCount = 0
+    let lastError: string | null = null
+
+    if (enrich) {
+      try {
+        const details = await this.enrich(repository)
+        readmeExcerpt = details.readmeExcerpt
+        commitSha = details.commitSha
+        packageName = details.packageName
+        packageVersion = details.packageVersion
+        packageIntegrity = details.packageIntegrity
+        compatibility = details.compatibility
+        packageManifest = details.packageManifest
+        retryCount = details.retryCount
+      } catch (error) {
+        retryCount = this.retries
+        lastError = error instanceof Error ? error.message.slice(0, 500) : 'Source enrichment failed.'
+      }
+    }
+
+    const assessment = classifyCandidate({
+      name: repository.name,
+      description: repository.description ?? '',
+      readme: readmeExcerpt,
+      topics: repository.topics,
+      packageManifest,
+      hasFixedVersion: Boolean(packageVersion),
+      hasIntegrity: Boolean(packageIntegrity?.startsWith('sha512-')),
+      hasCommit: Boolean(commitSha),
+      hasLicense: Boolean(repository.license?.spdx_id),
+    })
+    const riskAssessedAt = discoveredAt
+    const canonical = JSON.stringify({
+      external_id: String(repository.id),
+      repository: repository.full_name.toLowerCase(),
+      repository_url: repository.html_url,
+      author: repository.owner.login,
+      name: repository.name,
+      description: repository.description ?? '',
+      default_branch: repository.default_branch,
+      license_spdx: repository.license?.spdx_id ?? null,
+      stars: repository.stargazers_count,
+      upstream_updated_at: repository.updated_at,
+      commit_sha: commitSha,
+      package_name: packageName,
+      package_version: packageVersion,
+      package_integrity: packageIntegrity,
+      dsh_compatibility: compatibility,
+      category: assessment.category,
+      permissions: assessment.permissions,
+      risk_level: assessment.riskLevel,
+      risk_reasons: assessment.reasons,
+      risk_model_version: CANDIDATE_RISK_MODEL_VERSION,
+    })
+    return {
+      provider: 'github',
+      external_id: String(repository.id),
+      repository: repository.full_name,
+      repository_url: repository.html_url,
+      author: repository.owner.login,
+      name: repository.name,
+      description: repository.description ?? '',
+      default_branch: repository.default_branch,
+      readme_excerpt: readmeExcerpt,
+      license_spdx: repository.license?.spdx_id ?? null,
+      stars: repository.stargazers_count,
+      upstream_updated_at: repository.updated_at,
+      version: packageVersion,
+      commit_sha: commitSha,
+      package_name: packageName,
+      package_integrity: packageIntegrity,
+      dsh_compatibility: compatibility,
+      category: assessment.category,
+      permissions: assessment.permissions,
+      risk_level: assessment.riskLevel,
+      risk_reasons: assessment.reasons,
+      risk_assessed_at: riskAssessedAt,
+      risk_model_version: CANDIDATE_RISK_MODEL_VERSION,
+      metadata_sha256: await this.sha256(canonical),
+      discovered_at: discoveredAt,
+      status: 'COLLECTED_UNVERIFIED',
+      retry_count: retryCount,
+      last_error: lastError,
+    }
+  }
+
+  private async enrich(repository: GitHubSearchRepository): Promise<{
+    readmeExcerpt: string | null
+    commitSha: string | null
+    packageName: string | null
+    packageVersion: string | null
+    packageIntegrity: string | null
+    compatibility: string | null
+    packageManifest: Record<string, unknown>
+    retryCount: number
+  }> {
+    const headers = this.githubHeaders()
+    const base = `https://api.github.com/repos/${repository.full_name}`
+    let attempts = 0
+    const [commit, readme, packageManifest] = await Promise.all([
+      this.withRetry(async () => {
+        attempts += 1
+        return fetchJson<{ sha: string }>(this.fetcher, `${base}/commits/${encodeURIComponent(repository.default_branch)}`, headers)
+      }),
+      this.withRetry(async () => {
+        attempts += 1
+        try {
+          return await fetchJson<{ content?: string; encoding?: string }>(this.fetcher, `${base}/readme`, headers)
+        } catch { return null }
+      }),
+      this.withRetry(async () => {
+        attempts += 1
+        try {
+          return await fetchJson<{ content?: string; encoding?: string }>(this.fetcher, `${base}/contents/package.json`, headers)
+        } catch { return null }
+      }),
+    ])
+    const readmeText = this.decodeContent(readme)
+    const packageText = this.decodeContent(packageManifest)
+    let manifest: Record<string, unknown> = {}
+    if (packageText) {
+      try { manifest = JSON.parse(packageText) as Record<string, unknown> } catch { manifest = {} }
+    }
+    const packageName = typeof manifest.name === 'string' ? manifest.name : null
+    const declaredVersion = typeof manifest.version === 'string' ? manifest.version : null
+    const compatibility = this.compatibility(manifest)
+    const npm = packageName ? await this.npmMetadata(packageName).catch(() => null) : null
+    return {
+      readmeExcerpt: readmeText ? readmeText.replace(/\s+/g, ' ').trim().slice(0, 4000) : null,
+      commitSha: /^[a-f0-9]{40}$/.test(commit.sha) ? commit.sha : null,
+      packageName,
+      packageVersion: npm?.version ?? declaredVersion,
+      packageIntegrity: npm?.integrity ?? null,
+      compatibility: compatibility ?? npm?.compatibility ?? null,
+      packageManifest: npm?.packageManifest ?? manifest,
+      retryCount: Math.max(0, attempts - 3),
+    }
+  }
+
+  private async npmMetadata(packageName: string): Promise<{
+    version: string
+    integrity: string | null
+    compatibility: string | null
+    packageManifest: Record<string, unknown>
+  }> {
+    const encoded = packageName.startsWith('@') ? `@${encodeURIComponent(packageName.slice(1))}` : encodeURIComponent(packageName)
+    const metadata = await this.withRetry(() => fetchJson<{
+      'dist-tags'?: { latest?: string }
+      versions?: Record<string, Record<string, unknown> & {
+        dist?: { integrity?: string }
+        peerDependencies?: Record<string, string>
+        engines?: Record<string, string>
+      }>
+    }>(this.fetcher, `https://registry.npmjs.org/${encoded}`))
+    const version = metadata['dist-tags']?.latest
+    if (!version) throw new Error('npm metadata has no latest version.')
+    const selected = metadata.versions?.[version]
+    return {
+      version,
+      integrity: selected?.dist?.integrity ?? null,
+      compatibility: selected?.peerDependencies?.['@deepseek-ai/dsh'] ?? selected?.engines?.dsh ?? null,
+      packageManifest: selected ?? {},
+    }
+  }
+
+  private compatibility(manifest: Record<string, unknown>): string | null {
+    const peer = manifest.peerDependencies
+    if (peer && typeof peer === 'object' && typeof (peer as Record<string, unknown>)['@deepseek-ai/dsh'] === 'string') {
+      return (peer as Record<string, string>)['@deepseek-ai/dsh'] ?? null
+    }
+    const engines = manifest.engines
+    if (engines && typeof engines === 'object' && typeof (engines as Record<string, unknown>).dsh === 'string') {
+      return (engines as Record<string, string>).dsh ?? null
+    }
+    return null
+  }
+
+  private decodeContent(value: { content?: string; encoding?: string } | null): string | null {
+    if (!value?.content || value.encoding !== 'base64') return null
+    const bytes = Uint8Array.from(atob(value.content.replace(/\s/g, '')), (character) => character.charCodeAt(0))
+    return new TextDecoder().decode(bytes)
+  }
+
+  private async sha256(value: string): Promise<string> {
+    const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
+    return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')
+  }
+
+  private isDshCandidate(repository: GitHubSearchRepository, candidate: PublicSourceCandidate): boolean {
+    const topics = new Set((repository.topics ?? []).map((topic) => topic.toLowerCase()))
+    if (topics.has('dsh-plugin') || topics.has('deepseek-harness') || topics.has('deepseek-harness-plugin')) return true
+    const name = repository.name.toLowerCase()
+    if (/^(dsh[-_])|([-_]dsh(?:[-_]|$))/.test(name)) return true
+    const text = [
+      repository.description,
+      candidate.package_name,
+      candidate.readme_excerpt,
+    ].filter(Boolean).join(' ').toLowerCase()
+    return text.includes('@deepseek-ai/dsh') || text.includes('deepseek harness') || /\bdsh[- ]plugin\b/.test(text)
+  }
+
+  private githubHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2026-03-10',
+    }
+    if (typeof window === 'undefined') headers['User-Agent'] = 'HarnessHub-Registry-Aggregator'
+    if (this.token) headers.Authorization = `Bearer ${this.token}`
+    return headers
+  }
+
+  private async withRetry<T>(operation: () => Promise<T>): Promise<T> {
+    let error: unknown
+    for (let attempt = 0; attempt <= this.retries; attempt += 1) {
+      try { return await operation() } catch (reason) {
+        error = reason
+        if (attempt >= this.retries || !this.retryable(reason)) break
+        const requested = reason instanceof SourceFetchError ? reason.retryAfterMs : null
+        const delay = requested ?? 250 * 2 ** attempt
+        // A UI refresh must never sleep until a distant quota reset. Cached
+        // candidates remain visible and the user can retry after GitHub resets.
+        if (delay > 5_000) break
+        await new Promise((resolve) => setTimeout(resolve, Math.max(100, delay)))
+      }
+    }
+    throw error
+  }
+
+  private retryable(error: unknown): boolean {
+    if (!(error instanceof SourceFetchError)) return true
+    if (error.status === 403) return error.retryAfterMs !== null
+    return error.status === 408
+      || error.status === 425
+      || error.status === 429
+      || error.status >= 500
+  }
+
+  private async mapWithConcurrency<T, R>(
+    items: T[],
+    operation: (item: T, index: number) => Promise<R>,
+    concurrency = this.concurrency,
+  ): Promise<R[]> {
+    const results = new Array<R>(items.length)
+    let cursor = 0
+    const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+      while (cursor < items.length) {
+        const index = cursor
+        cursor += 1
+        const item = items[index]
+        if (item !== undefined) results[index] = await operation(item, index)
       }
     })
+    await Promise.all(workers)
+    return results
   }
 }

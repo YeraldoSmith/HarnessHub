@@ -2,6 +2,7 @@ import type { Plugin } from '@harnesshub/types'
 import { useI18n, type TranslationKey } from '@harnesshub/i18n'
 import { isPluginSourceVerified, pluginRiskSummary, type PluginRiskSummary } from './plugin-trust.js'
 import { PluginIcon } from './plugin-icon.js'
+import { permissionLabelKeys } from './permission-copy.js'
 
 export interface PluginCardProps {
   plugin: Plugin
@@ -13,6 +14,7 @@ const riskKeys: Record<PluginRiskSummary, TranslationKey> = {
   low: 'plugin.riskLow',
   medium: 'plugin.riskMedium',
   high: 'plugin.riskHigh',
+  critical: 'plugin.riskCritical',
 }
 
 export function PluginCard({ plugin, href }: PluginCardProps) {
@@ -60,7 +62,7 @@ export function PluginCard({ plugin, href }: PluginCardProps) {
         <div className="hh-permission-list" aria-label={t('plugin.declaredPermissions')}>
           {plugin.permissions.map((permission) => (
             <span className={`hh-permission hh-permission--${permission.risk}`} key={permission.id}>
-              {permission.label}
+              {t(permissionLabelKeys[permission.id])}
             </span>
           ))}
         </div>

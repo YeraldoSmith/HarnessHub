@@ -114,6 +114,66 @@ body {
   color: #943a2a;
 }
 
+.managed-plugins {
+  margin-top: 24px;
+}
+
+.managed-plugins__empty {
+  margin: 22px 0 0;
+  padding: 20px;
+  border: 1px dashed var(--border);
+  border-radius: 18px;
+  color: var(--muted);
+}
+
+.managed-plugins__list {
+  display: grid;
+  gap: 12px;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.managed-plugins__list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 18px;
+  align-items: center;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+}
+
+.managed-plugins__list li > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.managed-plugins__list strong,
+.managed-plugins__list small {
+  overflow-wrap: anywhere;
+}
+
+.managed-plugins__list span,
+.managed-plugins__list small {
+  color: var(--muted);
+}
+
+.managed-plugins__list label {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 700;
+}
+
+@media (max-width: 860px) {
+  .managed-plugins__list li {
+    grid-template-columns: 1fr;
+  }
+}
+
 .managed-install__evidence {
   display: grid;
   gap: 0.25rem;
@@ -135,6 +195,29 @@ body {
 
 .managed-install__confirm input {
   margin-top: 0.15rem;
+}
+
+.managed-install__confirm--high {
+  padding: 0.7rem;
+  border: 1px solid #e1ad9f;
+  border-radius: 10px;
+  background: #fff3ef;
+  color: #863a2c;
+}
+
+.managed-install__permissions {
+  margin-top: 0.8rem;
+  padding: 0.7rem;
+  border: 1px solid #dde7e0;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 0.68rem;
+}
+
+.managed-install__permissions ul {
+  margin: 0.45rem 0 0;
+  padding-left: 1rem;
+  color: var(--hh-muted);
 }
 
 .managed-install__actions {
@@ -2580,7 +2663,7 @@ body {
 
 .desktop-marketplace-controls {
   display: grid;
-  grid-template-columns: minmax(240px, 1fr) auto auto auto;
+  grid-template-columns: minmax(240px, 1fr) auto auto auto auto;
   align-items: center;
   gap: 0.65rem;
   margin-bottom: 0.9rem;
@@ -2602,6 +2685,25 @@ body {
   color: var(--hh-muted);
   font-size: 0.62rem;
   white-space: nowrap;
+}
+
+.desktop-discovery-refresh {
+  min-height: 2.45rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #8ab69a;
+  border-radius: 10px;
+  background: #edf7f0;
+  color: #24643f;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.62rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.desktop-discovery-refresh:disabled {
+  cursor: wait;
+  opacity: 0.6;
 }
 
 .desktop-marketplace-layout {
@@ -2694,6 +2796,10 @@ body {
   font-size: 0.7rem;
   font-style: normal;
   font-weight: 900;
+}
+
+.desktop-plugin-list button i.candidate {
+  color: #b17718;
 }
 
 .desktop-plugin-detail .hh-plugin-detail {
@@ -2990,6 +3096,7 @@ body {
 
 :root[data-theme='dark'] .desktop-marketplace-controls input,
 :root[data-theme='dark'] .desktop-marketplace-controls select,
+:root[data-theme='dark'] .desktop-discovery-refresh,
 :root[data-theme='dark'] .desktop-language-select select,
 :root[data-theme='dark'] select,
 :root[data-theme='dark'] input,

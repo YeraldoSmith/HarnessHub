@@ -87,6 +87,9 @@ importers:
       '@harnesshub/plugin-schema':
         specifier: workspace:*
         version: link:../../packages/plugin-schema
+      '@harnesshub/plugin-sources':
+        specifier: workspace:*
+        version: link:../../packages/plugin-sources
       '@harnesshub/runtime-bridge':
         specifier: workspace:*
         version: link:../../packages/runtime-bridge

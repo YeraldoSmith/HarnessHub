@@ -73,6 +73,14 @@ export const pluginSchema = z.object({
     .max(2)
     .default([]),
   readme_excerpt: z.string().max(4000).nullable().default(null),
+  registry_status: z.enum(['PUBLISHED', 'COLLECTED_UNVERIFIED']).default('PUBLISHED'),
+  risk_level: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).nullable().default(null),
+  risk_reasons: z.array(z.string().min(1).max(120)).max(20).default([]),
+  risk_assessed_at: z.string().datetime({ offset: true }).nullable().default(null),
+  risk_model_version: z.string().min(1).max(40).nullable().default(null),
+  discovery_snapshot_sha256: z.string().regex(/^[a-f0-9]{64}$/).nullable().default(null),
+  stars: z.number().int().nonnegative().nullable().default(null),
+  upstream_updated_at: z.string().datetime({ offset: true }).nullable().default(null),
   is_mock: z.boolean(),
 }) satisfies z.ZodType<Plugin>
 
@@ -85,6 +93,52 @@ export const registryResponseSchema = z.object({
   total: z.number().int().nonnegative(),
   page: z.number().int().positive(),
   hasNext: z.boolean(),
+})
+
+export const candidatePluginSchema = z.object({
+  id: z.string().min(1).max(40),
+  provider: z.literal('github'),
+  external_id: z.string().min(1).max(255),
+  repository: z.string().regex(/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/),
+  repository_url: z.string().url(),
+  owner: z.string().min(1).max(120),
+  name: z.string().min(1).max(120),
+  description: z.string().max(500),
+  default_branch: z.string().min(1).max(255),
+  readme_excerpt: z.string().max(4000).nullable(),
+  license_spdx: z.string().max(80).nullable(),
+  stars: z.number().int().nonnegative(),
+  upstream_updated_at: z.string().datetime({ offset: true }),
+  commit_sha: z.string().regex(/^[a-f0-9]{40}$/).nullable(),
+  package_name: z.string().max(214).nullable(),
+  package_version: z.string().max(80).nullable(),
+  package_integrity: z.string().max(300).nullable(),
+  dsh_compatibility: z.string().max(80).nullable(),
+  category: z.enum(['Coding', 'Productivity', 'Automation', 'Data', 'Research', 'Other']),
+  permissions: z.array(permissionSchema).max(20),
+  risk_level: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']),
+  risk_reasons: z.array(z.string().min(1).max(120)).max(20),
+  risk_assessed_at: z.string().datetime({ offset: true }),
+  risk_model_version: z.string().min(1).max(40),
+  metadata_sha256: z.string().regex(/^[a-f0-9]{64}$/),
+  discovered_at: z.string().datetime({ offset: true }),
+  last_observed_at: z.string().datetime({ offset: true }),
+  status: z.literal('COLLECTED_UNVERIFIED'),
+  retry_count: z.number().int().nonnegative(),
+  last_error: z.string().max(500).nullable(),
+})
+
+export const candidatePluginResponseSchema = z.object({
+  items: z.array(candidatePluginSchema),
+  total: z.number().int().nonnegative(),
+})
+
+export const discoveryRefreshResponseSchema = z.object({
+  status: z.enum(['SUCCESS', 'PARTIAL', 'COOLDOWN', 'IN_PROGRESS']),
+  discovered: z.number().int().nonnegative(),
+  stored: z.number().int().nonnegative(),
+  failed: z.number().int().nonnegative(),
+  next_refresh_at: z.string().datetime({ offset: true }).nullable(),
 })
 
 export const registryQuerySchema = z

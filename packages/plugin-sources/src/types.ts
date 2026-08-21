@@ -1,6 +1,11 @@
 import { z } from 'zod'
 
-import type { SourceEvidence } from '@harnesshub/types'
+import type {
+  PluginCategory,
+  PluginPermission,
+  PluginRiskLevel,
+  SourceEvidence,
+} from '@harnesshub/types'
 
 export const manualPluginSourceSchema = z.object({
   id: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
@@ -64,13 +69,27 @@ export interface PublicSourceCandidate {
   author: string
   description: string
   default_branch: string
+  name: string
+  readme_excerpt: string | null
   license_spdx: string | null
+  stars: number
+  upstream_updated_at: string
   version: string | null
   commit_sha: string | null
+  package_name: string | null
   package_integrity: string | null
+  dsh_compatibility: string | null
+  category: PluginCategory
+  permissions: PluginPermission[]
+  risk_level: PluginRiskLevel
+  risk_reasons: string[]
+  risk_assessed_at: string
+  risk_model_version: string
   metadata_sha256: string
   discovered_at: string
   status: PublicSourceCandidateStatus
+  retry_count: number
+  last_error: string | null
 }
 
 export interface SourceAggregationAdapter {

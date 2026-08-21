@@ -1,6 +1,12 @@
 export { GitHubSourceAdapter } from './github-adapter.js'
 export { NpmSourceAdapter } from './npm-adapter.js'
 export { GitHubDiscoveryAdapter, type GitHubDiscoveryOptions } from './github-discovery-adapter.js'
+export {
+  CANDIDATE_RISK_MODEL_VERSION,
+  classifyCandidate,
+  type CandidateRiskAssessment,
+  type CandidateRiskInput,
+} from './candidate-risk.js'
 export { PluginSourceSync } from './plugin-source-sync.js'
 export { SourceFetchError } from './http.js'
 export {

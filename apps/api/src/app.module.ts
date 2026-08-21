@@ -5,6 +5,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import { AuthModule } from './auth/auth.module.js'
 import { DatabaseModule } from './database/database.module.js'
 import { DeveloperTrustModule } from './developer-trust/developer-trust.module.js'
+import { DiscoveryModule } from './discovery/discovery.module.js'
 import { HealthController } from './health.controller.js'
 import { ApiExceptionFilter } from './http/api-exception.filter.js'
 import { RegistryModule } from './registry/registry.module.js'
@@ -29,6 +30,7 @@ function positiveInteger(name: string, fallback: number): number {
     RegistryModule,
     AuthModule,
     DeveloperTrustModule,
+    DiscoveryModule,
   ],
   controllers: [HealthController],
   providers: [

@@ -1,6 +1,6 @@
 [package]
 name = "harnesshub-desktop"
-version = "0.7.0-beta"
+version = "0.7.3-beta"
 description = "HarnessHub read-only desktop registry"
 authors = ["YeraldoSmith"]
 license = "UNLICENSED"
@@ -20,6 +20,7 @@ reqwest = { version = "0.12", default-features = false, features = ["blocking", 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 keyring = "3"
+libc = "0.2"
 sha2 = "0.10"
 tar = "0.4"
 tauri = { version = "2", features = [] }

@@ -30,6 +30,7 @@ const PNPM_INTEGRITY: &str =
 const OFFICIAL_NPM_REGISTRY: &str = "https://registry.npmjs.org";
 const MAX_TOOLCHAIN_DOWNLOAD_BYTES: u64 = 110 * 1024 * 1024;
 const MANAGED_PROFILE: &str = "web";
+#[cfg(test)]
 const REGISTRY_SOURCES: &str = include_str!("../../../../config/registry-sources.json");
 const SESSION_KEYRING_SERVICE: &str = "com.harnesshub.desktop";
 const SESSION_KEYRING_ACCOUNT: &str = "oauth-session";
@@ -82,11 +83,13 @@ struct ManagedToolchain {
     pnpm_bin: PathBuf,
 }
 
+#[cfg(test)]
 #[derive(Clone, Debug, Deserialize)]
 struct RegistryNpmSource {
     package_name: String,
 }
 
+#[cfg(test)]
 #[derive(Clone, Debug, Deserialize)]
 struct RegistrySource {
     id: String,
@@ -100,13 +103,20 @@ struct PluginOperationRequest {
     package_name: String,
     version: String,
     integrity: String,
+    source_kind: Option<String>,
+    registry_status: Option<String>,
+    risk_level: Option<String>,
+    #[serde(default)]
+    confirmation_count: u8,
+    source_url: Option<String>,
+    source_commit: Option<String>,
+    snapshot_sha256: Option<String>,
     confirmed: bool,
 }
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct PluginRemoveRequest {
-    plugin_id: String,
     package_name: String,
     confirmed: bool,
 }
@@ -118,7 +128,27 @@ struct ManagedPluginRecord {
     package_name: String,
     version: String,
     integrity: String,
+    #[serde(default)]
+    source_kind: Option<String>,
+    #[serde(default)]
+    registry_status: Option<String>,
+    #[serde(default)]
+    risk_level: Option<String>,
+    #[serde(default)]
+    source_url: Option<String>,
+    #[serde(default)]
+    source_commit: Option<String>,
+    #[serde(default)]
+    snapshot_sha256: Option<String>,
+    #[serde(default = "default_true")]
+    enabled: bool,
+    #[serde(default)]
+    issue: Option<String>,
     installed_at_unix_ms: u64,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -140,7 +170,17 @@ struct RuntimeStateFile {
     prepared: bool,
     dsh_version: Option<String>,
     prepared_at_unix_ms: Option<u64>,
+    #[serde(default)]
+    runtime_process: Option<ManagedRuntimeLease>,
     plugins: Vec<ManagedPluginRecord>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ManagedRuntimeLease {
+    pid: u32,
+    port: u16,
+    started_at_unix_ms: u64,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -166,7 +206,8 @@ struct ManagedOperationResult {
 }
 
 struct ManagedRuntimeProcess {
-    child: Child,
+    child: Option<Child>,
+    pid: u32,
     port: u16,
 }
 
@@ -289,6 +330,11 @@ fn node_artifact() -> Result<NodeArtifact, String> {
         ("windows", "x86_64") => Ok(NodeArtifact {
             file_name: "node-v22.19.0-win-x64.zip",
             sha256: "ea3fad0e67a991d8477d8c01344b56e69c676ccb733f065b22436994b1253f86",
+            archive_kind: ArchiveKind::Zip,
+        }),
+        ("windows", "x86") => Ok(NodeArtifact {
+            file_name: "node-v22.19.0-win-x86.zip",
+            sha256: "708b8a297a19e9ac433e32ac0fc496755757c5e00bd5a0683917e73cae5fe8ea",
             archive_kind: ArchiveKind::Zip,
         }),
         _ => Err("当前系统或 CPU 架构尚未提供受控 Runtime 工具链。".to_string()),
@@ -629,6 +675,101 @@ fn execution_path() -> String {
         .into_owned()
 }
 
+fn isolate_process_tree(command: &mut Command) {
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        command.process_group(0);
+    }
+    #[cfg(not(unix))]
+    let _ = command;
+}
+
+#[cfg(unix)]
+fn process_exists(pid: u32) -> bool {
+    // SAFETY: signal 0 does not alter the target process; it only checks that
+    // the exact PID still exists and is signalable by this user.
+    unsafe { libc::kill(pid as i32, 0) == 0 }
+}
+
+#[cfg(not(unix))]
+fn process_exists(pid: u32) -> bool {
+    Command::new("tasklist")
+        .args(["/FI", &format!("PID eq {pid}"), "/NH"])
+        .output()
+        .is_ok_and(|output| String::from_utf8_lossy(&output.stdout).contains(&pid.to_string()))
+}
+
+#[cfg(unix)]
+fn descendant_pids(root: u32) -> Vec<u32> {
+    let Ok(output) = Command::new("/bin/ps")
+        .args(["-axo", "pid=,ppid="])
+        .output()
+    else {
+        return Vec::new();
+    };
+    let pairs = String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .filter_map(|line| {
+            let mut fields = line.split_whitespace();
+            Some((
+                fields.next()?.parse::<u32>().ok()?,
+                fields.next()?.parse::<u32>().ok()?,
+            ))
+        })
+        .collect::<Vec<_>>();
+    let mut descendants = Vec::new();
+    let mut parents = vec![root];
+    while let Some(parent) = parents.pop() {
+        for (pid, ppid) in &pairs {
+            if *ppid == parent && !descendants.contains(pid) {
+                descendants.push(*pid);
+                parents.push(*pid);
+            }
+        }
+    }
+    descendants
+}
+
+fn terminate_process_tree(pid: u32, grace: Duration) {
+    #[cfg(unix)]
+    {
+        let descendants = descendant_pids(pid);
+        // New HarnessHub children have their own process group. The explicit
+        // descendant pass also cleans up processes left by pre-0.7.3 builds.
+        // SAFETY: all PIDs originate from an exact HarnessHub-managed command.
+        unsafe {
+            let _ = libc::kill(-(pid as i32), libc::SIGTERM);
+            for child_pid in descendants.iter().rev() {
+                let _ = libc::kill(*child_pid as i32, libc::SIGTERM);
+            }
+            let _ = libc::kill(pid as i32, libc::SIGTERM);
+        }
+        let deadline = Instant::now() + grace;
+        while process_exists(pid) && Instant::now() < deadline {
+            thread::sleep(Duration::from_millis(50));
+        }
+        if process_exists(pid) {
+            // SAFETY: same verified process tree as above, after a bounded
+            // graceful shutdown window.
+            unsafe {
+                let _ = libc::kill(-(pid as i32), libc::SIGKILL);
+                for child_pid in descendants.iter().rev() {
+                    let _ = libc::kill(*child_pid as i32, libc::SIGKILL);
+                }
+                let _ = libc::kill(pid as i32, libc::SIGKILL);
+            }
+        }
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = grace;
+        let _ = Command::new("taskkill")
+            .args(["/PID", &pid.to_string(), "/T", "/F"])
+            .status();
+    }
+}
+
 fn run_fixed_command(
     program: &Path,
     args: &[String],
@@ -649,6 +790,7 @@ fn run_fixed_command(
     if let Some(directory) = current_dir {
         command.current_dir(directory);
     }
+    isolate_process_tree(&mut command);
     let mut child = command
         .spawn()
         .map_err(|_| "无法启动 HarnessHub 受控 Runtime 操作，请重新准备所需环境。".to_string())?;
@@ -666,7 +808,7 @@ fn run_fixed_command(
     let (status, timed_out) = match wait {
         Some(status) => (Some(status), false),
         None => {
-            let _ = child.kill();
+            terminate_process_tree(child.id(), Duration::from_secs(2));
             let _ = child.wait();
             (None, true)
         }
@@ -1021,6 +1163,7 @@ fn build_runtime_environment_snapshot(app: &AppHandle) -> RuntimeEnvironmentSnap
     }
 }
 
+#[cfg(test)]
 fn allowlisted_sources() -> Result<Vec<RegistrySource>, String> {
     serde_json::from_str(REGISTRY_SOURCES).map_err(|_| "内置插件来源清单无效。".to_string())
 }
@@ -1039,31 +1182,103 @@ fn validate_plugin_request(request: &PluginOperationRequest) -> Result<(), Strin
     {
         return Err("插件版本不是受支持的固定版本。".to_string());
     }
-    if !request.integrity.starts_with("sha512-") || request.integrity.len() > 256 {
+    if request.package_name.is_empty()
+        || request.package_name.len() > 180
+        || !request
+            .package_name
+            .chars()
+            .all(|character| character.is_ascii_alphanumeric() || "@._-/".contains(character))
+        || request
+            .package_name
+            .split('/')
+            .any(|part| part.is_empty() || part == "." || part == "..")
+    {
+        return Err("插件包名无效。".to_string());
+    }
+    let github_source = request.source_kind.as_deref() == Some("GITHUB");
+    if github_source {
+        let commit = request
+            .source_commit
+            .as_deref()
+            .filter(|value| {
+                value.len() == 40 && value.chars().all(|character| character.is_ascii_hexdigit())
+            })
+            .ok_or_else(|| "GitHub 插件缺少固定 commit。".to_string())?;
+        if request.integrity != format!("git-commit:{commit}") {
+            return Err("GitHub 插件的 commit 证据不一致。".to_string());
+        }
+        github_package_spec(request)?;
+    } else if !request.integrity.starts_with("sha512-") || request.integrity.len() > 256 {
         return Err("插件缺少可验证的 npm 完整性证据。".to_string());
     }
-    let allowlisted = allowlisted_sources()?.into_iter().any(|source| {
-        source.id == request.plugin_id && source.npm.package_name == request.package_name
-    });
-    if !allowlisted {
-        return Err("该插件不在 HarnessHub 内置可信来源清单中。".to_string());
+
+    let required_confirmations = if request.registry_status.as_deref()
+        == Some("COLLECTED_UNVERIFIED")
+        || matches!(
+            request.risk_level.as_deref(),
+            Some("HIGH") | Some("CRITICAL")
+        ) {
+        2
+    } else {
+        1
+    };
+    if request.confirmation_count < required_confirmations {
+        return Err("风险确认次数不足，安装没有开始。".to_string());
     }
     Ok(())
+}
+
+fn github_package_spec(request: &PluginOperationRequest) -> Result<String, String> {
+    let source = request
+        .source_url
+        .as_deref()
+        .and_then(|value| Url::parse(value).ok())
+        .filter(|url| url.scheme() == "https" && url.host_str() == Some("github.com"))
+        .ok_or_else(|| "插件缺少有效的 GitHub 来源。".to_string())?;
+    let parts = source
+        .path_segments()
+        .map(|segments| {
+            segments
+                .filter(|part| !part.is_empty())
+                .map(|part| part.trim_end_matches(".git"))
+                .collect::<Vec<_>>()
+        })
+        .filter(|parts| parts.len() == 2 && parts.iter().all(|part| !part.is_empty()))
+        .ok_or_else(|| "插件 GitHub 来源格式无效。".to_string())?;
+    let commit = request
+        .source_commit
+        .as_deref()
+        .filter(|value| {
+            value.len() == 40 && value.chars().all(|character| character.is_ascii_hexdigit())
+        })
+        .ok_or_else(|| "GitHub 插件缺少固定 commit。".to_string())?;
+    Ok(format!(
+        "git+https://github.com/{}/{}.git#{commit}",
+        parts[0], parts[1]
+    ))
+}
+
+fn plugin_package_spec(request: &PluginOperationRequest) -> Result<String, String> {
+    if request.source_kind.as_deref() == Some("GITHUB") {
+        github_package_spec(request)
+    } else {
+        Ok(format!("{}@{}", request.package_name, request.version))
+    }
 }
 
 fn validate_remove_request(
     request: &PluginRemoveRequest,
     state: &RuntimeStateFile,
-) -> Result<(), String> {
+) -> Result<ManagedPluginRecord, String> {
     if !request.confirmed {
         return Err("需要明确确认后才能卸载。".to_string());
     }
-    if !state.plugins.iter().any(|plugin| {
-        plugin.plugin_id == request.plugin_id && plugin.package_name == request.package_name
-    }) {
-        return Err("未找到对应的已安装插件。".to_string());
-    }
-    Ok(())
+    state
+        .plugins
+        .iter()
+        .find(|plugin| plugin.package_name == request.package_name)
+        .cloned()
+        .ok_or_else(|| "未找到对应的已安装插件。".to_string())
 }
 
 fn require_runtime_tools(app: &AppHandle) -> Result<ManagedToolchain, String> {
@@ -1151,8 +1366,153 @@ fn run_profile_pnpm(
     )
 }
 
+#[derive(Clone, Debug)]
+struct ProcessRow {
+    pid: u32,
+    ppid: u32,
+    command: String,
+}
+
+#[cfg(unix)]
+fn process_rows() -> Vec<ProcessRow> {
+    let Ok(output) = Command::new("/bin/ps")
+        .args(["-axo", "pid=,ppid=,command="])
+        .output()
+    else {
+        return Vec::new();
+    };
+    String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .filter_map(|line| {
+            let mut fields = line.split_whitespace();
+            let pid = fields.next()?.parse::<u32>().ok()?;
+            let ppid = fields.next()?.parse::<u32>().ok()?;
+            let command = fields.collect::<Vec<_>>().join(" ");
+            Some(ProcessRow { pid, ppid, command })
+        })
+        .collect()
+}
+
+#[cfg(not(unix))]
+fn process_rows() -> Vec<ProcessRow> {
+    Vec::new()
+}
+
+fn loopback_port_ready(port: u16) -> bool {
+    TcpStream::connect_timeout(
+        &format!("127.0.0.1:{port}")
+            .parse()
+            .expect("fixed loopback address"),
+        Duration::from_millis(250),
+    )
+    .is_ok()
+}
+
+fn runtime_command_matches(app: &AppHandle, pid: u32, port: u16) -> bool {
+    #[cfg(unix)]
+    {
+        let Ok(root) = managed_root(app) else {
+            return false;
+        };
+        let root = root.to_string_lossy();
+        return process_rows().into_iter().any(|row| {
+            row.pid == pid
+                && row.command.contains(root.as_ref())
+                && row
+                    .command
+                    .contains(&format!("{DSH_PACKAGE}@{DSH_VERSION}"))
+                && row.command.contains(" web ")
+                && row.command.contains(" --no-open ")
+                && row.command.contains(&format!(" --port {port}"))
+        });
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = app;
+        process_exists(pid)
+    }
+}
+
+fn valid_runtime_lease(app: &AppHandle, lease: &ManagedRuntimeLease) -> bool {
+    process_exists(lease.pid)
+        && loopback_port_ready(lease.port)
+        && runtime_command_matches(app, lease.pid, lease.port)
+}
+
+fn parse_runtime_port(command: &str) -> Option<u16> {
+    let fields = command.split_whitespace().collect::<Vec<_>>();
+    fields
+        .windows(2)
+        .find(|pair| pair[0] == "--port")
+        .and_then(|pair| pair[1].parse::<u16>().ok())
+}
+
+fn discover_legacy_runtime(app: &AppHandle) -> Option<ManagedRuntimeLease> {
+    let root = managed_root(app).ok()?.to_string_lossy().into_owned();
+    process_rows().into_iter().find_map(|row| {
+        let port = parse_runtime_port(&row.command)?;
+        (row.ppid == 1
+            && row.command.contains(&root)
+            && row
+                .command
+                .contains(&format!("{DSH_PACKAGE}@{DSH_VERSION}"))
+            && row.command.contains(" web ")
+            && row.command.contains(" --no-open ")
+            && loopback_port_ready(port))
+        .then_some(ManagedRuntimeLease {
+            pid: row.pid,
+            port,
+            started_at_unix_ms: unix_ms(),
+        })
+    })
+}
+
+fn cleanup_orphaned_mutations(app: &AppHandle) -> usize {
+    let Ok(root) = managed_root(app) else {
+        return 0;
+    };
+    let root = root.to_string_lossy();
+    let orphaned = process_rows()
+        .into_iter()
+        .filter(|row| {
+            if row.ppid != 1 || !row.command.contains(root.as_ref()) {
+                return false;
+            }
+            let legacy_dsh_mutation = row
+                .command
+                .contains(&format!("{DSH_PACKAGE}@{DSH_VERSION}"))
+                && row.command.contains(" plugin ")
+                && (row.command.contains(" remove ") || row.command.contains(" install "));
+            let direct_profile_mutation = row.command.contains("pnpm")
+                && row.command.contains("profiles/web")
+                && (row.command.contains(" remove ")
+                    || row.command.contains(" add ")
+                    || row.command.contains(" install "));
+            legacy_dsh_mutation || direct_profile_mutation
+        })
+        .collect::<Vec<_>>();
+    for row in &orphaned {
+        terminate_process_tree(row.pid, Duration::from_secs(2));
+    }
+    if !orphaned.is_empty() {
+        audit(
+            app,
+            "RECOVER_ORPHANED_OPERATION",
+            None,
+            None,
+            None,
+            "SUCCESS",
+            &format!("已终止 {} 个由旧版应用遗留的插件操作进程。", orphaned.len()),
+        );
+    }
+    orphaned.len()
+}
+
 fn profile_manifest_path(app: &AppHandle) -> Result<PathBuf, String> {
-    Ok(dsh_home(app)?.join("profiles").join(MANAGED_PROFILE).join("package.json"))
+    Ok(dsh_home(app)?
+        .join("profiles")
+        .join(MANAGED_PROFILE)
+        .join("package.json"))
 }
 
 fn profile_package_dir(app: &AppHandle, package_name: &str) -> Result<PathBuf, String> {
@@ -1161,7 +1521,9 @@ fn profile_package_dir(app: &AppHandle, package_name: &str) -> Result<PathBuf, S
         || !package_name
             .chars()
             .all(|character| character.is_ascii_alphanumeric() || "@._-/".contains(character))
-        || package_name.split('/').any(|part| part.is_empty() || part == "." || part == "..")
+        || package_name
+            .split('/')
+            .any(|part| part.is_empty() || part == "." || part == "..")
     {
         return Err("插件包名无效。".to_string());
     }
@@ -1172,12 +1534,16 @@ fn profile_package_dir(app: &AppHandle, package_name: &str) -> Result<PathBuf, S
         .join(package_name))
 }
 
-fn profile_package_is_bundle(app: &AppHandle, package_name: &str, version: &str) -> Result<bool, String> {
+fn profile_package_is_bundle(
+    app: &AppHandle,
+    package_name: &str,
+    version: &str,
+) -> Result<bool, String> {
     let manifest = profile_package_dir(app, package_name)?.join("package.json");
     let content = fs::read_to_string(&manifest)
         .map_err(|_| "插件依赖没有正确写入隔离 Profile。".to_string())?;
-    let value: serde_json::Value = serde_json::from_str(&content)
-        .map_err(|_| "插件包清单无效，安装已停止。".to_string())?;
+    let value: serde_json::Value =
+        serde_json::from_str(&content).map_err(|_| "插件包清单无效，安装已停止。".to_string())?;
     if value.get("name").and_then(serde_json::Value::as_str) != Some(package_name)
         || value.get("version").and_then(serde_json::Value::as_str) != Some(version)
     {
@@ -1191,11 +1557,12 @@ fn profile_package_is_bundle(app: &AppHandle, package_name: &str, version: &str)
         .is_some_and(|patch| !patch.trim().is_empty()))
 }
 
-fn update_profile_bundle(app: &AppHandle, package_name: &str, add: bool) -> Result<(), String> {
-    let path = profile_manifest_path(app)?;
-    let content = fs::read_to_string(&path).map_err(|_| "无法读取 DSH Profile 配置。".to_string())?;
-    let mut value: serde_json::Value = serde_json::from_str(&content)
-        .map_err(|_| "DSH Profile 配置无效，操作已停止。".to_string())?;
+fn update_profile_manifest_value(
+    value: &mut serde_json::Value,
+    package_name: &str,
+    add_bundle: bool,
+    remove_dependency: bool,
+) -> Result<(), String> {
     let bundles = value
         .get_mut("dsh")
         .and_then(serde_json::Value::as_object_mut)
@@ -1205,12 +1572,56 @@ fn update_profile_bundle(app: &AppHandle, package_name: &str, add: bool) -> Resu
         .and_then(serde_json::Value::as_array_mut)
         .ok_or_else(|| "DSH Profile 缺少受控 bundle 配置。".to_string())?;
     bundles.retain(|bundle| bundle.as_str() != Some(package_name));
-    if add {
+    if add_bundle {
         bundles.push(serde_json::Value::String(package_name.to_string()));
     }
+    if remove_dependency {
+        value
+            .get_mut("dependencies")
+            .and_then(serde_json::Value::as_object_mut)
+            .map(|dependencies| dependencies.remove(package_name));
+    }
+    Ok(())
+}
+
+fn update_profile_manifest(
+    app: &AppHandle,
+    package_name: &str,
+    add_bundle: bool,
+    remove_dependency: bool,
+) -> Result<(), String> {
+    let path = profile_manifest_path(app)?;
+    let content =
+        fs::read_to_string(&path).map_err(|_| "无法读取 DSH Profile 配置。".to_string())?;
+    let mut value: serde_json::Value = serde_json::from_str(&content)
+        .map_err(|_| "DSH Profile 配置无效，操作已停止。".to_string())?;
+    update_profile_manifest_value(&mut value, package_name, add_bundle, remove_dependency)?;
     let rendered = serde_json::to_string_pretty(&value)
         .map_err(|_| "无法写入 DSH Profile 配置。".to_string())?;
-    fs::write(path, format!("{rendered}\n")).map_err(|_| "无法写入 DSH Profile 配置。".to_string())
+    let temporary = path.with_extension("json.tmp");
+    fs::write(&temporary, format!("{rendered}\n"))
+        .map_err(|_| "无法写入 DSH Profile 配置。".to_string())?;
+    fs::rename(temporary, path).map_err(|_| "无法提交 DSH Profile 配置。".to_string())
+}
+
+fn update_profile_bundle(app: &AppHandle, package_name: &str, add: bool) -> Result<(), String> {
+    update_profile_manifest(app, package_name, add, false)
+}
+
+fn remove_profile_package_entry(app: &AppHandle, package_name: &str) -> Result<(), String> {
+    update_profile_manifest(app, package_name, false, true)
+}
+
+fn remove_profile_package_link(app: &AppHandle, package_name: &str) -> Result<(), String> {
+    let path = profile_package_dir(app, package_name)?;
+    let Ok(metadata) = fs::symlink_metadata(&path) else {
+        return Ok(());
+    };
+    if metadata.file_type().is_symlink() || metadata.is_file() {
+        fs::remove_file(path).map_err(|_| "插件已停用，但残留文件暂时无法清理。".to_string())
+    } else {
+        fs::remove_dir_all(path).map_err(|_| "插件已停用，但残留文件暂时无法清理。".to_string())
+    }
 }
 
 fn restore_profile_and_dependencies(
@@ -1235,14 +1646,21 @@ fn restore_profile_and_dependencies(
 }
 
 /// Repair the one inconsistency that can occur after an interrupted profile
-/// mutation: a trusted bundle is recorded in runtime-state but missing from
-/// the profile's own node_modules. Only already-approved, allowlisted records
-/// are repaired and npm integrity is checked again before a download.
-fn reconcile_managed_profile(app: &AppHandle, state: &RuntimeStateFile) -> Result<(), String> {
-    for plugin in &state.plugins {
-        let present = profile_package_is_bundle(app, &plugin.package_name, &plugin.version)
-            .unwrap_or(false);
+/// mutation: a user-confirmed bundle is recorded in runtime-state but missing
+/// from the profile's own node_modules. npm sources are integrity-checked again;
+/// GitHub sources are restored from their exact recorded commit.
+fn reconcile_managed_profile(app: &AppHandle, state: &mut RuntimeStateFile) -> Result<(), String> {
+    cleanup_orphaned_mutations(app);
+    for plugin in &mut state.plugins {
+        if !plugin.enabled {
+            update_profile_bundle(app, &plugin.package_name, false)?;
+            continue;
+        }
+        let present =
+            profile_package_is_bundle(app, &plugin.package_name, &plugin.version).unwrap_or(false);
         if present {
+            update_profile_bundle(app, &plugin.package_name, true)?;
+            plugin.issue = None;
             continue;
         }
         let request = PluginOperationRequest {
@@ -1250,10 +1668,37 @@ fn reconcile_managed_profile(app: &AppHandle, state: &RuntimeStateFile) -> Resul
             package_name: plugin.package_name.clone(),
             version: plugin.version.clone(),
             integrity: plugin.integrity.clone(),
+            source_kind: plugin.source_kind.clone(),
+            registry_status: plugin.registry_status.clone(),
+            risk_level: plugin.risk_level.clone(),
+            confirmation_count: 2,
+            source_url: plugin.source_url.clone(),
+            source_commit: plugin.source_commit.clone(),
+            snapshot_sha256: plugin.snapshot_sha256.clone(),
             confirmed: true,
         };
-        validate_plugin_request(&request)?;
-        verify_npm_integrity(app, &request)?;
+        let source_verification = validate_plugin_request(&request).and_then(|_| {
+            if request.source_kind.as_deref() == Some("GITHUB") {
+                Ok(())
+            } else {
+                verify_npm_integrity(app, &request)
+            }
+        });
+        if let Err(reason) = source_verification {
+            plugin.enabled = false;
+            plugin.issue = Some(reason.clone());
+            update_profile_bundle(app, &plugin.package_name, false)?;
+            audit(
+                app,
+                "REPAIR_PLUGIN",
+                Some(&plugin.plugin_id),
+                Some(&plugin.package_name),
+                Some(&plugin.version),
+                "DISABLED",
+                "插件来源已变化或依赖缺失，已安全停用；Runtime 将继续启动。",
+            );
+            continue;
+        }
         audit(
             app,
             "REPAIR_PLUGIN",
@@ -1269,23 +1714,29 @@ fn reconcile_managed_profile(app: &AppHandle, state: &RuntimeStateFile) -> Resul
                 "add".to_string(),
                 "--save-exact".to_string(),
                 "--ignore-scripts".to_string(),
-                format!("{}@{}", plugin.package_name, plugin.version),
+                plugin_package_spec(&request)?,
             ],
             PROFILE_MUTATION_TIMEOUT,
         )?;
-        if !result.success() || !profile_package_is_bundle(app, &plugin.package_name, &plugin.version)? {
+        if !result.success()
+            || !profile_package_is_bundle(app, &plugin.package_name, &plugin.version)?
+        {
+            plugin.enabled = false;
+            plugin.issue = Some(result.user_message());
+            update_profile_bundle(app, &plugin.package_name, false)?;
             audit(
                 app,
                 "REPAIR_PLUGIN",
                 Some(&plugin.plugin_id),
                 Some(&plugin.package_name),
                 Some(&plugin.version),
-                "FAILED",
-                "受控插件依赖恢复失败；Runtime 没有启动。",
+                "DISABLED",
+                "受控插件依赖恢复失败，已安全停用；Runtime 将继续启动。",
             );
-            return Err(format!("插件 {} 的受控依赖无法恢复，Runtime 没有启动。", plugin.package_name));
+            continue;
         }
         update_profile_bundle(app, &plugin.package_name, true)?;
+        plugin.issue = None;
         audit(
             app,
             "REPAIR_PLUGIN",
@@ -1296,6 +1747,7 @@ fn reconcile_managed_profile(app: &AppHandle, state: &RuntimeStateFile) -> Resul
             "已恢复插件依赖并重新验证 DSH Profile。",
         );
     }
+    write_runtime_state(app, state)?;
     let verification = run_dsh(
         app,
         &["web".to_string(), "--dump-config".to_string()],
@@ -1396,7 +1848,7 @@ fn restore_profile_files(backups: &BTreeMap<PathBuf, Option<Vec<u8>>>) -> Result
 }
 
 fn runtime_status(app: &AppHandle, native: &NativeState) -> ManagedRuntimeStatus {
-    let state = read_runtime_state(app);
+    let mut state = read_runtime_state(app);
     let mut runtime = native
         .runtime
         .lock()
@@ -1404,14 +1856,58 @@ fn runtime_status(app: &AppHandle, native: &NativeState) -> ManagedRuntimeStatus
     let mut running = false;
     let mut port = None;
     let mut pid = None;
-    if let Some(process) = runtime.as_mut() {
-        match process.child.try_wait() {
-            Ok(None) => {
-                running = true;
-                port = Some(process.port);
-                pid = Some(process.child.id());
+    if runtime.is_none() {
+        let lease = state
+            .runtime_process
+            .clone()
+            .filter(|lease| valid_runtime_lease(app, lease))
+            .or_else(|| discover_legacy_runtime(app));
+        if let Some(lease) = lease {
+            if state.runtime_process.as_ref().map_or(true, |current| {
+                current.pid != lease.pid || current.port != lease.port
+            }) {
+                state.runtime_process = Some(lease.clone());
+                let _ = write_runtime_state(app, &state);
+                audit(
+                    app,
+                    "ADOPT_RUNTIME",
+                    None,
+                    Some(DSH_PACKAGE),
+                    Some(DSH_VERSION),
+                    "SUCCESS",
+                    "已接管应用重启前仍在运行的本地 DSH Runtime。",
+                );
             }
-            _ => *runtime = None,
+            *runtime = Some(ManagedRuntimeProcess {
+                child: None,
+                pid: lease.pid,
+                port: lease.port,
+            });
+        } else if state.runtime_process.take().is_some() {
+            let _ = write_runtime_state(app, &state);
+        }
+    }
+    if let Some(process) = runtime.as_mut() {
+        let alive = match process.child.as_mut() {
+            Some(child) => child.try_wait().is_ok_and(|status| status.is_none()),
+            None => valid_runtime_lease(
+                app,
+                &ManagedRuntimeLease {
+                    pid: process.pid,
+                    port: process.port,
+                    started_at_unix_ms: 0,
+                },
+            ),
+        };
+        if alive {
+            running = true;
+            port = Some(process.port);
+            pid = Some(process.pid);
+        } else {
+            *runtime = None;
+            if state.runtime_process.take().is_some() {
+                let _ = write_runtime_state(app, &state);
+            }
         }
     }
     ManagedRuntimeStatus {
@@ -1613,24 +2109,28 @@ fn install_managed_plugin_blocking(
 ) -> Result<ManagedOperationResult, String> {
     let native = app.state::<NativeState>();
     validate_plugin_request(&request)?;
+    if runtime_status(&app, &native).running {
+        stop_managed_runtime_blocking(app.clone())?;
+    }
     let _operation = native
         .operation_lock
         .lock()
         .map_err(|_| "另一个本地操作尚未结束。".to_string())?;
+    cleanup_orphaned_mutations(&app);
     let state = read_runtime_state(&app);
     if !state.prepared {
         return Err("请先完成 DSH Runtime 准备。".to_string());
     }
-    let action = if state
-        .plugins
-        .iter()
-        .any(|plugin| plugin.plugin_id == request.plugin_id)
-    {
+    let action = if state.plugins.iter().any(|plugin| {
+        plugin.plugin_id == request.plugin_id || plugin.package_name == request.package_name
+    }) {
         "UPDATE_PLUGIN"
     } else {
         "INSTALL_PLUGIN"
     };
-    verify_npm_integrity(&app, &request)?;
+    if request.source_kind.as_deref() != Some("GITHUB") {
+        verify_npm_integrity(&app, &request)?;
+    }
     audit(
         &app,
         action,
@@ -1641,7 +2141,7 @@ fn install_managed_plugin_blocking(
         "已创建恢复点并开始固定版本安装。",
     );
     let backups = backup_profile_files(&app)?;
-    let package_spec = format!("{}@{}", request.package_name, request.version);
+    let package_spec = plugin_package_spec(&request)?;
     let result = run_profile_pnpm(
         &app,
         &[
@@ -1652,7 +2152,9 @@ fn install_managed_plugin_blocking(
         ],
         PROFILE_MUTATION_TIMEOUT,
     )?;
-    if !result.success() || !profile_package_is_bundle(&app, &request.package_name, &request.version)? {
+    if !result.success()
+        || !profile_package_is_bundle(&app, &request.package_name, &request.version)?
+    {
         let restored = restore_profile_and_dependencies(&app, &backups).is_ok();
         let message = if restored {
             format!("安装未完成，已恢复原配置。{}", result.user_message())
@@ -1711,6 +2213,14 @@ fn install_managed_plugin_blocking(
         package_name: request.package_name.clone(),
         version: request.version.clone(),
         integrity: request.integrity.clone(),
+        source_kind: request.source_kind.clone(),
+        registry_status: request.registry_status.clone(),
+        risk_level: request.risk_level.clone(),
+        source_url: request.source_url.clone(),
+        source_commit: request.source_commit.clone(),
+        snapshot_sha256: request.snapshot_sha256.clone(),
+        enabled: true,
+        issue: None,
         installed_at_unix_ms: unix_ms(),
     });
     next.plugins
@@ -1746,48 +2256,49 @@ fn remove_managed_plugin_blocking(
     request: PluginRemoveRequest,
 ) -> Result<ManagedOperationResult, String> {
     let native = app.state::<NativeState>();
+    let initial_state = read_runtime_state(&app);
+    validate_remove_request(&request, &initial_state)?;
+    if runtime_status(&app, &native).running {
+        stop_managed_runtime_blocking(app.clone())?;
+    }
     let _operation = native
         .operation_lock
         .lock()
         .map_err(|_| "另一个本地操作尚未结束。".to_string())?;
+    cleanup_orphaned_mutations(&app);
     let state = read_runtime_state(&app);
-    validate_remove_request(&request, &state)?;
+    let installed = validate_remove_request(&request, &state)?;
     audit(
         &app,
         "REMOVE_PLUGIN",
-        Some(&request.plugin_id),
-        Some(&request.package_name),
-        None,
+        Some(&installed.plugin_id),
+        Some(&installed.package_name),
+        Some(&installed.version),
         "RUNNING",
-        "已创建恢复点并开始卸载。",
+        "已停止 Runtime、创建恢复点并开始卸载。",
     );
     let backups = backup_profile_files(&app)?;
-    // Remove the bundle layer before touching pnpm. That way an interrupted or
-    // previously broken dependency can never prevent the user from recovering
-    // the Runtime by uninstalling it.
-    update_profile_bundle(&app, &request.package_name, false)?;
-    let result = run_profile_pnpm(
+    // The functional uninstall is a local, atomic manifest operation. It does
+    // not depend on a package-manager subprocess or network availability.
+    remove_profile_package_entry(&app, &installed.package_name)?;
+    let verification = run_dsh(
         &app,
-        &[
-            "remove".to_string(),
-            "--ignore-scripts".to_string(),
-            request.package_name.clone(),
-        ],
+        &["web".to_string(), "--dump-config".to_string()],
         PROFILE_MUTATION_TIMEOUT,
     )?;
-    if !result.success() {
-        let restored = restore_profile_and_dependencies(&app, &backups).is_ok();
+    if !verification.success() {
+        let restored = restore_profile_files(&backups).is_ok();
         let message = if restored {
-            "卸载未完成，已恢复原配置。"
+            "卸载验证失败，已恢复原配置。"
         } else {
-            "卸载失败且自动恢复未完成。"
+            "卸载验证失败且自动恢复未完成。"
         };
         audit(
             &app,
             "REMOVE_PLUGIN",
-            Some(&request.plugin_id),
-            Some(&request.package_name),
-            None,
+            Some(&installed.plugin_id),
+            Some(&installed.package_name),
+            Some(&installed.version),
             if restored {
                 "ROLLED_BACK"
             } else {
@@ -1797,47 +2308,47 @@ fn remove_managed_plugin_blocking(
         );
         return Err(message.to_string());
     }
-    let verification = run_dsh(
+    let mut next = read_runtime_state(&app);
+    next.plugins
+        .retain(|plugin| plugin.package_name != installed.package_name);
+    write_runtime_state(&app, &next)?;
+
+    let files_cleaned = remove_profile_package_link(&app, &installed.package_name).is_ok();
+    let metadata_cleaned = run_profile_pnpm(
         &app,
-        &["web".to_string(), "--dump-config".to_string()],
-        PROFILE_MUTATION_TIMEOUT,
-    )?;
-    if !verification.success() {
-        let restored = restore_profile_and_dependencies(&app, &backups).is_ok();
-        let message = if restored {
-            "卸载验证失败，已恢复原配置。"
-        } else {
-            "卸载验证失败且自动恢复未完成。"
-        };
+        &[
+            "install".to_string(),
+            "--offline".to_string(),
+            "--ignore-scripts".to_string(),
+            "--no-frozen-lockfile".to_string(),
+        ],
+        Duration::from_secs(30),
+    )
+    .is_ok_and(|result| result.success());
+    if !files_cleaned || !metadata_cleaned {
         audit(
             &app,
-            "REMOVE_PLUGIN",
-            Some(&request.plugin_id),
-            Some(&request.package_name),
-            None,
-            if restored { "ROLLED_BACK" } else { "RECOVERY_REQUIRED" },
-            message,
+            "CLEANUP_PLUGIN_FILES",
+            Some(&installed.plugin_id),
+            Some(&installed.package_name),
+            Some(&installed.version),
+            "DEFERRED",
+            "插件已从 Runtime 安全卸载；未使用的缓存将在后续维护中清理。",
         );
-        return Err(message.to_string());
     }
-    let mut next = read_runtime_state(&app);
-    next.plugins.retain(|plugin| {
-        plugin.plugin_id != request.plugin_id && plugin.package_name != request.package_name
-    });
-    write_runtime_state(&app, &next)?;
     audit(
         &app,
         "REMOVE_PLUGIN",
-        Some(&request.plugin_id),
-        Some(&request.package_name),
-        None,
+        Some(&installed.plugin_id),
+        Some(&installed.package_name),
+        Some(&installed.version),
         "SUCCESS",
-        "插件已卸载。请重启 Runtime 以应用变更。",
+        "插件已卸载并通过 DSH Profile 验证。",
     );
     Ok(ManagedOperationResult {
         success: true,
         action: "REMOVE_PLUGIN".to_string(),
-        message: "插件已卸载。请重启 Runtime 以应用变更。".to_string(),
+        message: "插件已卸载；Runtime 已安全停止，可重新启动。".to_string(),
         runtime: runtime_status(&app, &native),
     })
 }
@@ -1856,37 +2367,19 @@ async fn start_managed_runtime(app: AppHandle) -> Result<ManagedRuntimeStatus, S
 
 fn start_managed_runtime_blocking(app: AppHandle) -> Result<ManagedRuntimeStatus, String> {
     let native = app.state::<NativeState>();
-    let state = read_runtime_state(&app);
+    let current = runtime_status(&app, &native);
+    if current.running {
+        return Ok(current);
+    }
+    let mut state = read_runtime_state(&app);
     if !state.prepared {
         return Err("请先完成 DSH Runtime 准备。".to_string());
-    }
-    {
-        let mut runtime = native
-            .runtime
-            .lock()
-            .map_err(|_| "Runtime 状态不可用。".to_string())?;
-        if let Some(process) = runtime.as_mut() {
-            if process.child.try_wait().ok().flatten().is_none() {
-                let port = process.port;
-                return Ok(ManagedRuntimeStatus {
-                    prepared: state.prepared,
-                    dsh_version: state.dsh_version.unwrap_or_else(|| DSH_VERSION.to_string()),
-                    profile: MANAGED_PROFILE,
-                    running: true,
-                    port: Some(port),
-                    url: Some(format!("http://127.0.0.1:{port}")),
-                    pid: Some(process.child.id()),
-                    plugins: state.plugins,
-                });
-            }
-            *runtime = None;
-        }
     }
     let _operation = native
         .operation_lock
         .lock()
         .map_err(|_| "另一个本地操作尚未结束。".to_string())?;
-    reconcile_managed_profile(&app, &state)?;
+    reconcile_managed_profile(&app, &mut state)?;
     let toolchain = require_runtime_tools(&app)?;
     let port = reserve_loopback_port()?;
     let root = managed_root(&app)?;
@@ -1915,15 +2408,30 @@ fn start_managed_runtime_blocking(app: AppHandle) -> Result<ManagedRuntimeStatus
         .stdin(Stdio::null())
         .stdout(Stdio::from(log))
         .stderr(Stdio::from(error_log));
-    let child = command
+    isolate_process_tree(&mut command);
+    let mut child = command
         .spawn()
         .map_err(|_| "无法启动 DSH Runtime。".to_string())?;
     let pid = child.id();
+    let lease = ManagedRuntimeLease {
+        pid,
+        port,
+        started_at_unix_ms: unix_ms(),
+    };
+    state.runtime_process = Some(lease);
+    if let Err(reason) = write_runtime_state(&app, &state) {
+        terminate_process_tree(pid, Duration::from_secs(2));
+        let _ = child.wait();
+        return Err(reason);
+    }
     *native
         .runtime
         .lock()
-        .map_err(|_| "Runtime 状态不可用。".to_string())? =
-        Some(ManagedRuntimeProcess { child, port });
+        .map_err(|_| "Runtime 状态不可用。".to_string())? = Some(ManagedRuntimeProcess {
+        child: Some(child),
+        pid,
+        port,
+    });
     audit(
         &app,
         "START_RUNTIME",
@@ -1953,8 +2461,15 @@ fn start_managed_runtime_blocking(app: AppHandle) -> Result<ManagedRuntimeStatus
                 .lock()
                 .map_err(|_| "Runtime 状态不可用。".to_string())?;
             if let Some(process) = guard.as_mut() {
-                if let Ok(Some(_)) = process.child.try_wait() {
+                if process
+                    .child
+                    .as_mut()
+                    .is_some_and(|child| child.try_wait().is_ok_and(|status| status.is_some()))
+                {
                     *guard = None;
+                    let mut failed_state = read_runtime_state(&app);
+                    failed_state.runtime_process = None;
+                    let _ = write_runtime_state(&app, &failed_state);
                     audit(
                         &app,
                         "START_RUNTIME",
@@ -1972,10 +2487,15 @@ fn start_managed_runtime_blocking(app: AppHandle) -> Result<ManagedRuntimeStatus
     }
     if let Ok(mut guard) = native.runtime.lock() {
         if let Some(mut process) = guard.take() {
-            let _ = process.child.kill();
-            let _ = process.child.wait();
+            terminate_process_tree(process.pid, Duration::from_secs(2));
+            if let Some(child) = process.child.as_mut() {
+                let _ = child.wait();
+            }
         }
     }
+    let mut failed_state = read_runtime_state(&app);
+    failed_state.runtime_process = None;
+    let _ = write_runtime_state(&app, &failed_state);
     audit(
         &app,
         "START_RUNTIME",
@@ -1997,6 +2517,8 @@ async fn stop_managed_runtime(app: AppHandle) -> Result<ManagedRuntimeStatus, St
 
 fn stop_managed_runtime_blocking(app: AppHandle) -> Result<ManagedRuntimeStatus, String> {
     let native = app.state::<NativeState>();
+    // Re-adopt a Runtime left alive by an application restart before stopping.
+    let _ = runtime_status(&app, &native);
     if let Some(workspace) = app.get_webview_window("dsh-workspace") {
         let _ = workspace.close();
     }
@@ -2005,17 +2527,9 @@ fn stop_managed_runtime_blocking(app: AppHandle) -> Result<ManagedRuntimeStatus,
         .lock()
         .map_err(|_| "Runtime 状态不可用。".to_string())?;
     if let Some(mut process) = runtime.take() {
-        #[cfg(unix)]
-        {
-            let _ = Command::new("/bin/kill")
-                .arg("-TERM")
-                .arg(process.child.id().to_string())
-                .status();
-            let _ = process.child.wait_timeout(Duration::from_secs(6));
-        }
-        if process.child.try_wait().ok().flatten().is_none() {
-            let _ = process.child.kill();
-            let _ = process.child.wait();
+        terminate_process_tree(process.pid, Duration::from_secs(6));
+        if let Some(child) = process.child.as_mut() {
+            let _ = child.wait();
         }
         audit(
             &app,
@@ -2028,6 +2542,10 @@ fn stop_managed_runtime_blocking(app: AppHandle) -> Result<ManagedRuntimeStatus,
         );
     }
     drop(runtime);
+    let mut state = read_runtime_state(&app);
+    if state.runtime_process.take().is_some() {
+        write_runtime_state(&app, &state)?;
+    }
     Ok(runtime_status(&app, &native))
 }
 
@@ -2043,8 +2561,12 @@ fn open_managed_runtime_workspace(app: AppHandle) -> Result<(), String> {
         return Err("仅允许在 HarnessHub 中打开本地 DSH Runtime。".to_string());
     }
     if let Some(window) = app.get_webview_window("dsh-workspace") {
-        window.show().map_err(|_| "无法显示 DSH 工作区。".to_string())?;
-        window.set_focus().map_err(|_| "无法聚焦 DSH 工作区。".to_string())?;
+        window
+            .show()
+            .map_err(|_| "无法显示 DSH 工作区。".to_string())?;
+        window
+            .set_focus()
+            .map_err(|_| "无法聚焦 DSH 工作区。".to_string())?;
         return Ok(());
     }
     WebviewWindowBuilder::new(&app, "dsh-workspace", WebviewUrl::External(parsed))
@@ -2092,6 +2614,24 @@ pub fn run() {
 mod tests {
     use super::*;
 
+    fn installed_record() -> ManagedPluginRecord {
+        ManagedPluginRecord {
+            plugin_id: "old-registry-id".to_string(),
+            package_name: "@example/dsh-plugin".to_string(),
+            version: "1.0.0".to_string(),
+            integrity: "sha512-proof".to_string(),
+            source_kind: Some("NPM".to_string()),
+            registry_status: Some("PUBLISHED".to_string()),
+            risk_level: Some("LOW".to_string()),
+            source_url: None,
+            source_commit: None,
+            snapshot_sha256: None,
+            enabled: true,
+            issue: None,
+            installed_at_unix_ms: 1,
+        }
+    }
+
     #[test]
     fn missing_program_is_reported_without_mutation() {
         let result = fixed_version_probe("Missing", "harnesshub-runtime-probe-missing");
@@ -2110,23 +2650,86 @@ mod tests {
     }
 
     #[test]
-    fn install_request_rejects_untrusted_package_and_missing_confirmation() {
+    fn install_request_allows_fixed_sources_but_rejects_missing_confirmation() {
         let request = PluginOperationRequest {
             plugin_id: "dsh-workbench".to_string(),
             package_name: "unexpected-package".to_string(),
             version: "1.0.0".to_string(),
             integrity: "sha512-test".to_string(),
+            source_kind: Some("NPM".to_string()),
+            registry_status: Some("PUBLISHED".to_string()),
+            risk_level: Some("LOW".to_string()),
+            confirmation_count: 1,
+            source_url: None,
+            source_commit: None,
+            snapshot_sha256: None,
             confirmed: true,
         };
-        assert!(validate_plugin_request(&request).is_err());
+        assert!(validate_plugin_request(&request).is_ok());
         let unconfirmed = PluginOperationRequest {
             plugin_id: "dsh-workbench".to_string(),
             package_name: "dsh-workbench".to_string(),
             version: "0.8.0".to_string(),
             integrity: "sha512-test".to_string(),
+            source_kind: Some("NPM".to_string()),
+            registry_status: Some("PUBLISHED".to_string()),
+            risk_level: Some("LOW".to_string()),
+            confirmation_count: 1,
+            source_url: None,
+            source_commit: None,
+            snapshot_sha256: None,
             confirmed: false,
         };
         assert!(validate_plugin_request(&unconfirmed).is_err());
+    }
+
+    #[test]
+    fn every_unverified_candidate_requires_two_confirmations_including_critical() {
+        let candidate = |risk: &str, confirmations: u8| PluginOperationRequest {
+            plugin_id: "candidate-example-dsh-plugin".to_string(),
+            package_name: "@example/dsh-plugin".to_string(),
+            version: "1.0.0".to_string(),
+            integrity: "sha512-test".to_string(),
+            source_kind: Some("NPM".to_string()),
+            registry_status: Some("COLLECTED_UNVERIFIED".to_string()),
+            risk_level: Some(risk.to_string()),
+            confirmation_count: confirmations,
+            source_url: Some("https://github.com/example/dsh-plugin".to_string()),
+            source_commit: Some("a".repeat(40)),
+            snapshot_sha256: Some("b".repeat(64)),
+            confirmed: true,
+        };
+        assert!(validate_plugin_request(&candidate("LOW", 1)).is_err());
+        assert!(validate_plugin_request(&candidate("LOW", 2)).is_ok());
+        assert!(validate_plugin_request(&candidate("MEDIUM", 1)).is_err());
+        assert!(validate_plugin_request(&candidate("MEDIUM", 2)).is_ok());
+        assert!(validate_plugin_request(&candidate("HIGH", 1)).is_err());
+        assert!(validate_plugin_request(&candidate("HIGH", 2)).is_ok());
+        assert!(validate_plugin_request(&candidate("CRITICAL", 2)).is_ok());
+    }
+
+    #[test]
+    fn github_candidates_are_pinned_to_the_confirmed_commit() {
+        let commit = "c".repeat(40);
+        let request = PluginOperationRequest {
+            plugin_id: "candidate-example-dsh-plugin".to_string(),
+            package_name: "@example/dsh-plugin".to_string(),
+            version: "1.0.0".to_string(),
+            integrity: format!("git-commit:{commit}"),
+            source_kind: Some("GITHUB".to_string()),
+            registry_status: Some("COLLECTED_UNVERIFIED".to_string()),
+            risk_level: Some("CRITICAL".to_string()),
+            confirmation_count: 2,
+            source_url: Some("https://github.com/example/dsh-plugin".to_string()),
+            source_commit: Some(commit.clone()),
+            snapshot_sha256: None,
+            confirmed: true,
+        };
+        assert!(validate_plugin_request(&request).is_ok());
+        assert_eq!(
+            plugin_package_spec(&request).expect("github spec"),
+            format!("git+https://github.com/example/dsh-plugin.git#{commit}")
+        );
     }
 
     #[test]
@@ -2148,5 +2751,98 @@ mod tests {
         );
         assert!(safe_archive_relative(Path::new("node-v22/../../escape")).is_none());
         assert!(safe_archive_relative(Path::new("/node-v22/bin/node")).is_none());
+    }
+
+    #[test]
+    fn removal_uses_stable_package_identity_after_registry_id_changes() {
+        let state = RuntimeStateFile {
+            plugins: vec![installed_record()],
+            ..RuntimeStateFile::default()
+        };
+        let request = PluginRemoveRequest {
+            package_name: "@example/dsh-plugin".to_string(),
+            confirmed: true,
+        };
+        assert_eq!(
+            validate_remove_request(&request, &state)
+                .expect("installed package")
+                .plugin_id,
+            "old-registry-id"
+        );
+    }
+
+    #[test]
+    fn profile_uninstall_removes_bundle_and_dependency_atomically() {
+        let mut manifest = serde_json::json!({
+            "dsh": { "profile": { "bundles": [
+                "@deepseek-ai/dsh-base",
+                "@example/dsh-plugin"
+            ] } },
+            "dependencies": { "@example/dsh-plugin": "1.0.0" }
+        });
+        update_profile_manifest_value(&mut manifest, "@example/dsh-plugin", false, true)
+            .expect("valid profile manifest");
+        assert_eq!(
+            manifest.pointer("/dsh/profile/bundles").unwrap(),
+            &serde_json::json!(["@deepseek-ai/dsh-base"])
+        );
+        assert!(manifest
+            .pointer("/dependencies/@example~1dsh-plugin")
+            .is_none());
+    }
+
+    #[test]
+    fn legacy_runtime_command_port_is_recovered() {
+        assert_eq!(
+            parse_runtime_port(
+                "node pnpm dlx @deepseek-ai/dsh@0.1.0-rc.8 web --no-open --port 58832"
+            ),
+            Some(58832)
+        );
+    }
+
+    #[test]
+    fn older_plugin_records_default_to_enabled() {
+        let value = serde_json::json!({
+            "pluginId": "old",
+            "packageName": "@example/dsh-plugin",
+            "version": "1.0.0",
+            "integrity": "sha512-proof",
+            "installedAtUnixMs": 1
+        });
+        let record: ManagedPluginRecord = serde_json::from_value(value).expect("legacy record");
+        assert!(record.enabled);
+        assert!(record.issue.is_none());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn command_timeout_terminates_the_spawned_process_tree() {
+        let marker = env::temp_dir().join(unique_id("harnesshub-child-pid"));
+        let result = run_fixed_command(
+            Path::new("/bin/sh"),
+            &[
+                "-c".to_string(),
+                "sleep 30 & echo $! > \"$1\"; wait".to_string(),
+                "harnesshub-test".to_string(),
+                marker.to_string_lossy().into_owned(),
+            ],
+            &[],
+            None,
+            Duration::from_millis(150),
+        )
+        .expect("bounded command");
+        assert!(result.timed_out);
+        let child_pid = fs::read_to_string(&marker)
+            .expect("child pid marker")
+            .trim()
+            .parse::<u32>()
+            .expect("child pid");
+        let _ = fs::remove_file(marker);
+        let deadline = Instant::now() + Duration::from_secs(2);
+        while process_exists(child_pid) && Instant::now() < deadline {
+            thread::sleep(Duration::from_millis(25));
+        }
+        assert!(!process_exists(child_pid));
     }
 }

@@ -36,19 +36,19 @@ DSH 固定为 `@deepseek-ai/dsh@0.1.0-rc.8`。执行器使用已经过真实冒�
 - 安装与卸载均设置 npm/pnpm `ignore_scripts=true`；
 - Runtime 日志、插件状态和审计保存在 HarnessHub 应用数据目录。
 
-Runtime 准备不会运行用户 Shell，不会读取用户 npmrc，不会修改全局 PATH，也不会调用系统 Node.js/pnpm 执行 DSH。当前内置 Node.js 下载清单覆盖 macOS、Windows、Linux 的 arm64 与 x64 架构；其他架构会在下载前明确停止。
+Runtime 准备不会运行用户 Shell，不会读取用户 npmrc，不会修改全局 PATH，也不会调用系统 Node.js/pnpm 执行 DSH。当前内置 Node.js 下载清单覆盖 macOS、Windows、Linux 的 arm64 与 x64 架构，以及 Windows x86；其他架构会在下载前明确停止。
 
 ## 插件准入
 
-原生层只接受同时满足以下条件的插件：
+原生层允许用户安装具有完整、不可变来源证据的插件；登录不是本地安装的前提。npm
+来源必须有固定精确版本及 `sha512` 完整性证据；GitHub 来源必须使用规范
+`https://github.com/<owner>/<repo>` 地址和 40 位固定 commit。任何来源都必须完成
+Runtime 准备并经过明确用户确认。
 
-1. `plugin_id` 与 npm 包名存在于编译时内置的 `config/registry-sources.json`；
-2. npm 来源当前状态为 `AVAILABLE`；
-3. Registry 保存了固定 npm 版本和 `sha512` 完整性证据；
-4. 用户已登录并在当前操作前勾选明确确认；
-5. Runtime 已完成隔离准备。
+自动发现、未验证、High 或 Critical 风险插件会要求两次独立确认。未验证不代表
+禁止安装，也不代表已经安全；HarnessHub 不执行静默安装。
 
-安装前，原生层通过固定参数 `pnpm view <package>@<version> dist.integrity --json` 重新获取当前完整性值，必须与 Registry 快照完全一致。之后由 HarnessHub 受控的 pnpm 在隔离 Profile 中执行：
+安装 npm 插件前，原生层通过固定参数 `pnpm view <package>@<version> dist.integrity --json` 重新获取当前完整性值，必须与 Registry 快照完全一致。GitHub 插件使用固定 commit URL，不允许浮动分支或 tag。之后由 HarnessHub 受控的 pnpm 在隔离 Profile 中执行：
 
 ```text
 pnpm --dir <isolated-profile>
@@ -63,7 +63,7 @@ pnpm --dir <isolated-profile>
 
 安装完成后必须运行固定的 `web --dump-config`。只有命令成功、配置可解析并保存安装状态后，UI 才显示已安装。
 
-每次启动前还会执行一次受控一致性检查：只有已经由用户确认、仍在编译时信任清单中、版本和 npm `sha512` 完整性再次匹配的插件，才允许补齐 Profile 中缺失的依赖。检查失败时 Runtime 保持停止并记录 `REPAIR_PLUGIN` 失败，而不会伪装成启动成功。
+每次启动前还会执行一次受控一致性检查：只有已记录的固定版本、npm 完整性证据或 GitHub commit 仍然可验证的插件，才允许补齐 Profile 中缺失的依赖。检查失败时 Runtime 保持停止并记录 `REPAIR_PLUGIN` 失败，而不会伪装成启动成功。
 
 ## Runtime 生命周期
 

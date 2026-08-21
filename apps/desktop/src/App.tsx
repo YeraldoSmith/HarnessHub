@@ -21,12 +21,14 @@ import {
 } from './control-plane.js'
 import { DesktopMarketplace } from './marketplace.js'
 import { ManagedRuntimePanel } from './managed-runtime-panel.js'
-import { ManagedRuntimeSetup } from './managed-runtime-setup.js'
+import { detectManagedRuntimeEnvironment, ManagedRuntimeSetup } from './managed-runtime-setup.js'
 import { ProductPages } from './product-pages.js'
 import {
   DesktopApiUnavailableError,
   fetchDesktopApi,
+  loadDesktopCandidates,
   loadDesktopRegistry,
+  refreshDesktopDiscovery,
 } from './registry-client.js'
 import {
   deleteSessionToken,
@@ -51,12 +53,36 @@ function wait(milliseconds: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds))
 }
 
+function mergeMarketplacePlugins(published: Plugin[], candidates: Plugin[]): Plugin[] {
+  const publishedRepositories = new Set(published.flatMap((plugin) => plugin.github_url
+    ? [plugin.github_url.replace(/\.git$/, '').toLowerCase()]
+    : []))
+  return [
+    ...published,
+    ...candidates.filter((candidate) => !candidate.github_url || !publishedRepositories.has(candidate.github_url.replace(/\.git$/, '').toLowerCase())),
+  ]
+}
+
+function snapshotFromManagedRuntime(runtime: ManagedRuntimeStatus): RuntimeSnapshot {
+  return {
+    runtimeId: 'harnesshub-local-dsh',
+    runtimeName: 'DSH',
+    implementation: 'LOCAL_DSH',
+    version: runtime.dshVersion,
+    status: runtime.running ? 'RUNNING' : 'NOT_RUNNING',
+    connection: runtime.running ? 'CONNECTED' : 'DISCONNECTED',
+    generation: 1,
+    updatedAt: new Date().toISOString(),
+  }
+}
+
 export function App() {
   const { t } = useI18n()
   const [plugins, setPlugins] = useState<Plugin[]>([])
   const [registryLoading, setRegistryLoading] = useState(true)
   const [registryError, setRegistryError] = useState('')
   const [registryNotice, setRegistryNotice] = useState('')
+  const [discoveryRefreshing, setDiscoveryRefreshing] = useState(false)
   const [authError, setAuthError] = useState('')
   const [auth, setAuth] = useState<AuthSessionResponse>({ authenticated: false })
   const [authState, setAuthState] = useState<'idle' | 'waiting' | 'error'>('idle')
@@ -82,33 +108,65 @@ export function App() {
     return () => { active = false }
   }, [])
 
+  const loadMarketplace = useCallback(async (active: () => boolean) => {
+    setRegistryLoading(true)
+    const [registry, initialCandidates] = await Promise.all([
+      loadDesktopRegistry(undefined, apiBaseUrl),
+      loadDesktopCandidates(apiBaseUrl),
+    ])
+    let candidates = initialCandidates
+    if (candidates.available && candidates.items.length === 0) {
+      await refreshDesktopDiscovery(apiBaseUrl).catch(() => undefined)
+      candidates = await loadDesktopCandidates(apiBaseUrl)
+    }
+    if (!active()) return
+    setPlugins(mergeMarketplacePlugins(registry.registry.items, candidates.items))
+    setRegistryError('')
+    setRegistryNotice(candidates.items.length > 0
+      ? t('desktop.discoverySummary', { count: candidates.items.length })
+      : registry.source === 'BUNDLED' ? t('desktop.registrySnapshotNotice') : '')
+    setRegistryLoading(false)
+  }, [apiBaseUrl, t])
+
   useEffect(() => {
     let active = true
-    void loadDesktopRegistry(undefined, apiBaseUrl)
-      .then((result) => {
-        if (!active) return
-        setPlugins(result.registry.items)
-        setRegistryError('')
-        setRegistryNotice(result.source === 'BUNDLED' ? t('desktop.registrySnapshotNotice') : '')
-      })
-      .catch(() => {
-        if (active) setRegistryError(t('status.registryRequestFailed'))
-      })
-      .finally(() => {
-        if (active) setRegistryLoading(false)
-      })
+    void loadMarketplace(() => active).catch(() => {
+      if (active) {
+        setRegistryError(t('status.registryRequestFailed'))
+        setRegistryLoading(false)
+      }
+    })
 
     return () => {
       active = false
     }
-  }, [apiBaseUrl, t])
+  }, [loadMarketplace, t])
+
+  const refreshDiscovery = useCallback(async () => {
+    setDiscoveryRefreshing(true)
+    setRegistryError('')
+    try {
+      await refreshDesktopDiscovery(apiBaseUrl)
+      await loadMarketplace(() => true)
+    } catch {
+      setRegistryError(t('desktop.discoveryFailed'))
+    } finally {
+      setDiscoveryRefreshing(false)
+    }
+  }, [apiBaseUrl, loadMarketplace, t])
 
   const refreshAudit = useCallback(() => {
     void listInstallationAudit().then(setInstallationAudit).catch(() => undefined)
   }, [])
 
   useEffect(() => {
-    void getManagedRuntimeStatus().then(setManagedRuntime).catch(() => undefined)
+    void getManagedRuntimeStatus().then((runtime) => {
+      setManagedRuntime(runtime)
+      setRuntimeSnapshot(snapshotFromManagedRuntime(runtime))
+    }).catch(() => undefined)
+    void detectManagedRuntimeEnvironment().then((environment) => {
+      if (environment) setRuntimeEnvironment(environment)
+    }).catch(() => undefined)
     refreshAudit()
   }, [refreshAudit])
 
@@ -304,10 +362,12 @@ export function App() {
 
           {activeSection === 'plugins' ? <DesktopMarketplace
             auth={auth}
+            discoveryRefreshing={discoveryRefreshing}
             error={registryError}
             loading={registryLoading}
             notice={registryNotice}
             onAuditChange={refreshAudit}
+            onRefreshDiscovery={() => void refreshDiscovery()}
             onRuntimeChange={setManagedRuntime}
             plugins={plugins}
             runtime={managedRuntime}

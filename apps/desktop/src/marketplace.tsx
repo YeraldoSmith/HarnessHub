@@ -14,6 +14,8 @@ interface DesktopMarketplaceProps {
   notice: string
   auth: AuthSessionResponse
   runtime: ManagedRuntimeStatus
+  discoveryRefreshing: boolean
+  onRefreshDiscovery(): void
   onRuntimeChange(runtime: ManagedRuntimeStatus): void
   onAuditChange(): void
 }
@@ -25,6 +27,8 @@ export function DesktopMarketplace({
   notice,
   auth,
   runtime,
+  discoveryRefreshing,
+  onRefreshDiscovery,
   onRuntimeChange,
   onAuditChange,
 }: DesktopMarketplaceProps) {
@@ -79,6 +83,14 @@ export function DesktopMarketplace({
           <option value="recent">{t('web.sortRecent')}</option>
         </select>
         <strong>{t('desktop.marketplaceCount', { count: filtered.length })}</strong>
+        <button
+          className="desktop-discovery-refresh"
+          disabled={discoveryRefreshing}
+          onClick={onRefreshDiscovery}
+          type="button"
+        >
+          {discoveryRefreshing ? t('desktop.discoveryRefreshing') : t('desktop.discoveryRefresh')}
+        </button>
       </div>
 
       {loading ? <div className="desktop-message">{t('desktop.loading')}</div> : null}
@@ -98,8 +110,11 @@ export function DesktopMarketplace({
                   type="button"
                 >
                   <PluginIcon className="desktop-plugin-icon" plugin={plugin} />
-                  <span><strong>{plugin.name}</strong><small>{plugin.author.name} · v{plugin.version}</small></span>
+                  <span><strong>{plugin.name}</strong><small>{plugin.author.name} · {plugin.registry_status === 'COLLECTED_UNVERIFIED' && !plugin.npm_version
+                    ? t('plugin.versionPending')
+                    : `v${plugin.version}`}</small></span>
                   <em className={`desktop-risk desktop-risk--${risk}`}>{risk === 'pending' ? t('plugin.riskPending') : risk.toUpperCase()}</em>
+                  {plugin.registry_status === 'COLLECTED_UNVERIFIED' ? <i className="candidate" title={t('plugin.collectedUnverified')}>?</i> : null}
                   {isPluginSourceVerified(plugin) ? <i title={t('plugin.sourceVerified')}>✓</i> : null}
                 </button>
               )

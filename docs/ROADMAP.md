@@ -328,3 +328,13 @@ HarnessHub 仍不直接发送 Agent/模型请求，不保存模型凭据，也�
 - Permanent public HarnessHub IDs beginning with Founder `HH-0000000001`.
 - Early User and Beta Tester badge vocabulary, separate from roles and safety.
 - GitHub public-source discovery candidates remain `COLLECTED_UNVERIFIED` until the evidence pipeline completes.
+
+## v0.7.1 Guest-first and ecosystem discovery
+
+- Remove account checks from pinned DSH preparation and published-plugin local installation.
+- Keep anonymous installation state and audit records local; account features remain optional enhancements.
+- Persist public GitHub/npm discovery results in a separate `COLLECTED_UNVERIFIED` candidate registry.
+- Add candidate deduplication, transient retry, manual refresh, cooldown, and an opt-in scheduler boundary.
+- Classify candidates into Coding, Productivity, Automation, Data, Research, or Other.
+- Assign deterministic LOW, MEDIUM, HIGH, or CRITICAL risk with retained reasons and immutable snapshots.
+- Allow non-critical candidates with complete fixed evidence through risk-tiered confirmation; block CRITICAL by default.

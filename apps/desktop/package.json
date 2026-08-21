@@ -1,6 +1,6 @@
 {
   "name": "@harnesshub/desktop",
-  "version": "0.7.0-beta",
+  "version": "0.7.3-beta",
   "private": true,
   "type": "module",
   "scripts": {
@@ -15,6 +15,7 @@
     "@harnesshub/i18n": "workspace:*",
     "@harnesshub/installation-prototype": "workspace:*",
     "@harnesshub/plugin-schema": "workspace:*",
+    "@harnesshub/plugin-sources": "workspace:*",
     "@harnesshub/runtime-bridge": "workspace:*",
     "@harnesshub/runtime-integration": "workspace:*",
     "@harnesshub/types": "workspace:*",

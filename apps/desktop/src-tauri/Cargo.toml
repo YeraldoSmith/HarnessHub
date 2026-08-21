@@ -1,6 +1,6 @@
 [package]
 name = "harnesshub-desktop"
-version = "0.7.3-beta.4"
+version = "0.7.3-beta.5"
 description = "HarnessHub read-only desktop registry"
 authors = ["YeraldoSmith"]
 license = "AGPL-3.0-only"

@@ -1320,6 +1320,20 @@ fn pnpm_dsh_args() -> Vec<String> {
     vec!["dlx".to_string(), format!("{DSH_PACKAGE}@{DSH_VERSION}")]
 }
 
+/// The managed Desktop Web Profile owns these two flags. They keep the Runtime
+/// loopback-only and prevent a second browser window from opening. A bundle
+/// that claims a mutually-exclusive, non-Web Profile is never added to this
+/// Profile (see `desktop_web_profile_issue` below), so it cannot intercept this
+/// Web-only command line.
+fn managed_dsh_web_args(port: u16) -> Vec<String> {
+    vec![
+        "web".to_string(),
+        "--no-open".to_string(),
+        "--port".to_string(),
+        port.to_string(),
+    ]
+}
+
 fn run_dsh(
     app: &AppHandle,
     additional: &[String],
@@ -1422,7 +1436,6 @@ fn runtime_command_matches(app: &AppHandle, pid: u32, port: u16) -> bool {
                     .command
                     .contains(&format!("{DSH_PACKAGE}@{DSH_VERSION}"))
                 && row.command.contains(" web ")
-                && row.command.contains(" --no-open ")
                 && row.command.contains(&format!(" --port {port}"))
         });
     }
@@ -1457,7 +1470,6 @@ fn discover_legacy_runtime(app: &AppHandle) -> Option<ManagedRuntimeLease> {
                 .command
                 .contains(&format!("{DSH_PACKAGE}@{DSH_VERSION}"))
             && row.command.contains(" web ")
-            && row.command.contains(" --no-open ")
             && loopback_port_ready(port))
         .then_some(ManagedRuntimeLease {
             pid: row.pid,
@@ -1555,6 +1567,68 @@ fn profile_package_is_bundle(
         .and_then(|bundle| bundle.get("patch"))
         .and_then(serde_json::Value::as_str)
         .is_some_and(|patch| !patch.trim().is_empty()))
+}
+
+/// Return a user-facing reason when an installed DSH bundle expressly targets
+/// a non-Web Profile. Installing such a package remains allowed: the package
+/// and its evidence remain in the isolated Profile, but it is not activated in
+/// HarnessHub Desktop's Web Runtime. This prevents a Headless-only gateway
+/// from taking over `cmdlineArgs` and making the Desktop Web Runtime unusable.
+///
+/// We deliberately require a concrete patch declaration, rather than guessing
+/// from a package name, author, or README. Unknown bundles retain the normal
+/// install path and are handled by the existing risk/confirmation flow.
+fn desktop_web_profile_issue(
+    app: &AppHandle,
+    package_name: &str,
+) -> Result<Option<String>, String> {
+    let manifest_path = profile_package_dir(app, package_name)?.join("package.json");
+    let manifest = fs::read_to_string(&manifest_path)
+        .map_err(|_| "插件依赖没有正确写入隔离 Profile。".to_string())?;
+    let value: serde_json::Value =
+        serde_json::from_str(&manifest).map_err(|_| "插件包清单无效，安装已停止。".to_string())?;
+    let Some(patch) = value
+        .get("dsh")
+        .and_then(|dsh| dsh.get("bundle"))
+        .and_then(|bundle| bundle.get("patch"))
+        .and_then(serde_json::Value::as_str)
+    else {
+        return Ok(None);
+    };
+    let patch_path = Path::new(patch);
+    if patch_path.is_absolute()
+        || patch_path.components().any(|component| {
+            matches!(
+                component,
+                Component::ParentDir | Component::RootDir | Component::Prefix(_)
+            )
+        })
+    {
+        return Err("插件 bundle patch 路径无效，安装已停止。".to_string());
+    }
+    let content = fs::read_to_string(profile_package_dir(app, package_name)?.join(patch_path))
+        .map_err(|_| "插件 bundle patch 无法读取，安装已停止。".to_string())?;
+    if patch_disables_row(&content, "headless-startup")
+        || patch_disables_row(&content, "headless-runner")
+    {
+        return Ok(Some(
+            "此插件声明了 Headless 专用 DSH Profile，已安装但不会在当前 Desktop Web Runtime 中启用。"
+                .to_string(),
+        ));
+    }
+    Ok(None)
+}
+
+/// Narrow, structure-aware check for a `cordis.patch.yml` row of the form:
+/// `- id: <row>` followed by `disabled: true`, before the next top-level row.
+fn patch_disables_row(content: &str, row_id: &str) -> bool {
+    let marker = format!("- id: {row_id}");
+    let Some(start) = content.find(&marker) else {
+        return false;
+    };
+    let remainder = &content[start + marker.len()..];
+    let row = remainder.split("\n- id:").next().unwrap_or(remainder);
+    row.lines().any(|line| line.trim() == "disabled: true")
 }
 
 fn update_profile_manifest_value(
@@ -1700,6 +1774,21 @@ fn reconcile_managed_profile(app: &AppHandle, state: &mut RuntimeStateFile) -> R
     for plugin in &mut state.plugins {
         if !plugin.enabled {
             update_profile_bundle(app, &plugin.package_name, false)?;
+            continue;
+        }
+        if let Some(reason) = desktop_web_profile_issue(app, &plugin.package_name)? {
+            plugin.enabled = false;
+            plugin.issue = Some(reason.clone());
+            update_profile_bundle(app, &plugin.package_name, false)?;
+            audit(
+                app,
+                "DISABLE_INCOMPATIBLE_WEB_BUNDLE",
+                Some(&plugin.plugin_id),
+                Some(&plugin.package_name),
+                Some(&plugin.version),
+                "SUCCESS",
+                &reason,
+            );
             continue;
         }
         let present =
@@ -2213,7 +2302,8 @@ fn install_managed_plugin_blocking(
         );
         return Err(message);
     }
-    update_profile_bundle(&app, &request.package_name, true)?;
+    let desktop_web_issue = desktop_web_profile_issue(&app, &request.package_name)?;
+    update_profile_bundle(&app, &request.package_name, desktop_web_issue.is_none())?;
     if let Err(reason) = verify_profile_manifest_consistency(&app) {
         let restored = restore_profile_and_dependencies(&app, &backups).is_ok();
         let message = if restored {
@@ -2251,8 +2341,8 @@ fn install_managed_plugin_blocking(
         source_url: request.source_url.clone(),
         source_commit: request.source_commit.clone(),
         snapshot_sha256: request.snapshot_sha256.clone(),
-        enabled: true,
-        issue: None,
+        enabled: desktop_web_issue.is_none(),
+        issue: desktop_web_issue.clone(),
         installed_at_unix_ms: unix_ms(),
     });
     next.plugins
@@ -2264,13 +2354,21 @@ fn install_managed_plugin_blocking(
         Some(&request.plugin_id),
         Some(&request.package_name),
         Some(&request.version),
-        "SUCCESS",
-        "固定版本安装完成，配置验证通过。",
+        if desktop_web_issue.is_some() {
+            "INSTALLED_NOT_ACTIVATED"
+        } else {
+            "SUCCESS"
+        },
+        desktop_web_issue
+            .as_deref()
+            .unwrap_or("固定版本安装完成，配置验证通过。"),
     );
     Ok(ManagedOperationResult {
         success: true,
         action: action.to_string(),
-        message: "插件已安装并通过 DSH 配置验证。请重启 Runtime 以加载变更。".to_string(),
+        message: desktop_web_issue.unwrap_or_else(|| {
+            "插件已安装并通过 DSH 配置验证。请重启 Runtime 以加载变更。".to_string()
+        }),
         runtime: runtime_status(&app, &native),
     })
 }
@@ -2457,12 +2555,7 @@ fn start_managed_runtime_blocking(app: AppHandle) -> Result<ManagedRuntimeStatus
         .map_err(|_| "无法创建 Runtime 日志。".to_string())?;
     let mut args = vec![toolchain.pnpm_cli.to_string_lossy().into_owned()];
     args.extend(pnpm_dsh_args());
-    args.extend([
-        "web".to_string(),
-        "--no-open".to_string(),
-        "--port".to_string(),
-        port.to_string(),
-    ]);
+    args.extend(managed_dsh_web_args(port));
     let mut command = Command::new(&toolchain.node);
     command
         .args(args)
@@ -2858,11 +2951,43 @@ mod tests {
     #[test]
     fn legacy_runtime_command_port_is_recovered() {
         assert_eq!(
-            parse_runtime_port(
-                "node pnpm dlx @deepseek-ai/dsh@0.1.0-rc.8 web --no-open --port 58832"
-            ),
+            parse_runtime_port("node pnpm dlx @deepseek-ai/dsh@0.1.0-rc.8 web --port 58832"),
             Some(58832)
         );
+    }
+
+    #[test]
+    fn managed_runtime_only_uses_supported_web_arguments() {
+        let args = managed_dsh_web_args(58832);
+        assert_eq!(args, ["web", "--no-open", "--port", "58832"]);
+    }
+
+    #[test]
+    fn headless_only_patch_is_not_activated_in_desktop_web_profile() {
+        let patch = r#"
+- id: headless-startup
+  disabled: true
+
+- id: headless-runner
+  disabled: true
+
+- insert:
+    - id: gateway
+      inject: [cmdlineArgs]
+"#;
+        assert!(patch_disables_row(patch, "headless-startup"));
+        assert!(patch_disables_row(patch, "headless-runner"));
+    }
+
+    #[test]
+    fn regular_patch_remains_eligible_for_desktop_web_profile() {
+        let patch = r#"
+- insert:
+    - id: plugin-startup
+      inject: [webStartup]
+"#;
+        assert!(!patch_disables_row(patch, "headless-startup"));
+        assert!(!patch_disables_row(patch, "headless-runner"));
     }
 
     #[test]

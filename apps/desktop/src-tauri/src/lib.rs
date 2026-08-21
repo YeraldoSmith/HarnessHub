@@ -29,6 +29,9 @@ const PNPM_INTEGRITY: &str =
     "sha512-eIHz7VkNRyxKlV4riLISF5ERYGbcyIy8o4SeybYPG7qm0syyIfqR2k4cZb7yvL43k2Wup6xTnHv4be3DobItzg==";
 const OFFICIAL_NPM_REGISTRY: &str = "https://registry.npmjs.org";
 const MAX_TOOLCHAIN_DOWNLOAD_BYTES: u64 = 110 * 1024 * 1024;
+const COMMUNITY_CATALOG_URL: &str =
+    "https://raw.githubusercontent.com/lwmxiaobei/dsh-plugins/main/catalog/plugins.json";
+const MAX_COMMUNITY_CATALOG_BYTES: u64 = 8 * 1024 * 1024;
 const MANAGED_PROFILE: &str = "web";
 #[cfg(test)]
 const REGISTRY_SOURCES: &str = include_str!("../../../../config/registry-sources.json");
@@ -111,6 +114,7 @@ struct PluginOperationRequest {
     source_url: Option<String>,
     source_commit: Option<String>,
     snapshot_sha256: Option<String>,
+    dsh_compatibility: Option<String>,
     confirmed: bool,
 }
 
@@ -471,6 +475,39 @@ fn download_verified(url: &str, expected_sha256: &str, target: &Path) -> Result<
         return Err("Node.js 工具链 SHA-256 校验失败，安装已停止。".to_string());
     }
     fs::rename(&temporary, target).map_err(|_| "无法提交已校验的工具链下载。".to_string())
+}
+
+/// Fetch the only community catalog URL used by Desktop. Keeping the request
+/// in the native layer avoids WebView CSP/CORS differences while retaining a
+/// strict host, redirect and size boundary. The returned JSON is still treated
+/// as untrusted metadata by the TypeScript catalog adapter.
+fn fetch_community_catalog_blocking() -> Result<String, String> {
+    let client = reqwest::blocking::Client::builder()
+        .connect_timeout(Duration::from_secs(10))
+        .timeout(Duration::from_secs(30))
+        .redirect(reqwest::redirect::Policy::limited(2))
+        .build()
+        .map_err(|_| "无法初始化社区目录读取器。".to_string())?;
+    let response = client
+        .get(COMMUNITY_CATALOG_URL)
+        .send()
+        .and_then(reqwest::blocking::Response::error_for_status)
+        .map_err(|error| format!("无法读取 DSH 社区插件目录：{error}"))?;
+    if response
+        .content_length()
+        .is_some_and(|length| length > MAX_COMMUNITY_CATALOG_BYTES)
+    {
+        return Err("社区插件目录超过安全大小上限。".to_string());
+    }
+    let mut bytes = Vec::new();
+    response
+        .take(MAX_COMMUNITY_CATALOG_BYTES + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|_| "社区插件目录读取中断。".to_string())?;
+    if bytes.len() as u64 > MAX_COMMUNITY_CATALOG_BYTES {
+        return Err("社区插件目录超过安全大小上限。".to_string());
+    }
+    String::from_utf8(bytes).map_err(|_| "社区插件目录不是有效的 UTF-8 数据。".to_string())
 }
 
 fn extract_tar_gz_safely(archive_path: &Path, target: &Path) -> Result<(), String> {
@@ -1228,7 +1265,9 @@ fn validate_plugin_request(request: &PluginOperationRequest) -> Result<(), Strin
     Ok(())
 }
 
-fn github_package_spec(request: &PluginOperationRequest) -> Result<String, String> {
+fn github_source_identity(
+    request: &PluginOperationRequest,
+) -> Result<(String, String, String), String> {
     let source = request
         .source_url
         .as_deref()
@@ -1245,6 +1284,13 @@ fn github_package_spec(request: &PluginOperationRequest) -> Result<String, Strin
         })
         .filter(|parts| parts.len() == 2 && parts.iter().all(|part| !part.is_empty()))
         .ok_or_else(|| "插件 GitHub 来源格式无效。".to_string())?;
+    if parts.iter().any(|part| {
+        !part
+            .chars()
+            .all(|character| character.is_ascii_alphanumeric() || "._-".contains(character))
+    }) {
+        return Err("插件 GitHub 来源格式无效。".to_string());
+    }
     let commit = request
         .source_commit
         .as_deref()
@@ -1252,10 +1298,131 @@ fn github_package_spec(request: &PluginOperationRequest) -> Result<String, Strin
             value.len() == 40 && value.chars().all(|character| character.is_ascii_hexdigit())
         })
         .ok_or_else(|| "GitHub 插件缺少固定 commit。".to_string())?;
+    Ok((
+        parts[0].to_string(),
+        parts[1].to_string(),
+        commit.to_string(),
+    ))
+}
+
+fn github_package_spec(request: &PluginOperationRequest) -> Result<String, String> {
+    let (owner, repository, commit) = github_source_identity(request)?;
     Ok(format!(
         "git+https://github.com/{}/{}.git#{commit}",
-        parts[0], parts[1]
+        owner, repository
     ))
+}
+
+fn verify_github_source_preflight(request: &PluginOperationRequest) -> Result<(), String> {
+    let (owner, repository, commit) = github_source_identity(request)?;
+    let client = reqwest::blocking::Client::builder()
+        .connect_timeout(Duration::from_secs(10))
+        .timeout(Duration::from_secs(30))
+        .redirect(reqwest::redirect::Policy::limited(2))
+        .user_agent("HarnessHub-Beta/0.7")
+        .build()
+        .map_err(|_| "无法初始化 GitHub 来源检查。".to_string())?;
+    let manifest_url =
+        format!("https://raw.githubusercontent.com/{owner}/{repository}/{commit}/package.json");
+    let response = client
+        .get(&manifest_url)
+        .send()
+        .map_err(|_| "无法连接 GitHub 检查插件来源；安装没有开始。".to_string())?;
+    if response.status() == reqwest::StatusCode::NOT_FOUND {
+        return Err(
+            "GitHub 仓库、固定 commit 或 package.json 已不存在；安装没有开始。".to_string(),
+        );
+    }
+    let mut response = response
+        .error_for_status()
+        .map_err(|_| "GitHub 来源暂时不可读取；安装没有开始。".to_string())?;
+    if response
+        .content_length()
+        .is_some_and(|length| length > 512 * 1024)
+    {
+        return Err("插件 package.json 超过安全检查上限；安装没有开始。".to_string());
+    }
+    let mut bytes = Vec::new();
+    response
+        .by_ref()
+        .take(512 * 1024 + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|_| "读取插件 package.json 时中断；安装没有开始。".to_string())?;
+    if bytes.len() > 512 * 1024 {
+        return Err("插件 package.json 超过安全检查上限；安装没有开始。".to_string());
+    }
+    let manifest: serde_json::Value = serde_json::from_slice(&bytes)
+        .map_err(|_| "插件 package.json 无法解析；安装没有开始。".to_string())?;
+    if manifest.get("name").and_then(serde_json::Value::as_str)
+        != Some(request.package_name.as_str())
+    {
+        return Err("GitHub package 名称与 Marketplace 记录不一致；安装没有开始。".to_string());
+    }
+    if manifest.get("version").and_then(serde_json::Value::as_str) != Some(request.version.as_str())
+    {
+        return Err(
+            "GitHub package 版本与 Marketplace 固定版本不一致；请刷新插件来源。".to_string(),
+        );
+    }
+    let patch = manifest
+        .pointer("/dsh/bundle/patch")
+        .and_then(serde_json::Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| "此 package 没有声明 DSH Bundle，不能安装到当前 Runtime。".to_string())?;
+    let normalized_patch = patch.strip_prefix("./").unwrap_or(patch);
+    if normalized_patch.contains('\\')
+        || normalized_patch.split('/').any(|part| {
+            part.is_empty()
+                || part == "."
+                || part == ".."
+                || !part
+                    .chars()
+                    .all(|character| character.is_ascii_alphanumeric() || "._-".contains(character))
+        })
+    {
+        return Err("DSH Bundle patch 路径不安全；安装没有开始。".to_string());
+    }
+    let patch_url = format!(
+        "https://raw.githubusercontent.com/{owner}/{repository}/{commit}/{normalized_patch}"
+    );
+    let patch_response = client
+        .get(patch_url)
+        .send()
+        .map_err(|_| "无法连接 GitHub 检查 DSH Bundle 文件；安装没有开始。".to_string())?;
+    if patch_response.status() == reqwest::StatusCode::NOT_FOUND {
+        return Err("插件声明的 DSH Bundle 文件不存在；安装没有开始。".to_string());
+    }
+    patch_response
+        .error_for_status()
+        .map_err(|_| "插件的 DSH Bundle 文件暂时不可读取；安装没有开始。".to_string())?;
+    Ok(())
+}
+
+fn verify_declared_dsh_compatibility(request: &PluginOperationRequest) -> Result<(), String> {
+    let Some(declared) = request.dsh_compatibility.as_deref().map(str::trim) else {
+        return Ok(());
+    };
+    if declared.is_empty() || declared.eq_ignore_ascii_case("unknown") || declared == "*" {
+        return Ok(());
+    }
+    // DSH is still on the 0.1 release line. Only reject an explicit declaration
+    // for another release line; ranges that include 0.1 remain installable and
+    // are validated again by the Profile consistency check after installation.
+    let digits = declared
+        .split(|character: char| !character.is_ascii_digit() && character != '.')
+        .find(|part| part.chars().filter(|character| *character == '.').count() >= 1);
+    if let Some(version) = digits {
+        let mut parts = version.split('.');
+        if let (Some(major), Some(minor)) = (parts.next(), parts.next()) {
+            if major != "0" || minor != "1" {
+                return Err(format!(
+                    "插件声明兼容 DSH {declared}，当前 Runtime 为 {DSH_VERSION}；安装没有开始。"
+                ));
+            }
+        }
+    }
+    Ok(())
 }
 
 fn plugin_package_spec(request: &PluginOperationRequest) -> Result<String, String> {
@@ -1318,6 +1485,20 @@ fn dsh_environment(
 
 fn pnpm_dsh_args() -> Vec<String> {
     vec!["dlx".to_string(), format!("{DSH_PACKAGE}@{DSH_VERSION}")]
+}
+
+/// The managed Desktop Web Profile owns these two flags. They keep the Runtime
+/// loopback-only and prevent a second browser window from opening. A bundle
+/// that claims a mutually-exclusive, non-Web Profile is never added to this
+/// Profile (see `desktop_web_profile_issue` below), so it cannot intercept this
+/// Web-only command line.
+fn managed_dsh_web_args(port: u16) -> Vec<String> {
+    vec![
+        "web".to_string(),
+        "--no-open".to_string(),
+        "--port".to_string(),
+        port.to_string(),
+    ]
 }
 
 fn run_dsh(
@@ -1422,7 +1603,6 @@ fn runtime_command_matches(app: &AppHandle, pid: u32, port: u16) -> bool {
                     .command
                     .contains(&format!("{DSH_PACKAGE}@{DSH_VERSION}"))
                 && row.command.contains(" web ")
-                && row.command.contains(" --no-open ")
                 && row.command.contains(&format!(" --port {port}"))
         });
     }
@@ -1457,7 +1637,6 @@ fn discover_legacy_runtime(app: &AppHandle) -> Option<ManagedRuntimeLease> {
                 .command
                 .contains(&format!("{DSH_PACKAGE}@{DSH_VERSION}"))
             && row.command.contains(" web ")
-            && row.command.contains(" --no-open ")
             && loopback_port_ready(port))
         .then_some(ManagedRuntimeLease {
             pid: row.pid,
@@ -1534,6 +1713,38 @@ fn profile_package_dir(app: &AppHandle, package_name: &str) -> Result<PathBuf, S
         .join(package_name))
 }
 
+/// pnpm normalizes a fixed GitHub URL written by HarnessHub into
+/// `github:owner/repository#<commit>` in the Profile manifest. Accept both
+/// representations, but only when the repository identity is well formed and
+/// the fragment is a full immutable commit SHA.
+fn pinned_github_dependency(value: &str) -> Option<(&str, &str)> {
+    let normalized = value
+        .strip_prefix("github:")
+        .or_else(|| value.strip_prefix("git+https://github.com/"))?;
+    let (repository, commit) = normalized.split_once('#')?;
+    let repository = repository.strip_suffix(".git").unwrap_or(repository);
+    let mut parts = repository.split('/');
+    let owner = parts.next()?;
+    let name = parts.next()?;
+    if owner.is_empty()
+        || name.is_empty()
+        || parts.next().is_some()
+        || !owner
+            .chars()
+            .all(|character| character.is_ascii_alphanumeric() || "._-".contains(character))
+        || !name
+            .chars()
+            .all(|character| character.is_ascii_alphanumeric() || "._-".contains(character))
+        || commit.len() != 40
+        || !commit
+            .chars()
+            .all(|character| character.is_ascii_hexdigit())
+    {
+        return None;
+    }
+    Some((repository, commit))
+}
+
 fn profile_package_is_bundle(
     app: &AppHandle,
     package_name: &str,
@@ -1544,8 +1755,10 @@ fn profile_package_is_bundle(
         .map_err(|_| "插件依赖没有正确写入隔离 Profile。".to_string())?;
     let value: serde_json::Value =
         serde_json::from_str(&content).map_err(|_| "插件包清单无效，安装已停止。".to_string())?;
+    let is_pinned_git_dependency = pinned_github_dependency(version).is_some();
     if value.get("name").and_then(serde_json::Value::as_str) != Some(package_name)
-        || value.get("version").and_then(serde_json::Value::as_str) != Some(version)
+        || (!is_pinned_git_dependency
+            && value.get("version").and_then(serde_json::Value::as_str) != Some(version))
     {
         return Err("插件实际包信息与已核验版本不一致，安装已停止。".to_string());
     }
@@ -1555,6 +1768,97 @@ fn profile_package_is_bundle(
         .and_then(|bundle| bundle.get("patch"))
         .and_then(serde_json::Value::as_str)
         .is_some_and(|patch| !patch.trim().is_empty()))
+}
+
+fn verify_profile_dependency_matches_request(
+    app: &AppHandle,
+    request: &PluginOperationRequest,
+) -> Result<(), String> {
+    let manifest = fs::read_to_string(profile_manifest_path(app)?)
+        .map_err(|_| "无法读取 DSH Profile 配置。".to_string())?;
+    let value: serde_json::Value = serde_json::from_str(&manifest)
+        .map_err(|_| "DSH Profile 配置无效，安装已停止。".to_string())?;
+    let installed_spec = value
+        .get("dependencies")
+        .and_then(serde_json::Value::as_object)
+        .and_then(|dependencies| dependencies.get(&request.package_name))
+        .and_then(serde_json::Value::as_str)
+        .ok_or_else(|| "插件依赖没有写入隔离 Profile，安装已停止。".to_string())?;
+
+    if request.source_kind.as_deref() == Some("GITHUB") {
+        let (owner, repository, expected_commit) = github_source_identity(request)?;
+        let expected_repository = format!("{owner}/{repository}");
+        let (installed_repository, installed_commit) = pinned_github_dependency(installed_spec)
+            .ok_or_else(|| "GitHub 插件没有保留固定 commit，安装已停止。".to_string())?;
+        if installed_repository != expected_repository || installed_commit != expected_commit {
+            return Err("GitHub 插件安装结果与固定来源证据不一致，安装已停止。".to_string());
+        }
+    } else if installed_spec != request.version {
+        return Err("npm 插件没有保持请求的固定版本，安装已停止。".to_string());
+    }
+    Ok(())
+}
+
+/// Return a user-facing reason when an installed DSH bundle expressly targets
+/// a non-Web Profile. Installing such a package remains allowed: the package
+/// and its evidence remain in the isolated Profile, but it is not activated in
+/// HarnessHub Desktop's Web Runtime. This prevents a Headless-only gateway
+/// from taking over `cmdlineArgs` and making the Desktop Web Runtime unusable.
+///
+/// We deliberately require a concrete patch declaration, rather than guessing
+/// from a package name, author, or README. Unknown bundles retain the normal
+/// install path and are handled by the existing risk/confirmation flow.
+fn desktop_web_profile_issue(
+    app: &AppHandle,
+    package_name: &str,
+) -> Result<Option<String>, String> {
+    let manifest_path = profile_package_dir(app, package_name)?.join("package.json");
+    let manifest = fs::read_to_string(&manifest_path)
+        .map_err(|_| "插件依赖没有正确写入隔离 Profile。".to_string())?;
+    let value: serde_json::Value =
+        serde_json::from_str(&manifest).map_err(|_| "插件包清单无效，安装已停止。".to_string())?;
+    let Some(patch) = value
+        .get("dsh")
+        .and_then(|dsh| dsh.get("bundle"))
+        .and_then(|bundle| bundle.get("patch"))
+        .and_then(serde_json::Value::as_str)
+    else {
+        return Ok(None);
+    };
+    let patch_path = Path::new(patch);
+    if patch_path.is_absolute()
+        || patch_path.components().any(|component| {
+            matches!(
+                component,
+                Component::ParentDir | Component::RootDir | Component::Prefix(_)
+            )
+        })
+    {
+        return Err("插件 bundle patch 路径无效，安装已停止。".to_string());
+    }
+    let content = fs::read_to_string(profile_package_dir(app, package_name)?.join(patch_path))
+        .map_err(|_| "插件 bundle patch 无法读取，安装已停止。".to_string())?;
+    if patch_disables_row(&content, "headless-startup")
+        || patch_disables_row(&content, "headless-runner")
+    {
+        return Ok(Some(
+            "此插件声明了 Headless 专用 DSH Profile，已安装但不会在当前 Desktop Web Runtime 中启用。"
+                .to_string(),
+        ));
+    }
+    Ok(None)
+}
+
+/// Narrow, structure-aware check for a `cordis.patch.yml` row of the form:
+/// `- id: <row>` followed by `disabled: true`, before the next top-level row.
+fn patch_disables_row(content: &str, row_id: &str) -> bool {
+    let marker = format!("- id: {row_id}");
+    let Some(start) = content.find(&marker) else {
+        return false;
+    };
+    let remainder = &content[start + marker.len()..];
+    let row = remainder.split("\n- id:").next().unwrap_or(remainder);
+    row.lines().any(|line| line.trim() == "disabled: true")
 }
 
 fn update_profile_manifest_value(
@@ -1612,6 +1916,52 @@ fn remove_profile_package_entry(app: &AppHandle, package_name: &str) -> Result<(
     update_profile_manifest(app, package_name, false, true)
 }
 
+/// Checks only Profile metadata and installed package manifests. This is safe to
+/// run during install, uninstall, and recovery because it never loads plugin
+/// code. Starting DSH remains the single point that activates installed code.
+fn verify_profile_manifest_consistency(app: &AppHandle) -> Result<(), String> {
+    let path = profile_manifest_path(app)?;
+    let content =
+        fs::read_to_string(&path).map_err(|_| "无法读取 DSH Profile 配置。".to_string())?;
+    let value: serde_json::Value = serde_json::from_str(&content)
+        .map_err(|_| "DSH Profile 配置无效，操作已停止。".to_string())?;
+    let bundles = value
+        .get("dsh")
+        .and_then(serde_json::Value::as_object)
+        .and_then(|dsh| dsh.get("profile"))
+        .and_then(serde_json::Value::as_object)
+        .and_then(|profile| profile.get("bundles"))
+        .and_then(serde_json::Value::as_array)
+        .ok_or_else(|| "DSH Profile 缺少受控 bundle 配置。".to_string())?;
+    let dependencies = value
+        .get("dependencies")
+        .and_then(serde_json::Value::as_object)
+        .ok_or_else(|| "DSH Profile 缺少插件依赖配置。".to_string())?;
+
+    for bundle in bundles {
+        let package_name = bundle
+            .as_str()
+            .filter(|name| !name.trim().is_empty())
+            .ok_or_else(|| "DSH Profile 包含无效的 bundle 标识。".to_string())?;
+        // DSH supplies these built-in bundles itself. Every other bundle must
+        // have an exact Profile dependency and a matching package manifest.
+        if package_name.starts_with("@deepseek-ai/dsh-") {
+            continue;
+        }
+        let version = dependencies
+            .get(package_name)
+            .and_then(serde_json::Value::as_str)
+            .filter(|version| !version.trim().is_empty())
+            .ok_or_else(|| format!("DSH Profile 中的插件 {package_name} 缺少依赖记录。"))?;
+        if !profile_package_is_bundle(app, package_name, version)? {
+            return Err(format!(
+                "DSH Profile 中的插件 {package_name} 未正确安装，已阻止启动。"
+            ));
+        }
+    }
+    Ok(())
+}
+
 fn remove_profile_package_link(app: &AppHandle, package_name: &str) -> Result<(), String> {
     let path = profile_package_dir(app, package_name)?;
     let Ok(metadata) = fs::symlink_metadata(&path) else {
@@ -1656,6 +2006,21 @@ fn reconcile_managed_profile(app: &AppHandle, state: &mut RuntimeStateFile) -> R
             update_profile_bundle(app, &plugin.package_name, false)?;
             continue;
         }
+        if let Some(reason) = desktop_web_profile_issue(app, &plugin.package_name)? {
+            plugin.enabled = false;
+            plugin.issue = Some(reason.clone());
+            update_profile_bundle(app, &plugin.package_name, false)?;
+            audit(
+                app,
+                "DISABLE_INCOMPATIBLE_WEB_BUNDLE",
+                Some(&plugin.plugin_id),
+                Some(&plugin.package_name),
+                Some(&plugin.version),
+                "SUCCESS",
+                &reason,
+            );
+            continue;
+        }
         let present =
             profile_package_is_bundle(app, &plugin.package_name, &plugin.version).unwrap_or(false);
         if present {
@@ -1675,6 +2040,7 @@ fn reconcile_managed_profile(app: &AppHandle, state: &mut RuntimeStateFile) -> R
             source_url: plugin.source_url.clone(),
             source_commit: plugin.source_commit.clone(),
             snapshot_sha256: plugin.snapshot_sha256.clone(),
+            dsh_compatibility: None,
             confirmed: true,
         };
         let source_verification = validate_plugin_request(&request).and_then(|_| {
@@ -1748,16 +2114,7 @@ fn reconcile_managed_profile(app: &AppHandle, state: &mut RuntimeStateFile) -> R
         );
     }
     write_runtime_state(app, state)?;
-    let verification = run_dsh(
-        app,
-        &["web".to_string(), "--dump-config".to_string()],
-        PROFILE_MUTATION_TIMEOUT,
-    )?;
-    if verification.success() {
-        Ok(())
-    } else {
-        Err("DSH Profile 验证未通过，Runtime 没有启动。请在任务页面查看恢复记录。".to_string())
-    }
+    verify_profile_manifest_consistency(app)
 }
 
 fn verify_dsh_integrity(app: &AppHandle) -> Result<(), String> {
@@ -1797,7 +2154,24 @@ fn verify_npm_integrity(app: &AppHandle, request: &PluginOperationRequest) -> Re
         Duration::from_secs(60),
     )?;
     if !result.success() {
-        return Err("无法从 npm 核验插件完整性证据。安装没有开始。".to_string());
+        let details = format!("{} {}", result.stdout, result.stderr).to_ascii_lowercase();
+        if details.contains("e404")
+            || details.contains("404 not found")
+            || details.contains("no matching version")
+            || details.contains("is not in this registry")
+        {
+            return Err(format!(
+                "npm 中不存在 {}@{}；安装没有开始。",
+                request.package_name, request.version
+            ));
+        }
+        if details.contains("enotfound")
+            || details.contains("econnreset")
+            || details.contains("network")
+        {
+            return Err("无法连接 npm Registry 检查插件来源；安装没有开始。".to_string());
+        }
+        return Err("npm package 暂时无法读取；安装没有开始。".to_string());
     }
     let observed = serde_json::from_str::<String>(&result.stdout)
         .unwrap_or_else(|_| result.stdout.trim().trim_matches('"').to_string());
@@ -1996,6 +2370,11 @@ where
 }
 
 #[tauri::command]
+async fn fetch_community_catalog() -> Result<String, String> {
+    background_operation(fetch_community_catalog_blocking).await
+}
+
+#[tauri::command]
 async fn prepare_managed_runtime(
     app: AppHandle,
     confirmed: bool,
@@ -2109,9 +2488,6 @@ fn install_managed_plugin_blocking(
 ) -> Result<ManagedOperationResult, String> {
     let native = app.state::<NativeState>();
     validate_plugin_request(&request)?;
-    if runtime_status(&app, &native).running {
-        stop_managed_runtime_blocking(app.clone())?;
-    }
     let _operation = native
         .operation_lock
         .lock()
@@ -2121,6 +2497,17 @@ fn install_managed_plugin_blocking(
     if !state.prepared {
         return Err("请先完成 DSH Runtime 准备。".to_string());
     }
+    verify_declared_dsh_compatibility(&request)?;
+    if request.source_kind.as_deref() == Some("GITHUB") {
+        verify_github_source_preflight(&request)?;
+    } else {
+        verify_npm_integrity(&app, &request)?;
+    }
+    // Stop only after every read-only preflight succeeds, so a missing source
+    // or incompatible plugin cannot interrupt a healthy running workspace.
+    if runtime_status(&app, &native).running {
+        stop_managed_runtime_blocking(app.clone())?;
+    }
     let action = if state.plugins.iter().any(|plugin| {
         plugin.plugin_id == request.plugin_id || plugin.package_name == request.package_name
     }) {
@@ -2128,9 +2515,6 @@ fn install_managed_plugin_blocking(
     } else {
         "INSTALL_PLUGIN"
     };
-    if request.source_kind.as_deref() != Some("GITHUB") {
-        verify_npm_integrity(&app, &request)?;
-    }
     audit(
         &app,
         action,
@@ -2152,12 +2536,36 @@ fn install_managed_plugin_blocking(
         ],
         PROFILE_MUTATION_TIMEOUT,
     )?;
+    // A successful package-manager exit code is not enough: the resolved
+    // package must be the exact pinned package and declare a DSH Bundle.
+    // Treat any read/validation error as a failed transaction, then restore
+    // the Profile before returning a concise user-facing explanation.
+    let dependency_validation = if result.success() {
+        verify_profile_dependency_matches_request(&app, &request)
+    } else {
+        Ok(())
+    };
+    let bundle_validation =
+        profile_package_is_bundle(&app, &request.package_name, &request.version);
     if !result.success()
-        || !profile_package_is_bundle(&app, &request.package_name, &request.version)?
+        || dependency_validation.is_err()
+        || !matches!(&bundle_validation, Ok(true))
     {
         let restored = restore_profile_and_dependencies(&app, &backups).is_ok();
         let message = if restored {
-            format!("安装未完成，已恢复原配置。{}", result.user_message())
+            if !result.success() {
+                if result.timed_out {
+                    "插件依赖安装超时，已恢复原配置。请稍后重试。".to_string()
+                } else {
+                    "插件依赖无法在受控 DSH Profile 中完成安装，已恢复原配置。请检查来源、网络与兼容性。".to_string()
+                }
+            } else if let Err(reason) = dependency_validation {
+                format!("插件固定来源验证失败，已恢复原配置。{reason}")
+            } else if matches!(&bundle_validation, Ok(false)) {
+                "该包不是可在当前 DSH Runtime 启用的 DSH Bundle，已恢复原配置。".to_string()
+            } else {
+                "插件包未通过固定版本或 Bundle 清单验证，已恢复原配置。".to_string()
+            }
         } else {
             "安装未完成，自动恢复失败。请在任务页面查看恢复说明。".to_string()
         };
@@ -2176,18 +2584,14 @@ fn install_managed_plugin_blocking(
         );
         return Err(message);
     }
-    update_profile_bundle(&app, &request.package_name, true)?;
-    let verification = run_dsh(
-        &app,
-        &["web".to_string(), "--dump-config".to_string()],
-        PROFILE_MUTATION_TIMEOUT,
-    )?;
-    if !verification.success() {
+    let desktop_web_issue = desktop_web_profile_issue(&app, &request.package_name)?;
+    update_profile_bundle(&app, &request.package_name, desktop_web_issue.is_none())?;
+    if let Err(reason) = verify_profile_manifest_consistency(&app) {
         let restored = restore_profile_and_dependencies(&app, &backups).is_ok();
         let message = if restored {
-            "插件验证失败，已恢复原配置。"
+            format!("插件配置验证失败，已恢复原配置。{reason}")
         } else {
-            "插件验证失败且自动恢复未完成。"
+            "插件验证失败且自动恢复未完成。".to_string()
         };
         audit(
             &app,
@@ -2200,9 +2604,9 @@ fn install_managed_plugin_blocking(
             } else {
                 "RECOVERY_REQUIRED"
             },
-            message,
+            &message,
         );
-        return Err(message.to_string());
+        return Err(message);
     }
     let mut next = read_runtime_state(&app);
     next.plugins.retain(|plugin| {
@@ -2219,8 +2623,8 @@ fn install_managed_plugin_blocking(
         source_url: request.source_url.clone(),
         source_commit: request.source_commit.clone(),
         snapshot_sha256: request.snapshot_sha256.clone(),
-        enabled: true,
-        issue: None,
+        enabled: desktop_web_issue.is_none(),
+        issue: desktop_web_issue.clone(),
         installed_at_unix_ms: unix_ms(),
     });
     next.plugins
@@ -2232,13 +2636,21 @@ fn install_managed_plugin_blocking(
         Some(&request.plugin_id),
         Some(&request.package_name),
         Some(&request.version),
-        "SUCCESS",
-        "固定版本安装完成，配置验证通过。",
+        if desktop_web_issue.is_some() {
+            "INSTALLED_NOT_ACTIVATED"
+        } else {
+            "SUCCESS"
+        },
+        desktop_web_issue
+            .as_deref()
+            .unwrap_or("固定版本安装完成，配置验证通过。"),
     );
     Ok(ManagedOperationResult {
         success: true,
         action: action.to_string(),
-        message: "插件已安装并通过 DSH 配置验证。请重启 Runtime 以加载变更。".to_string(),
+        message: desktop_web_issue.unwrap_or_else(|| {
+            "插件已安装并通过 DSH 配置验证。请重启 Runtime 以加载变更。".to_string()
+        }),
         runtime: runtime_status(&app, &native),
     })
 }
@@ -2281,17 +2693,12 @@ fn remove_managed_plugin_blocking(
     // The functional uninstall is a local, atomic manifest operation. It does
     // not depend on a package-manager subprocess or network availability.
     remove_profile_package_entry(&app, &installed.package_name)?;
-    let verification = run_dsh(
-        &app,
-        &["web".to_string(), "--dump-config".to_string()],
-        PROFILE_MUTATION_TIMEOUT,
-    )?;
-    if !verification.success() {
+    if let Err(reason) = verify_profile_manifest_consistency(&app) {
         let restored = restore_profile_files(&backups).is_ok();
         let message = if restored {
-            "卸载验证失败，已恢复原配置。"
+            format!("卸载配置验证失败，已恢复原配置。{reason}")
         } else {
-            "卸载验证失败且自动恢复未完成。"
+            "卸载验证失败且自动恢复未完成。".to_string()
         };
         audit(
             &app,
@@ -2304,9 +2711,9 @@ fn remove_managed_plugin_blocking(
             } else {
                 "RECOVERY_REQUIRED"
             },
-            message,
+            &message,
         );
-        return Err(message.to_string());
+        return Err(message);
     }
     let mut next = read_runtime_state(&app);
     next.plugins
@@ -2365,6 +2772,42 @@ async fn start_managed_runtime(app: AppHandle) -> Result<ManagedRuntimeStatus, S
     background_operation(move || start_managed_runtime_blocking(app)).await
 }
 
+#[tauri::command]
+async fn reconnect_managed_runtime(app: AppHandle) -> Result<ManagedRuntimeStatus, String> {
+    background_operation(move || reconnect_managed_runtime_blocking(app)).await
+}
+
+/// Reconnect means recover the managed local Runtime, rather than merely
+/// re-reading a stale UI snapshot. If a process survived the Desktop restart we
+/// adopt it; otherwise we perform the same guarded start path as the Start
+/// button, including Profile reconciliation and audit logging.
+fn reconnect_managed_runtime_blocking(app: AppHandle) -> Result<ManagedRuntimeStatus, String> {
+    let native = app.state::<NativeState>();
+    let current = runtime_status(&app, &native);
+    if current.running {
+        audit(
+            &app,
+            "RECONNECT_RUNTIME",
+            None,
+            Some(DSH_PACKAGE),
+            Some(DSH_VERSION),
+            "SUCCESS",
+            "已恢复与现有本地 DSH Runtime 的连接。",
+        );
+        return Ok(current);
+    }
+    audit(
+        &app,
+        "RECONNECT_RUNTIME",
+        None,
+        Some(DSH_PACKAGE),
+        Some(DSH_VERSION),
+        "RUNNING",
+        "本地 DSH Runtime 未运行，正在执行受控恢复。",
+    );
+    start_managed_runtime_blocking(app)
+}
+
 fn start_managed_runtime_blocking(app: AppHandle) -> Result<ManagedRuntimeStatus, String> {
     let native = app.state::<NativeState>();
     let current = runtime_status(&app, &native);
@@ -2394,12 +2837,7 @@ fn start_managed_runtime_blocking(app: AppHandle) -> Result<ManagedRuntimeStatus
         .map_err(|_| "无法创建 Runtime 日志。".to_string())?;
     let mut args = vec![toolchain.pnpm_cli.to_string_lossy().into_owned()];
     args.extend(pnpm_dsh_args());
-    args.extend([
-        "web".to_string(),
-        "--no-open".to_string(),
-        "--port".to_string(),
-        port.to_string(),
-    ]);
+    args.extend(managed_dsh_web_args(port));
     let mut command = Command::new(&toolchain.node);
     command
         .args(args)
@@ -2596,10 +3034,12 @@ pub fn run() {
             detect_runtime_environment,
             get_managed_runtime_status,
             list_installation_audit,
+            fetch_community_catalog,
             prepare_managed_runtime,
             install_managed_plugin,
             remove_managed_plugin,
             start_managed_runtime,
+            reconnect_managed_runtime,
             stop_managed_runtime,
             open_managed_runtime_workspace,
             save_session_token,
@@ -2613,6 +3053,13 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    #[ignore = "requires access to the pinned public catalog"]
+    fn can_fetch_the_pinned_community_catalog() {
+        let catalog = fetch_community_catalog_blocking().expect("community catalog");
+        assert!(catalog.contains("\"plugins\""));
+    }
 
     fn installed_record() -> ManagedPluginRecord {
         ManagedPluginRecord {
@@ -2663,6 +3110,7 @@ mod tests {
             source_url: None,
             source_commit: None,
             snapshot_sha256: None,
+            dsh_compatibility: Some("0.1".to_string()),
             confirmed: true,
         };
         assert!(validate_plugin_request(&request).is_ok());
@@ -2678,6 +3126,7 @@ mod tests {
             source_url: None,
             source_commit: None,
             snapshot_sha256: None,
+            dsh_compatibility: Some("0.1".to_string()),
             confirmed: false,
         };
         assert!(validate_plugin_request(&unconfirmed).is_err());
@@ -2697,6 +3146,7 @@ mod tests {
             source_url: Some("https://github.com/example/dsh-plugin".to_string()),
             source_commit: Some("a".repeat(40)),
             snapshot_sha256: Some("b".repeat(64)),
+            dsh_compatibility: Some("0.1".to_string()),
             confirmed: true,
         };
         assert!(validate_plugin_request(&candidate("LOW", 1)).is_err());
@@ -2723,6 +3173,7 @@ mod tests {
             source_url: Some("https://github.com/example/dsh-plugin".to_string()),
             source_commit: Some(commit.clone()),
             snapshot_sha256: None,
+            dsh_compatibility: Some("0.1".to_string()),
             confirmed: true,
         };
         assert!(validate_plugin_request(&request).is_ok());
@@ -2730,6 +3181,23 @@ mod tests {
             plugin_package_spec(&request).expect("github spec"),
             format!("git+https://github.com/example/dsh-plugin.git#{commit}")
         );
+    }
+
+    #[test]
+    fn pnpm_normalized_github_dependency_remains_a_fixed_source() {
+        let commit = "b1ababa535d80de0368e9036760e31de7eb569f4";
+        assert_eq!(
+            pinned_github_dependency(&format!("github:253071608/dsh-localnote#{commit}")),
+            Some(("253071608/dsh-localnote", commit))
+        );
+        assert_eq!(
+            pinned_github_dependency(&format!(
+                "git+https://github.com/253071608/dsh-localnote.git#{commit}"
+            )),
+            Some(("253071608/dsh-localnote", commit))
+        );
+        assert!(pinned_github_dependency("github:253071608/dsh-localnote").is_none());
+        assert!(pinned_github_dependency("github:253071608/dsh-localnote#main").is_none());
     }
 
     #[test]
@@ -2794,11 +3262,43 @@ mod tests {
     #[test]
     fn legacy_runtime_command_port_is_recovered() {
         assert_eq!(
-            parse_runtime_port(
-                "node pnpm dlx @deepseek-ai/dsh@0.1.0-rc.8 web --no-open --port 58832"
-            ),
+            parse_runtime_port("node pnpm dlx @deepseek-ai/dsh@0.1.0-rc.8 web --port 58832"),
             Some(58832)
         );
+    }
+
+    #[test]
+    fn managed_runtime_only_uses_supported_web_arguments() {
+        let args = managed_dsh_web_args(58832);
+        assert_eq!(args, ["web", "--no-open", "--port", "58832"]);
+    }
+
+    #[test]
+    fn headless_only_patch_is_not_activated_in_desktop_web_profile() {
+        let patch = r#"
+- id: headless-startup
+  disabled: true
+
+- id: headless-runner
+  disabled: true
+
+- insert:
+    - id: gateway
+      inject: [cmdlineArgs]
+"#;
+        assert!(patch_disables_row(patch, "headless-startup"));
+        assert!(patch_disables_row(patch, "headless-runner"));
+    }
+
+    #[test]
+    fn regular_patch_remains_eligible_for_desktop_web_profile() {
+        let patch = r#"
+- insert:
+    - id: plugin-startup
+      inject: [webStartup]
+"#;
+        assert!(!patch_disables_row(patch, "headless-startup"));
+        assert!(!patch_disables_row(patch, "headless-runner"));
     }
 
     #[test]

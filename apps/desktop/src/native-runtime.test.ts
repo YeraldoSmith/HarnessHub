@@ -71,6 +71,7 @@ describe('managed plugin evidence boundary', () => {
   it('allows risk-assessed candidates with pinned npm, commit, and snapshot evidence', () => {
     const candidate = {
       ...plugin(),
+      tags: ['installable-bundle'],
       registry_status: 'COLLECTED_UNVERIFIED' as const,
       risk_level: 'MEDIUM' as const,
       discovery_snapshot_sha256: 'b'.repeat(64),
@@ -83,9 +84,33 @@ describe('managed plugin evidence boundary', () => {
     })
   })
 
+  it('allows a catalog bundle only when its Git source is pinned to the displayed commit', () => {
+    const commit = 'c'.repeat(40)
+    const candidate: Plugin = {
+      ...plugin(),
+      source: 'github',
+      npm_url: null,
+      source_commit: commit,
+      tags: ['installable-bundle'],
+      registry_status: 'COLLECTED_UNVERIFIED',
+      risk_level: 'HIGH',
+      source_evidence: [{
+        provider: 'github', url: 'https://github.com/example/dsh-git-plugin',
+        repository_url: 'https://github.com/example/dsh-git-plugin', package_name: 'dsh-git-plugin',
+        fetched_at: '2026-08-21T00:00:00.000Z', commit_sha: commit, release_tag: null,
+        npm_version: '1.0.0', integrity: `git-commit:${commit}`, readme_sha256: null, license_spdx: 'MIT',
+      }],
+    }
+    expect(installableEvidence(candidate)).toMatchObject({
+      packageName: 'dsh-git-plugin', sourceKind: 'GITHUB', sourceCommit: commit, requiredConfirmations: 2,
+    })
+    expect(installableEvidence({ ...candidate, source_commit: 'd'.repeat(40) })).toBeNull()
+  })
+
   it('requires two confirmations for every unverified candidate and never policy-blocks CRITICAL', () => {
     const candidate = {
       ...plugin(),
+      tags: ['installable-bundle'],
       registry_status: 'COLLECTED_UNVERIFIED' as const,
       risk_level: 'HIGH' as const,
       discovery_snapshot_sha256: 'b'.repeat(64),
@@ -97,7 +122,7 @@ describe('managed plugin evidence boundary', () => {
     })
   })
 
-  it('resolves missing npm evidence to a commit-pinned GitHub installation', async () => {
+  it('does not make an unverified GitHub repository installable at click time', async () => {
     const candidate = {
       ...plugin(),
       registry_status: 'COLLECTED_UNVERIFIED' as const,
@@ -107,31 +132,15 @@ describe('managed plugin evidence boundary', () => {
       source_commit: null,
       source_evidence: plugin().source_evidence.filter((evidence) => evidence.provider !== 'npm'),
     }
-    const encodedManifest = btoa(JSON.stringify({
-      name: 'dsh-workbench',
-      version: '0.8.0',
-    }))
-    vi.stubGlobal('fetch', vi.fn(async (input: string | URL | Request) => {
-      const url = String(input)
-      if (url.endsWith('/repos/lee259/dsh-workbench')) {
-        return new Response(JSON.stringify({ default_branch: 'main' }), { status: 200 })
-      }
-      if (url.endsWith('/commits/main')) {
-        return new Response(JSON.stringify({ sha: 'c'.repeat(40) }), { status: 200 })
-      }
-      if (url.includes('/contents/package.json?ref=')) {
-        return new Response(JSON.stringify({ encoding: 'base64', content: encodedManifest }), { status: 200 })
-      }
-      return new Response('{}', { status: 404 })
-    }))
+    await expect(resolveInstallableEvidence(candidate)).rejects.toThrow('固定 DSH bundle 证据')
+  })
 
-    await expect(resolveInstallableEvidence(candidate)).resolves.toMatchObject({
-      packageName: 'dsh-workbench',
-      version: '0.8.0',
-      integrity: `git-commit:${'c'.repeat(40)}`,
-      sourceKind: 'GITHUB',
-      requiredConfirmations: 2,
-    })
+  it('does not expose install evidence for a source-only discovered repository', () => {
+    expect(installableEvidence({
+      ...plugin(),
+      registry_status: 'COLLECTED_UNVERIFIED',
+      risk_level: 'HIGH',
+    })).toBeNull()
   })
 
   it('keeps local installation identity stable when a Registry refresh changes the plugin ID', () => {

@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common'
 
-import { GitHubDiscoveryAdapter } from '@harnesshub/plugin-sources'
+import { CommunityCatalogAdapter, GitHubDiscoveryAdapter, type PublicSourceCandidate } from '@harnesshub/plugin-sources'
 
 import { CANDIDATE_PLUGIN_REPOSITORY } from './candidate-plugin.repository.js'
 import { DiscoveryController } from './discovery.controller.js'
@@ -24,14 +24,33 @@ function positiveInteger(value: string | undefined, fallback: number): number {
       provide: SOURCE_AGGREGATION_ADAPTER,
       useFactory: () => {
         const token = process.env.GITHUB_DISCOVERY_TOKEN?.trim() || process.env.GITHUB_TOKEN?.trim() || undefined
-        return new GitHubDiscoveryAdapter({
+        const catalog = new CommunityCatalogAdapter({
+          maxEntries: positiveInteger(process.env.COMMUNITY_CATALOG_LIMIT, 200),
+        })
+        const github = new GitHubDiscoveryAdapter({
           token,
-          perQuery: positiveInteger(process.env.DISCOVERY_RESULTS_PER_QUERY, 30),
+          perQuery: positiveInteger(process.env.DISCOVERY_RESULTS_PER_QUERY, 100),
           detailLimit: process.env.DISCOVERY_DETAIL_LIMIT
-            ? positiveInteger(process.env.DISCOVERY_DETAIL_LIMIT, token ? 30 : 12)
+            ? positiveInteger(process.env.DISCOVERY_DETAIL_LIMIT, token ? 1_000 : 12)
             : undefined,
+          pagesPerQuery: positiveInteger(process.env.DISCOVERY_PAGES_PER_QUERY, token ? 10 : 1),
           retries: 2,
         })
+        return {
+          discover: async (): Promise<PublicSourceCandidate[]> => {
+            const [catalogCandidates, githubCandidates] = await Promise.all([
+              catalog.discover(),
+              github.discover().catch(() => []),
+            ])
+            // The direct GitHub scan has stronger npm SHA-512 evidence when it
+            // overlaps a catalog entry, so it intentionally wins the merge.
+            const merged = new Map<string, PublicSourceCandidate>()
+            for (const candidate of [...catalogCandidates, ...githubCandidates]) {
+              merged.set(`${candidate.repository.toLowerCase()}#${candidate.bundle_directory ?? ''}`, candidate)
+            }
+            return [...merged.values()]
+          },
+        }
       },
     },
   ],

@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { invoke, isTauri } from '@tauri-apps/api/core'
+import { invoke } from '@tauri-apps/api/core'
 
 import { useI18n } from '@harnesshub/i18n'
+
+import { isHarnessHubDesktop } from './desktop-environment.js'
 import {
   RuntimeEnvironmentManager,
   type NativeRuntimeEnvironmentSnapshot,
@@ -21,7 +23,7 @@ class TauriEnvironmentProbe implements ReadonlyEnvironmentProbe {
 }
 
 export async function detectManagedRuntimeEnvironment(): Promise<RuntimeEnvironmentSnapshot | null> {
-  if (!isTauri()) return null
+  if (!isHarnessHubDesktop()) return null
   return new RuntimeEnvironmentManager(new TauriEnvironmentProbe()).detect()
 }
 
@@ -47,7 +49,7 @@ export function ManagedRuntimeSetup({
   const [message, setMessage] = useState('')
 
   const detect = useCallback(async () => {
-    if (!isTauri()) return
+    if (!isHarnessHubDesktop()) return
     setError('')
     try {
       const snapshot = await manager.detect()
@@ -109,7 +111,7 @@ export function ManagedRuntimeSetup({
             <input checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} type="checkbox" />
             <span>{t('runtimeSetup.confirmLabel')}</span>
           </label>
-          <button disabled={!confirmed || pending || !isTauri()} onClick={() => void prepare()} type="button">
+          <button disabled={!confirmed || pending || !isHarnessHubDesktop()} onClick={() => void prepare()} type="button">
             {pending ? t('runtimeSetup.preparing') : t('runtimeSetup.prepare')}
           </button>
           <p className="runtime-setup-hint">{t('runtimeSetup.timeHint')}</p>

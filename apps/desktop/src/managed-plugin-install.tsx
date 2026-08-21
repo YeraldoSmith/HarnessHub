@@ -38,8 +38,8 @@ export function ManagedPluginInstall({
   const evidence = useMemo(() => installableEvidence(plugin), [plugin])
   const policy = useMemo(() => pluginInstallationPolicy(plugin), [plugin])
   const installed = managedPluginForRegistryEntry(plugin, runtime.plugins)
-  const canResolveFromGitHub = Boolean(plugin.github_url)
   const current = Boolean(installed && (!evidence || installed.version === evidence.version))
+  const directInstall = plugin.registry_status === 'PUBLISHED' && policy.riskLevel === 'LOW'
 
   useEffect(() => {
     setConfirmed(false)
@@ -54,7 +54,7 @@ export function ManagedPluginInstall({
     setError('')
     try {
       const result = action === 'install'
-        ? await installManagedPlugin(plugin, confirmed ? 1 + (highRiskConfirmed ? 1 : 0) : 0)
+        ? await installManagedPlugin(plugin, directInstall ? 1 : confirmed ? 1 + (highRiskConfirmed ? 1 : 0) : 0)
         : await removeManagedPlugin(plugin, installed?.packageName ?? '')
       onRuntimeChange(result.runtime)
       onAuditChange()
@@ -69,7 +69,7 @@ export function ManagedPluginInstall({
     }
   }
 
-  const blocked = !nativeAvailable() || !runtime.prepared || (!evidence && !installed && !canResolveFromGitHub)
+  const blocked = !nativeAvailable() || !runtime.prepared || (!evidence && !installed)
 
   return (
     <section className="managed-install" aria-labelledby={`install-${plugin.id}`}>
@@ -83,9 +83,7 @@ export function ManagedPluginInstall({
             ? t('managedInstall.installed', { version: installed.version })
             : evidence
               ? t('managedInstall.availableRisk', { version: evidence.version, risk: policy.riskLevel })
-              : canResolveFromGitHub
-                ? t('managedInstall.candidateResolvable')
-                : t('managedInstall.candidatePending')}
+            : t('managedInstall.candidatePending')}
         </strong>
       </header>
 
@@ -100,8 +98,8 @@ export function ManagedPluginInstall({
           {t('managedInstall.disabledRepair', { reason: installed.issue ?? t('managedInstall.sourceChanged') })}
         </p>
       ) : null}
-      {!evidence ? <p className={`managed-install__notice${canResolveFromGitHub ? '' : ' managed-install__notice--error'}`}>
-        {t(canResolveFromGitHub ? 'managedInstall.sourceResolution' : 'managedInstall.unavailable')}
+      {!evidence ? <p className="managed-install__notice managed-install__notice--error">
+        {t('managedInstall.unavailable')}
       </p> : null}
 
       {evidence ? (
@@ -123,11 +121,11 @@ export function ManagedPluginInstall({
 
       {!blocked ? (
         <>
-          <label className="managed-install__confirm">
+          {!directInstall || installed ? <label className="managed-install__confirm">
             <input checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} type="checkbox" />
-            <span>{t(policy.riskLevel === 'LOW' ? 'managedInstall.confirmLow' : 'managedInstall.confirmPermissions')}</span>
-          </label>
-          {policy.requiredConfirmations === 2 ? (
+            <span>{t(installed ? 'managedInstall.confirmRemove' : policy.riskLevel === 'LOW' ? 'managedInstall.confirmLow' : 'managedInstall.confirmPermissions')}</span>
+          </label> : null}
+          {!directInstall && policy.requiredConfirmations === 2 ? (
             <label className="managed-install__confirm managed-install__confirm--high">
               <input
                 checked={highRiskConfirmed}
@@ -138,9 +136,9 @@ export function ManagedPluginInstall({
             </label>
           ) : null}
           <div className="managed-install__actions">
-            {!current && (evidence || canResolveFromGitHub) ? (
+            {!current && evidence ? (
               <button
-                disabled={!confirmed || (policy.requiredConfirmations === 2 && !highRiskConfirmed) || pending}
+                disabled={(!directInstall && (!confirmed || (policy.requiredConfirmations === 2 && !highRiskConfirmed))) || pending}
                 onClick={() => void operate('install')}
                 type="button"
               >

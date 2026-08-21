@@ -85,6 +85,31 @@ describe('Runtime Bridge Desktop UI', () => {
     expect(markup).not.toContain('runtimeBridge.noRealEvents')
   })
 
+  it('keeps Start available after a prepared local Runtime has stopped', () => {
+    const markup = renderToStaticMarkup(
+      <RuntimeBridgeView
+        auditCount={0}
+        error=""
+        events={[]}
+        onReconnect={() => undefined}
+        onStart={() => undefined}
+        onStop={() => undefined}
+        pending={false}
+        runtimeReady
+        snapshot={{
+          ...initialSnapshot,
+          implementation: 'LOCAL_DSH',
+          runtimeId: 'harnesshub-local-dsh',
+          connection: 'DISCONNECTED',
+        }}
+      />,
+    )
+
+    expect(markup).toMatch(/<button[^>]*>启动<\/button>/)
+    expect(markup).toContain('重新连接')
+    expect(markup).toMatch(/<button disabled=""[^>]*>停止<\/button>/)
+  })
+
   it('renders validated runtime events after the Fixture starts', async () => {
     let value = 0
     const fixture = new ContractDshRuntimeFixture({

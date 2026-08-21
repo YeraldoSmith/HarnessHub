@@ -106,6 +106,7 @@ export interface CandidatePlugin {
   external_id: string
   repository: string
   repository_url: string
+  bundle_directory: string | null
   owner: string
   name: string
   description: string
@@ -118,6 +119,7 @@ export interface CandidatePlugin {
   package_name: string | null
   package_version: string | null
   package_integrity: string | null
+  dsh_bundle_patch: string | null
   dsh_compatibility: string | null
   category: PluginCategory
   permissions: PluginPermission[]

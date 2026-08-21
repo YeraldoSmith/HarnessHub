@@ -1,11 +1,11 @@
 {
   "name": "@harnesshub/desktop",
-  "version": "0.7.3-beta.3",
+  "version": "0.7.3-beta.6",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "tsc -b && vite build",
+    "build": "pnpm --filter @harnesshub/types build && pnpm --filter @harnesshub/plugin-schema build && pnpm --filter @harnesshub/i18n build && pnpm --filter @harnesshub/plugin-sources build && tsc -b && vite build",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run",
     "tauri:dev": "tauri dev",

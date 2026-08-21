@@ -1,6 +1,7 @@
 export { GitHubSourceAdapter } from './github-adapter.js'
 export { NpmSourceAdapter } from './npm-adapter.js'
 export { GitHubDiscoveryAdapter, type GitHubDiscoveryOptions } from './github-discovery-adapter.js'
+export { CommunityCatalogAdapter, type CommunityCatalogDiscoveryOptions } from './community-catalog-adapter.js'
 export {
   CANDIDATE_RISK_MODEL_VERSION,
   classifyCandidate,
